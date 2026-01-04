@@ -14,7 +14,108 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      calculations: {
+        Row: {
+          cost_type: string
+          created_at: string
+          energy_cost: number
+          equipment_cost: number
+          fixed_profit: number | null
+          id: string
+          ink_cost: number
+          labor_cost: number
+          lot_cost: number
+          lot_quantity: number
+          margin_percentage: number
+          other_material_cost: number
+          other_operational_cost: number
+          paper_cost: number
+          product_name: string
+          profit: number
+          rent_cost: number
+          sale_price: number
+          total_cost: number
+          unit_price: number
+          user_id: string
+          varnish_cost: number
+        }
+        Insert: {
+          cost_type?: string
+          created_at?: string
+          energy_cost?: number
+          equipment_cost?: number
+          fixed_profit?: number | null
+          id?: string
+          ink_cost?: number
+          labor_cost?: number
+          lot_cost?: number
+          lot_quantity?: number
+          margin_percentage?: number
+          other_material_cost?: number
+          other_operational_cost?: number
+          paper_cost?: number
+          product_name: string
+          profit: number
+          rent_cost?: number
+          sale_price: number
+          total_cost: number
+          unit_price: number
+          user_id: string
+          varnish_cost?: number
+        }
+        Update: {
+          cost_type?: string
+          created_at?: string
+          energy_cost?: number
+          equipment_cost?: number
+          fixed_profit?: number | null
+          id?: string
+          ink_cost?: number
+          labor_cost?: number
+          lot_cost?: number
+          lot_quantity?: number
+          margin_percentage?: number
+          other_material_cost?: number
+          other_operational_cost?: number
+          paper_cost?: number
+          product_name?: string
+          profit?: number
+          rent_cost?: number
+          sale_price?: number
+          total_cost?: number
+          unit_price?: number
+          user_id?: string
+          varnish_cost?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          plan: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          plan?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          plan?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
