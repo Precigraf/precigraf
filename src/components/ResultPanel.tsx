@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Save, BarChart3, Package, DollarSign, Percent, Loader2 } from 'lucide-react';
+import { TrendingUp, Save, BarChart3, Package, DollarSign, Percent, Loader2, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useCalculations } from '@/hooks/useCalculations';
@@ -11,12 +11,20 @@ interface ResultPanelProps {
   baseCost: number;
   rawMaterialsCost: number;
   operationalCost: number;
+  productionCost: number;
   totalCost: number;
   profitMargin: number;
   profitValue: number;
+  desiredProfit: number;
+  baseSellingPrice: number;
+  marketplaceCommission: number;
+  marketplaceFixedFees: number;
+  marketplaceTotalFees: number;
+  finalSellingPrice: number;
   sellingPrice: number;
   unitPrice: number;
   isFixedProfit: boolean;
+  hasMarketplace: boolean;
   // Additional data for saving
   costType: string;
   lotCost: number;
@@ -38,12 +46,20 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   baseCost,
   rawMaterialsCost,
   operationalCost,
+  productionCost,
   totalCost,
   profitMargin,
   profitValue,
+  desiredProfit,
+  baseSellingPrice,
+  marketplaceCommission,
+  marketplaceFixedFees,
+  marketplaceTotalFees,
+  finalSellingPrice,
   sellingPrice,
   unitPrice,
   isFixedProfit,
+  hasMarketplace,
   costType,
   lotCost,
   paper,
@@ -139,35 +155,61 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
             <div className="flex justify-between items-center">
               <span className="font-semibold text-foreground flex items-center gap-2">
                 <DollarSign className="w-4 h-4 text-primary" />
-                CUSTO TOTAL
+                CUSTO DE PRODUÇÃO
               </span>
-              <span className="font-bold text-lg text-foreground">{formatCurrency(totalCost)}</span>
+              <span className="font-bold text-lg text-foreground">{formatCurrency(productionCost)}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Lucro */}
-      <div className="bg-secondary/50 rounded-xl p-4 mb-6">
+      {/* Lucro Desejado */}
+      <div className="bg-secondary/50 rounded-xl p-4 mb-4">
         <div className="flex items-center gap-2 mb-2">
           <Percent className="w-4 h-4 text-primary" />
           <span className="text-sm text-secondary-foreground">
-            Lucro {isFixedProfit ? '(valor fixo)' : `(${profitMargin}%)`}
+            Lucro Desejado {isFixedProfit ? '(valor fixo)' : `(${profitMargin}%)`}
           </span>
         </div>
         <span className="text-2xl font-bold text-success">
-          + {formatCurrency(profitValue)}
+          + {formatCurrency(desiredProfit)}
         </span>
       </div>
 
-      {/* Preço de Venda - Destaque */}
+      {/* Taxas do Marketplace */}
+      {hasMarketplace && (
+        <div className="bg-warning/10 border border-warning/30 rounded-xl p-4 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Store className="w-4 h-4 text-warning" />
+            <span className="text-sm font-medium text-warning">Taxas do Marketplace</span>
+          </div>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-secondary-foreground">• Comissão (%)</span>
+              <span className="text-foreground">{formatCurrency(marketplaceCommission)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-secondary-foreground">• Taxa fixa ({quantity} un)</span>
+              <span className="text-foreground">{formatCurrency(marketplaceFixedFees)}</span>
+            </div>
+            <div className="border-t border-warning/30 pt-2 mt-2">
+              <div className="flex justify-between items-center font-medium">
+                <span className="text-warning">Total de taxas</span>
+                <span className="text-warning">{formatCurrency(marketplaceTotalFees)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preço Final de Venda - Destaque */}
       <div className="gold-gradient rounded-xl p-6 mb-6 shadow-gold">
         <div className="text-center">
           <span className="text-sm font-medium text-primary-foreground/80 uppercase tracking-wide">
-            Preço Total de Venda
+            Preço Final de Venda
           </span>
           <div className="text-4xl font-bold text-primary-foreground mt-2 mb-3">
-            {formatCurrency(sellingPrice)}
+            {formatCurrency(finalSellingPrice)}
           </div>
           <div className="bg-primary-foreground/20 rounded-lg py-2 px-4 inline-block">
             <span className="text-sm text-primary-foreground">

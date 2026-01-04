@@ -5,6 +5,7 @@ import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
 import SavedCalculations from './SavedCalculations';
+import MarketplaceSection, { MarketplaceType, MARKETPLACE_CONFIG } from './MarketplaceSection';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -37,6 +38,11 @@ const CostCalculator: React.FC = () => {
   const [profitMargin, setProfitMargin] = useState(70);
   const [fixedProfit, setFixedProfit] = useState(0);
 
+  // Marketplace
+  const [marketplace, setMarketplace] = useState<MarketplaceType>('none');
+  const [commissionPercentage, setCommissionPercentage] = useState(0);
+  const [fixedFeePerItem, setFixedFeePerItem] = useState(0);
+
   // Cálculos em tempo real
   const calculations = useMemo(() => {
     // Custo base
@@ -48,30 +54,50 @@ const CostCalculator: React.FC = () => {
     // Custos operacionais total
     const operationalCost = labor + energy + equipment + rent + otherCosts;
 
-    // Custo total
-    const totalCost = baseCost + rawMaterialsCost + operationalCost;
+    // Custo de produção
+    const productionCost = baseCost + rawMaterialsCost + operationalCost;
 
-    // Lucro (valor fixo tem prioridade)
+    // Lucro desejado (valor fixo tem prioridade)
     const isFixedProfit = fixedProfit > 0;
-    const profitValue = isFixedProfit
+    const desiredProfit = isFixedProfit
       ? fixedProfit
-      : totalCost * (profitMargin / 100);
+      : productionCost * (profitMargin / 100);
 
-    // Preço de venda
-    const sellingPrice = totalCost + profitValue;
+    // Preço base de venda (sem taxas)
+    const baseSellingPrice = productionCost + desiredProfit;
 
-    // Preço unitário
-    const unitPrice = lotQuantity > 0 ? sellingPrice / lotQuantity : 0;
+    // Taxas do marketplace
+    const marketplaceCommission = baseSellingPrice * (commissionPercentage / 100);
+    const marketplaceFixedFees = fixedFeePerItem * lotQuantity;
+    const marketplaceTotalFees = marketplaceCommission + marketplaceFixedFees;
+
+    // Preço final de venda (com taxas)
+    const finalSellingPrice = baseSellingPrice + marketplaceTotalFees;
+
+    // Preço unitário final
+    const unitPrice = lotQuantity > 0 ? finalSellingPrice / lotQuantity : 0;
+
+    // Lucro líquido
+    const netProfit = finalSellingPrice - productionCost - marketplaceTotalFees;
 
     return {
       baseCost,
       rawMaterialsCost,
       operationalCost,
-      totalCost,
+      productionCost,
       isFixedProfit,
-      profitValue,
-      sellingPrice,
+      desiredProfit,
+      baseSellingPrice,
+      marketplaceCommission,
+      marketplaceFixedFees,
+      marketplaceTotalFees,
+      finalSellingPrice,
       unitPrice,
+      netProfit,
+      // Legacy compatibility
+      totalCost: productionCost,
+      profitValue: desiredProfit,
+      sellingPrice: finalSellingPrice,
     };
   }, [
     costType,
@@ -89,8 +115,9 @@ const CostCalculator: React.FC = () => {
     otherCosts,
     profitMargin,
     fixedProfit,
+    commissionPercentage,
+    fixedFeePerItem,
   ]);
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
       {/* Coluna Esquerda - Formulário */}
@@ -225,6 +252,18 @@ const CostCalculator: React.FC = () => {
           />
         </FormSection>
 
+        {/* Seção 6: Marketplace */}
+        <MarketplaceSection
+          marketplace={marketplace}
+          onMarketplaceChange={setMarketplace}
+          commissionPercentage={commissionPercentage}
+          onCommissionChange={setCommissionPercentage}
+          fixedFeePerItem={fixedFeePerItem}
+          onFixedFeeChange={setFixedFeePerItem}
+          profitValue={calculations.desiredProfit}
+          marketplaceTotalFees={calculations.marketplaceTotalFees}
+        />
+
         {/* Cálculos Salvos (apenas para usuários logados) */}
         {user && <SavedCalculations />}
       </div>
@@ -237,12 +276,20 @@ const CostCalculator: React.FC = () => {
           baseCost={calculations.baseCost}
           rawMaterialsCost={calculations.rawMaterialsCost}
           operationalCost={calculations.operationalCost}
+          productionCost={calculations.productionCost}
           totalCost={calculations.totalCost}
           profitMargin={profitMargin}
           profitValue={calculations.profitValue}
+          desiredProfit={calculations.desiredProfit}
+          baseSellingPrice={calculations.baseSellingPrice}
+          marketplaceCommission={calculations.marketplaceCommission}
+          marketplaceFixedFees={calculations.marketplaceFixedFees}
+          marketplaceTotalFees={calculations.marketplaceTotalFees}
+          finalSellingPrice={calculations.finalSellingPrice}
           sellingPrice={calculations.sellingPrice}
           unitPrice={calculations.unitPrice}
           isFixedProfit={calculations.isFixedProfit}
+          hasMarketplace={marketplace !== 'none'}
           costType={costType}
           lotCost={costType === 'lot' ? lotCost : unitCost * lotQuantity}
           paper={paper}
