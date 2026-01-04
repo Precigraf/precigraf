@@ -264,12 +264,10 @@ const CostCalculator: React.FC = () => {
           marketplaceTotalFees={calculations.marketplaceTotalFees}
         />
 
-        {/* Cálculos Salvos (apenas para usuários logados) */}
-        {user && <SavedCalculations />}
       </div>
 
-      {/* Coluna Direita - Resultados */}
-      <div>
+      {/* Coluna Direita - Resultados + Histórico */}
+      <div className="space-y-6">
         <ResultPanel
           productName={productName}
           quantity={lotQuantity}
@@ -303,6 +301,9 @@ const CostCalculator: React.FC = () => {
           otherCosts={otherCosts}
           fixedProfit={fixedProfit}
         />
+        
+        {/* Histórico de Cálculos (apenas para usuários logados) */}
+        {user && <SavedCalculations />}
       </div>
     </div>
   );
