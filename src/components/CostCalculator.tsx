@@ -199,7 +199,7 @@ const CostCalculator: React.FC = () => {
           subtitle="Informe o custo total de materiais para este lote"
         >
           <CurrencyInput label="Papel" value={paper} onChange={setPaper} />
-          <CurrencyInput label="Tinta" value={ink} onChange={setInk} />
+          <CurrencyInput label="Alça" value={ink} onChange={setInk} />
           <CurrencyInput label="Verniz" value={varnish} onChange={setVarnish} />
           <CurrencyInput label="Outros" value={otherMaterials} onChange={setOtherMaterials} />
         </FormSection>
