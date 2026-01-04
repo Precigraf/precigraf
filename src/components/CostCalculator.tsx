@@ -4,11 +4,15 @@ import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
+import SavedCalculations from './SavedCalculations';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '@/hooks/useAuth';
 
 const CostCalculator: React.FC = () => {
+  const { user } = useAuth();
+  
   // Estado do formulário
   const [productName, setProductName] = useState('Tag impressa 4x5cm');
   const [costType, setCostType] = useState<'lot' | 'unit'>('lot');
@@ -220,6 +224,9 @@ const CostCalculator: React.FC = () => {
             fullWidth
           />
         </FormSection>
+
+        {/* Cálculos Salvos (apenas para usuários logados) */}
+        {user && <SavedCalculations />}
       </div>
 
       {/* Coluna Direita - Resultados */}
@@ -236,6 +243,18 @@ const CostCalculator: React.FC = () => {
           sellingPrice={calculations.sellingPrice}
           unitPrice={calculations.unitPrice}
           isFixedProfit={calculations.isFixedProfit}
+          costType={costType}
+          lotCost={costType === 'lot' ? lotCost : unitCost * lotQuantity}
+          paper={paper}
+          ink={ink}
+          varnish={varnish}
+          otherMaterials={otherMaterials}
+          labor={labor}
+          energy={energy}
+          equipment={equipment}
+          rent={rent}
+          otherCosts={otherCosts}
+          fixedProfit={fixedProfit}
         />
       </div>
     </div>
