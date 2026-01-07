@@ -27,8 +27,6 @@ export interface Calculation {
   created_at: string;
 }
 
-const FREE_PLAN_LIMIT = 5;
-
 export const useCalculations = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -59,9 +57,6 @@ export const useCalculations = () => {
     fetchCalculations();
   }, [user]);
 
-  const canSaveMore = count < FREE_PLAN_LIMIT;
-  const remainingCalculations = Math.max(0, FREE_PLAN_LIMIT - count);
-
   const saveCalculation = async (data: {
     productName: string;
     costType: string;
@@ -87,15 +82,6 @@ export const useCalculations = () => {
       toast({
         title: "Faça login",
         description: "Você precisa estar logado para salvar cálculos.",
-        variant: "destructive",
-      });
-      return { success: false };
-    }
-
-    if (!canSaveMore) {
-      toast({
-        title: "Limite atingido",
-        description: "Você atingiu o limite de 5 cálculos no plano gratuito. Faça upgrade para salvar mais!",
         variant: "destructive",
       });
       return { success: false };
@@ -136,7 +122,7 @@ export const useCalculations = () => {
 
     toast({
       title: "Cálculo salvo!",
-      description: `Restam ${remainingCalculations - 1} cálculos no plano gratuito.`,
+      description: "Seu cálculo foi salvo com sucesso.",
     });
 
     await fetchCalculations();
@@ -172,8 +158,6 @@ export const useCalculations = () => {
     calculations,
     loading,
     count,
-    canSaveMore,
-    remainingCalculations,
     saveCalculation,
     deleteCalculation,
     refresh: fetchCalculations,

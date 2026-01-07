@@ -6,26 +6,80 @@
 
 @layer base {
   :root {
+    --background: 0 0% 98%;
+    --foreground: 0 0% 9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 0 0% 93%;
+    --secondary-foreground: 0 0% 20%;
+
+    --muted: 0 0% 90%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 0 0% 93%;
+    --accent-foreground: 0 0% 9%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 4%;
+
+    --border: 0 0% 85%;
+    --input: 0 0% 93%;
+    --ring: 0 0% 9%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 96%;
+    --sidebar-foreground: 0 0% 20%;
+    --sidebar-primary: 0 0% 9%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 93%;
+    --sidebar-accent-foreground: 0 0% 20%;
+    --sidebar-border: 0 0% 85%;
+    --sidebar-ring: 0 0% 9%;
+
+    /* Custom gradients */
+    --gradient-card: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(0, 0%, 96%) 100%);
+    --gradient-result: linear-gradient(135deg, hsl(0, 0%, 98%) 0%, hsl(0, 0%, 94%) 100%);
+
+    /* Shadows */
+    --shadow-card: 0 4px 20px -4px hsla(0, 0%, 0%, 0.1);
+  }
+
+  .dark {
     --background: 0 0% 4%;
-    --foreground: 45 10% 95%;
+    --foreground: 0 0% 95%;
 
     --card: 0 0% 8%;
-    --card-foreground: 45 10% 95%;
+    --card-foreground: 0 0% 95%;
 
     --popover: 0 0% 8%;
-    --popover-foreground: 45 10% 95%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 45 90% 61%;
+    --primary: 0 0% 95%;
     --primary-foreground: 0 0% 4%;
 
     --secondary: 0 0% 12%;
-    --secondary-foreground: 45 10% 85%;
+    --secondary-foreground: 0 0% 85%;
 
     --muted: 0 0% 15%;
     --muted-foreground: 0 0% 55%;
 
-    --accent: 45 90% 61%;
-    --accent-foreground: 0 0% 4%;
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 95%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -38,32 +92,23 @@
 
     --border: 0 0% 18%;
     --input: 0 0% 12%;
-    --ring: 45 90% 61%;
-
-    --radius: 0.75rem;
+    --ring: 0 0% 95%;
 
     --sidebar-background: 0 0% 6%;
-    --sidebar-foreground: 45 10% 85%;
-    --sidebar-primary: 45 90% 61%;
+    --sidebar-foreground: 0 0% 85%;
+    --sidebar-primary: 0 0% 95%;
     --sidebar-primary-foreground: 0 0% 4%;
     --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 45 10% 85%;
+    --sidebar-accent-foreground: 0 0% 85%;
     --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 45 90% 61%;
+    --sidebar-ring: 0 0% 95%;
 
     /* Custom gradients */
-    --gradient-gold: linear-gradient(135deg, hsl(45, 90%, 61%) 0%, hsl(35, 85%, 45%) 100%);
     --gradient-card: linear-gradient(180deg, hsl(0, 0%, 10%) 0%, hsl(0, 0%, 7%) 100%);
-    --gradient-result: linear-gradient(135deg, hsl(0, 0%, 12%) 0%, hsl(45, 20%, 8%) 100%);
+    --gradient-result: linear-gradient(135deg, hsl(0, 0%, 12%) 0%, hsl(0, 0%, 8%) 100%);
 
     /* Shadows */
-    --shadow-gold: 0 4px 20px -4px hsla(45, 90%, 61%, 0.25);
     --shadow-card: 0 4px 20px -4px hsla(0, 0%, 0%, 0.5);
-  }
-
-  .dark {
-    --background: 0 0% 4%;
-    --foreground: 45 10% 95%;
   }
 }
 
@@ -103,16 +148,12 @@
     box-shadow: var(--shadow-card);
   }
 
-  .gold-gradient {
-    background: var(--gradient-gold);
-  }
-
   .result-gradient {
     background: var(--gradient-result);
   }
 
   .input-currency {
-    @apply bg-input border border-border rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200;
+    @apply bg-input border border-border rounded-lg px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/50 focus:border-foreground transition-all duration-200;
   }
 
   .section-title {
@@ -128,15 +169,6 @@
   }
 
   .value-highlight {
-    @apply text-primary font-bold;
-  }
-}
-
-@layer utilities {
-  .text-gradient-gold {
-    background: var(--gradient-gold);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    @apply text-foreground font-bold;
   }
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Save, BarChart3, Package, DollarSign, Percent, Loader2, Store } from 'lucide-react';
+import { TrendingUp, Save, Package, DollarSign, Percent, Loader2, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useCalculations } from '@/hooks/useCalculations';
@@ -74,7 +74,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   fixedProfit,
 }) => {
   const { user } = useAuth();
-  const { saveCalculation, canSaveMore, remainingCalculations } = useCalculations();
+  const { saveCalculation } = useCalculations();
   const navigate = useNavigate();
   const [saving, setSaving] = React.useState(false);
 
@@ -119,8 +119,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   return (
     <div className="glass-card result-gradient p-6 sticky top-6 animate-slide-up">
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-10 h-10 rounded-xl gold-gradient flex items-center justify-center">
-          <TrendingUp className="w-5 h-5 text-primary-foreground" />
+        <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
+          <TrendingUp className="w-5 h-5 text-background" />
         </div>
         <div>
           <h2 className="text-xl font-bold text-foreground">Resultado</h2>
@@ -154,7 +154,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
           <div className="border-t border-border pt-3">
             <div className="flex justify-between items-center">
               <span className="font-semibold text-foreground flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-primary" />
+                <DollarSign className="w-4 h-4 text-foreground" />
                 CUSTO DE PRODUÇÃO
               </span>
               <span className="font-bold text-lg text-foreground">{formatCurrency(productionCost)}</span>
@@ -166,7 +166,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
       {/* Lucro Desejado */}
       <div className="bg-secondary/50 rounded-xl p-4 mb-4">
         <div className="flex items-center gap-2 mb-2">
-          <Percent className="w-4 h-4 text-primary" />
+          <Percent className="w-4 h-4 text-foreground" />
           <span className="text-sm text-secondary-foreground">
             Lucro Desejado {isFixedProfit ? '(valor fixo)' : `(${profitMargin}%)`}
           </span>
@@ -203,53 +203,38 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
       )}
 
       {/* Preço Final de Venda - Destaque */}
-      <div className="gold-gradient rounded-xl p-6 mb-6 shadow-gold">
+      <div className="bg-foreground rounded-xl p-6 mb-6">
         <div className="text-center">
-          <span className="text-sm font-medium text-primary-foreground/80 uppercase tracking-wide">
+          <span className="text-sm font-medium text-background/80 uppercase tracking-wide">
             Preço Final de Venda
           </span>
-          <div className="text-4xl font-bold text-primary-foreground mt-2 mb-3">
+          <div className="text-4xl font-bold text-background mt-2 mb-3">
             {formatCurrency(finalSellingPrice)}
           </div>
-          <div className="bg-primary-foreground/20 rounded-lg py-2 px-4 inline-block">
-            <span className="text-sm text-primary-foreground">
+          <div className="bg-background/20 rounded-lg py-2 px-4 inline-block">
+            <span className="text-sm text-background">
               Preço por unidade ({quantity} un) → <strong>{formatCurrency(unitPrice)}</strong>
             </span>
           </div>
         </div>
       </div>
 
-      {/* Limite do plano */}
-      {user && (
-        <div className={`text-center text-xs mb-4 ${canSaveMore ? 'text-muted-foreground' : 'text-destructive'}`}>
-          {canSaveMore
-            ? `${remainingCalculations} cálculos restantes no plano gratuito`
-            : 'Limite de 5 cálculos atingido. Faça upgrade!'}
-        </div>
-      )}
-
-      {/* Botões */}
-      <div className="grid grid-cols-2 gap-3">
-        <Button variant="secondary" className="gap-2">
-          <BarChart3 className="w-4 h-4" />
-          Análise
-        </Button>
-        <Button
-          variant="default"
-          className="gap-2 gold-gradient hover:opacity-90 text-primary-foreground border-0"
-          onClick={handleSave}
-          disabled={saving || (user && !canSaveMore)}
-        >
-          {saving ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <>
-              <Save className="w-4 h-4" />
-              {user ? 'Salvar' : 'Entrar para Salvar'}
-            </>
-          )}
-        </Button>
-      </div>
+      {/* Botão Salvar */}
+      <Button
+        variant="default"
+        className="w-full gap-2 bg-foreground hover:bg-foreground/90 text-background border-0"
+        onClick={handleSave}
+        disabled={saving}
+      >
+        {saving ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <>
+            <Save className="w-4 h-4" />
+            {user ? 'Salvar' : 'Entrar para Salvar'}
+          </>
+        )}
+      </Button>
     </div>
   );
 };
