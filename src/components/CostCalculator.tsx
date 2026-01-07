@@ -39,39 +39,53 @@ const CostCalculator: React.FC = () => {
   const [commissionPercentage, setCommissionPercentage] = useState(0);
   const [fixedFeePerItem, setFixedFeePerItem] = useState(0);
 
-  // Cálculos em tempo real
+  // Cálculos em tempo real - CALCULADO POR UNIDADE e multiplicado pela quantidade
   const calculations = useMemo(() => {
-    // Custo base
-    const baseCost = costType === 'lot' ? lotCost : unitCost * lotQuantity;
+    // Custo base por unidade
+    const unitBaseCost = costType === 'lot' 
+      ? (lotQuantity > 0 ? lotCost / lotQuantity : 0) 
+      : unitCost;
 
-    // Matéria-prima total
-    const rawMaterialsCost = paper + ink + varnish + otherMaterials;
+    // Matéria-prima total (dividido por quantidade para obter por unidade)
+    const rawMaterialsTotal = paper + ink + varnish + otherMaterials;
+    const unitRawMaterialsCost = lotQuantity > 0 ? rawMaterialsTotal / lotQuantity : 0;
 
-    // Custos operacionais total
-    const operationalCost = labor + energy + equipment + rent + otherCosts;
+    // Custos operacionais total (dividido por quantidade para obter por unidade)
+    const operationalTotal = labor + energy + equipment + rent + otherCosts;
+    const unitOperationalCost = lotQuantity > 0 ? operationalTotal / lotQuantity : 0;
 
-    // Custo de produção
-    const productionCost = baseCost + rawMaterialsCost + operationalCost;
+    // Custo de produção por unidade
+    const unitProductionCost = unitBaseCost + unitRawMaterialsCost + unitOperationalCost;
 
-    // Lucro desejado (valor fixo tem prioridade)
+    // Lucro desejado por unidade (valor fixo tem prioridade)
     const isFixedProfit = fixedProfit > 0;
-    const desiredProfit = isFixedProfit
-      ? fixedProfit
-      : productionCost * (profitMargin / 100);
+    const unitDesiredProfit = isFixedProfit
+      ? (lotQuantity > 0 ? fixedProfit / lotQuantity : 0)
+      : unitProductionCost * (profitMargin / 100);
 
-    // Preço base de venda (sem taxas)
-    const baseSellingPrice = productionCost + desiredProfit;
+    // Preço base de venda por unidade (sem taxas)
+    const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
 
-    // Taxas do marketplace
-    const marketplaceCommission = baseSellingPrice * (commissionPercentage / 100);
-    const marketplaceFixedFees = fixedFeePerItem * lotQuantity;
-    const marketplaceTotalFees = marketplaceCommission + marketplaceFixedFees;
+    // Taxas do marketplace por unidade
+    const unitMarketplaceCommission = unitBaseSellingPrice * (commissionPercentage / 100);
+    const unitMarketplaceFixedFees = fixedFeePerItem;
+    const unitMarketplaceTotalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
 
-    // Preço final de venda (com taxas)
-    const finalSellingPrice = baseSellingPrice + marketplaceTotalFees;
+    // Preço unitário final (com taxas)
+    const unitPrice = unitBaseSellingPrice + unitMarketplaceTotalFees;
 
-    // Preço unitário final
-    const unitPrice = lotQuantity > 0 ? finalSellingPrice / lotQuantity : 0;
+    // PREÇO FINAL = Preço unitário × Quantidade
+    const finalSellingPrice = unitPrice * lotQuantity;
+
+    // Totais para exibição
+    const baseCost = unitBaseCost * lotQuantity;
+    const rawMaterialsCost = rawMaterialsTotal;
+    const operationalCost = operationalTotal;
+    const productionCost = unitProductionCost * lotQuantity;
+    const desiredProfit = unitDesiredProfit * lotQuantity;
+    const marketplaceCommission = unitMarketplaceCommission * lotQuantity;
+    const marketplaceFixedFees = unitMarketplaceFixedFees * lotQuantity;
+    const marketplaceTotalFees = unitMarketplaceTotalFees * lotQuantity;
 
     // Lucro líquido
     const netProfit = finalSellingPrice - productionCost - marketplaceTotalFees;
@@ -83,7 +97,7 @@ const CostCalculator: React.FC = () => {
       productionCost,
       isFixedProfit,
       desiredProfit,
-      baseSellingPrice,
+      baseSellingPrice: unitBaseSellingPrice * lotQuantity,
       marketplaceCommission,
       marketplaceFixedFees,
       marketplaceTotalFees,
