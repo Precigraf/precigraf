@@ -14,7 +14,7 @@ const Index = () => {
       <footer className="border-t border-border mt-16 py-8">
         <div className="container mx-auto px-4 text-center">
           <p className="text-sm text-muted-foreground">
-            © 2026 Calculadora de Custos Gráficos. Feito para gráficas rápidas.
+            © 2026 PreciGraf. Calculadora de Precificação.
           </p>
         </div>
       </footer>

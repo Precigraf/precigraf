@@ -7,11 +7,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 const Auth: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -45,52 +44,27 @@ const Auth: React.FC = () => {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) {
-          if (error.message.includes('Invalid login credentials')) {
-            toast({
-              title: "Credenciais inválidas",
-              description: "Email ou senha incorretos. Tente novamente.",
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Erro ao entrar",
-              description: error.message,
-              variant: "destructive",
-            });
-          }
+      const { error } = await signIn(email, password);
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast({
+            title: "Credenciais inválidas",
+            description: "Email ou senha incorretos. Tente novamente.",
+            variant: "destructive",
+          });
         } else {
           toast({
-            title: "Bem-vindo de volta!",
-            description: "Login realizado com sucesso.",
+            title: "Erro ao entrar",
+            description: error.message,
+            variant: "destructive",
           });
-          navigate('/');
         }
       } else {
-        const { error } = await signUp(email, password);
-        if (error) {
-          if (error.message.includes('already registered')) {
-            toast({
-              title: "Email já cadastrado",
-              description: "Este email já está em uso. Tente fazer login.",
-              variant: "destructive",
-            });
-          } else {
-            toast({
-              title: "Erro ao criar conta",
-              description: error.message,
-              variant: "destructive",
-            });
-          }
-        } else {
-          toast({
-            title: "Conta criada!",
-            description: "Sua conta foi criada com sucesso. Você já pode usar a calculadora!",
-          });
-          navigate('/');
-        }
+        toast({
+          title: "Bem-vindo!",
+          description: "Login realizado com sucesso.",
+        });
+        navigate('/');
       }
     } catch (error) {
       toast({
@@ -108,19 +82,22 @@ const Auth: React.FC = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl gold-gradient flex items-center justify-center shadow-gold mx-auto mb-4">
-            <Calculator className="w-8 h-8 text-primary-foreground" />
+          <div className="w-16 h-16 rounded-2xl bg-foreground flex items-center justify-center mx-auto mb-4">
+            <Calculator className="w-8 h-8 text-background" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">
-            Calculadora de Custos Gráficos
+            PreciGraf
           </h1>
           <p className="text-muted-foreground mt-2">
-            {isLogin ? 'Entre na sua conta' : 'Crie sua conta grátis'}
+            Calculadora de Precificação
           </p>
         </div>
 
         {/* Form Card */}
         <div className="glass-card p-6">
+          <h2 className="text-lg font-semibold text-foreground text-center mb-6">
+            Acesse sua conta
+          </h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-secondary-foreground">
@@ -158,58 +135,26 @@ const Auth: React.FC = () => {
 
             <Button
               type="submit"
-              className="w-full gold-gradient hover:opacity-90 text-primary-foreground border-0 gap-2"
+              className="w-full bg-foreground hover:bg-foreground/90 text-background border-0 gap-2"
               disabled={loading}
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  {isLogin ? 'Entrar' : 'Criar conta'}
+                  Entrar
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </Button>
           </form>
-
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-              disabled={loading}
-            >
-              {isLogin ? (
-                <>
-                  Não tem uma conta?{' '}
-                  <span className="text-primary font-medium">Criar conta</span>
-                </>
-              ) : (
-                <>
-                  Já tem uma conta?{' '}
-                  <span className="text-primary font-medium">Entrar</span>
-                </>
-              )}
-            </button>
-          </div>
         </div>
 
-        {/* Features */}
+        {/* Footer */}
         <div className="mt-8 text-center">
-          <p className="text-sm text-muted-foreground mb-4">
-            Plano gratuito inclui:
+          <p className="text-xs text-muted-foreground">
+            Acesso exclusivo com credenciais fornecidas.
           </p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <span className="text-xs bg-secondary px-3 py-1 rounded-full text-secondary-foreground">
-              5 cálculos salvos
-            </span>
-            <span className="text-xs bg-secondary px-3 py-1 rounded-full text-secondary-foreground">
-              Cálculos ilimitados
-            </span>
-            <span className="text-xs bg-secondary px-3 py-1 rounded-full text-secondary-foreground">
-              Histórico de orçamentos
-            </span>
-          </div>
         </div>
       </div>
     </div>

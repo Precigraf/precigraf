@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 
 const SavedCalculations: React.FC = () => {
-  const { calculations, loading, deleteCalculation, remainingCalculations, canSaveMore } = useCalculations();
+  const { calculations, loading, deleteCalculation, count } = useCalculations();
   const [searchTerm, setSearchTerm] = useState('');
   const [viewingCalc, setViewingCalc] = useState<Calculation | null>(null);
 
@@ -52,11 +52,8 @@ const SavedCalculations: React.FC = () => {
         <div>
           <h3 className="text-lg font-bold text-foreground">Histórico de Cálculos</h3>
           <p className="text-sm text-muted-foreground">
-            {calculations.length} de 5 no plano gratuito
+            {count} cálculos salvos
           </p>
-        </div>
-        <div className={`text-xs px-3 py-1 rounded-full ${canSaveMore ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'}`}>
-          {remainingCalculations} restantes
         </div>
       </div>
 
