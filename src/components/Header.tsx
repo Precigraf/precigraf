@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Calculator, Sparkles, LogOut, User } from 'lucide-react';
+import { Calculator, Sparkles, LogOut, User, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -39,6 +39,13 @@ const Header: React.FC = () => {
               <>
                 {user ? (
                   <>
+                    <Link 
+                      to="/dashboard" 
+                      className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      Dashboard
+                    </Link>
                     <button className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                       <Sparkles className="w-4 h-4" />
                       Upgrade Pro
