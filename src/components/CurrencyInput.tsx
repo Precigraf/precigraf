@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface CurrencyInputProps {
   label: string;
@@ -9,14 +9,14 @@ interface CurrencyInputProps {
   fullWidth?: boolean;
 }
 
-const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(({
+const CurrencyInput: React.FC<CurrencyInputProps> = ({
   label,
   value,
   onChange,
   placeholder = "0,00",
   helperText,
   fullWidth = false,
-}, ref) => {
+}) => {
   const [displayValue, setDisplayValue] = useState('');
 
   const formatCurrency = (num: number): string => {
@@ -57,7 +57,6 @@ const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(({
           R$
         </span>
         <input
-          ref={ref}
           type="text"
           inputMode="numeric"
           value={displayValue}
@@ -71,8 +70,6 @@ const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(({
       )}
     </div>
   );
-});
-
-CurrencyInput.displayName = 'CurrencyInput';
+};
 
 export default CurrencyInput;
