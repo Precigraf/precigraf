@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 
 interface CurrencyInputProps {
   label: string;
@@ -9,23 +9,15 @@ interface CurrencyInputProps {
   fullWidth?: boolean;
 }
 
-const CurrencyInput: React.FC<CurrencyInputProps> = ({
+const CurrencyInput = forwardRef<HTMLInputElement, CurrencyInputProps>(({
   label,
   value,
   onChange,
   placeholder = "0,00",
   helperText,
   fullWidth = false,
-}) => {
+}, ref) => {
   const [displayValue, setDisplayValue] = useState('');
-
-  useEffect(() => {
-    if (value === 0) {
-      setDisplayValue('');
-    } else {
-      setDisplayValue(formatCurrency(value));
-    }
-  }, []);
 
   const formatCurrency = (num: number): string => {
     return num.toLocaleString('pt-BR', {
@@ -33,6 +25,14 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
       maximumFractionDigits: 2,
     });
   };
+
+  useEffect(() => {
+    if (value === 0) {
+      setDisplayValue('');
+    } else {
+      setDisplayValue(formatCurrency(value));
+    }
+  }, [value]);
 
   const parseCurrency = (str: string): number => {
     const cleaned = str.replace(/[^\d]/g, '');
@@ -57,6 +57,7 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
           R$
         </span>
         <input
+          ref={ref}
           type="text"
           inputMode="numeric"
           value={displayValue}
@@ -70,6 +71,8 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
       )}
     </div>
   );
-};
+});
+
+CurrencyInput.displayName = 'CurrencyInput';
 
 export default CurrencyInput;
