@@ -1,21 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { Package, Layers, Factory, Percent, CircleDollarSign, Tag } from 'lucide-react';
+import { Package, Layers, Factory, Percent, Tag } from 'lucide-react';
 import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
 import MarketplaceSection, { MarketplaceType, MARKETPLACE_CONFIG } from './MarketplaceSection';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
 const CostCalculator: React.FC = () => {
   // Estado do formulário
   const [productName, setProductName] = useState('');
-  const [costType, setCostType] = useState<'lot' | 'unit'>('lot');
   const [lotQuantity, setLotQuantity] = useState(0);
-  const [lotCost, setLotCost] = useState(0);
-  const [unitCost, setUnitCost] = useState(0);
 
   // Matéria-prima
   const [paper, setPaper] = useState(0);
@@ -41,21 +36,18 @@ const CostCalculator: React.FC = () => {
 
   // Cálculos em tempo real - CALCULADO POR UNIDADE e multiplicado pela quantidade
   const calculations = useMemo(() => {
-    // Custo base por unidade
-    const unitBaseCost = costType === 'lot' 
-      ? (lotQuantity > 0 ? lotCost / lotQuantity : 0) 
-      : unitCost;
-
-    // Matéria-prima total (dividido por quantidade para obter por unidade)
-    const rawMaterialsTotal = paper + ink + varnish + otherMaterials;
-    const unitRawMaterialsCost = lotQuantity > 0 ? rawMaterialsTotal / lotQuantity : 0;
+    // Matéria-prima por unidade (valores informados são por unidade)
+    const unitRawMaterialsCost = paper + ink + varnish + otherMaterials;
+    
+    // Matéria-prima total = unitário × quantidade
+    const rawMaterialsCost = unitRawMaterialsCost * lotQuantity;
 
     // Custos operacionais total (dividido por quantidade para obter por unidade)
     const operationalTotal = labor + energy + equipment + rent + otherCosts;
     const unitOperationalCost = lotQuantity > 0 ? operationalTotal / lotQuantity : 0;
 
-    // Custo de produção por unidade
-    const unitProductionCost = unitBaseCost + unitRawMaterialsCost + unitOperationalCost;
+    // Custo de produção por unidade (apenas matéria-prima + operacional por unidade)
+    const unitProductionCost = unitRawMaterialsCost + unitOperationalCost;
 
     // Lucro desejado por unidade (valor fixo tem prioridade)
     const isFixedProfit = fixedProfit > 0;
@@ -78,8 +70,6 @@ const CostCalculator: React.FC = () => {
     const finalSellingPrice = unitPrice * lotQuantity;
 
     // Totais para exibição
-    const baseCost = unitBaseCost * lotQuantity;
-    const rawMaterialsCost = rawMaterialsTotal;
     const operationalCost = operationalTotal;
     const productionCost = unitProductionCost * lotQuantity;
     const desiredProfit = unitDesiredProfit * lotQuantity;
@@ -91,7 +81,6 @@ const CostCalculator: React.FC = () => {
     const netProfit = finalSellingPrice - productionCost - marketplaceTotalFees;
 
     return {
-      baseCost,
       rawMaterialsCost,
       operationalCost,
       productionCost,
@@ -110,9 +99,6 @@ const CostCalculator: React.FC = () => {
       sellingPrice: finalSellingPrice,
     };
   }, [
-    costType,
-    lotCost,
-    unitCost,
     lotQuantity,
     paper,
     ink,
@@ -151,65 +137,31 @@ const CostCalculator: React.FC = () => {
           </div>
         </FormSection>
 
-        {/* Seção 2: Custo Base */}
+        {/* Seção 2: Quantidade */}
         <FormSection
-          title="Custo base do produto"
-          icon={<CircleDollarSign className="w-5 h-5 text-primary" />}
+          title="Quantidade"
+          icon={<Package className="w-5 h-5 text-primary" />}
         >
           <div className="col-span-full">
-            <RadioGroup
-              value={costType}
-              onValueChange={(v) => setCostType(v as 'lot' | 'unit')}
-              className="flex flex-col sm:flex-row gap-4 mb-4"
-            >
-              <div className="flex items-center space-x-3 bg-secondary/50 rounded-lg px-4 py-3 flex-1 cursor-pointer hover:bg-secondary/70 transition-colors">
-                <RadioGroupItem value="lot" id="lot" />
-                <Label htmlFor="lot" className="text-sm text-secondary-foreground cursor-pointer">
-                  Custo por lote (ex: material para 500 un = R$ 150)
-                </Label>
-              </div>
-              <div className="flex items-center space-x-3 bg-secondary/50 rounded-lg px-4 py-3 flex-1 cursor-pointer hover:bg-secondary/70 transition-colors">
-                <RadioGroupItem value="unit" id="unit" />
-                <Label htmlFor="unit" className="text-sm text-secondary-foreground cursor-pointer">
-                  Custo por unidade (ex: R$ 0,30 por unidade)
-                </Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-secondary-foreground">
-              Quantidade do lote
+            <label className="text-sm font-medium text-secondary-foreground mb-2 block">
+              Quantidade de unidades
             </label>
             <Input
               type="number"
-              value={lotQuantity}
+              value={lotQuantity || ''}
               onChange={(e) => setLotQuantity(parseInt(e.target.value) || 0)}
+              placeholder="0"
               className="input-currency"
               min={1}
             />
           </div>
-
-          {costType === 'lot' ? (
-            <CurrencyInput
-              label="Custo total do lote"
-              value={lotCost}
-              onChange={setLotCost}
-            />
-          ) : (
-            <CurrencyInput
-              label="Custo por unidade"
-              value={unitCost}
-              onChange={setUnitCost}
-            />
-          )}
         </FormSection>
 
-        {/* Seção 3: Matéria-prima */}
+        {/* Seção 3: Matéria-prima (valor por unidade) */}
         <FormSection
-          title="Matéria-prima"
+          title="Matéria-prima (valor por unidade)"
           icon={<Layers className="w-5 h-5 text-primary" />}
-          subtitle="Informe o custo total de materiais para este lote"
+          subtitle="Informe o custo de materiais por unidade"
         >
           <CurrencyInput label="Papel" value={paper} onChange={setPaper} />
           <CurrencyInput label="Alça" value={ink} onChange={setInk} />
@@ -284,7 +236,6 @@ const CostCalculator: React.FC = () => {
         <ResultPanel
           productName={productName}
           quantity={lotQuantity}
-          baseCost={calculations.baseCost}
           rawMaterialsCost={calculations.rawMaterialsCost}
           operationalCost={calculations.operationalCost}
           productionCost={calculations.productionCost}

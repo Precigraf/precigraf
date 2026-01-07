@@ -4,7 +4,6 @@ import { TrendingUp, Package, DollarSign, Percent, Store } from 'lucide-react';
 interface ResultPanelProps {
   productName: string;
   quantity: number;
-  baseCost: number;
   rawMaterialsCost: number;
   operationalCost: number;
   productionCost: number;
@@ -22,7 +21,6 @@ interface ResultPanelProps {
 const ResultPanel: React.FC<ResultPanelProps> = ({
   productName,
   quantity,
-  baseCost,
   rawMaterialsCost,
   operationalCost,
   productionCost,
@@ -65,10 +63,6 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         </div>
 
         <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <span className="text-secondary-foreground">Custo base</span>
-            <span className="font-medium text-foreground">{formatCurrency(baseCost)}</span>
-          </div>
           <div className="flex justify-between items-center">
             <span className="text-secondary-foreground">Matéria-prima</span>
             <span className="font-medium text-foreground">{formatCurrency(rawMaterialsCost)}</span>
