@@ -1,9 +1,5 @@
 import React from 'react';
-import { TrendingUp, Save, Package, DollarSign, Percent, Loader2, Store } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
-import { useCalculations } from '@/hooks/useCalculations';
-import { useNavigate } from 'react-router-dom';
+import { TrendingUp, Package, DollarSign, Percent, Store } from 'lucide-react';
 
 interface ResultPanelProps {
   productName: string;
@@ -12,32 +8,15 @@ interface ResultPanelProps {
   rawMaterialsCost: number;
   operationalCost: number;
   productionCost: number;
-  totalCost: number;
   profitMargin: number;
-  profitValue: number;
   desiredProfit: number;
-  baseSellingPrice: number;
   marketplaceCommission: number;
   marketplaceFixedFees: number;
   marketplaceTotalFees: number;
   finalSellingPrice: number;
-  sellingPrice: number;
   unitPrice: number;
   isFixedProfit: boolean;
   hasMarketplace: boolean;
-  // Additional data for saving
-  costType: string;
-  lotCost: number;
-  paper: number;
-  ink: number;
-  varnish: number;
-  otherMaterials: number;
-  labor: number;
-  energy: number;
-  equipment: number;
-  rent: number;
-  otherCosts: number;
-  fixedProfit: number;
 }
 
 const ResultPanel: React.FC<ResultPanelProps> = ({
@@ -47,73 +26,21 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   rawMaterialsCost,
   operationalCost,
   productionCost,
-  totalCost,
   profitMargin,
-  profitValue,
   desiredProfit,
-  baseSellingPrice,
   marketplaceCommission,
   marketplaceFixedFees,
   marketplaceTotalFees,
   finalSellingPrice,
-  sellingPrice,
   unitPrice,
   isFixedProfit,
   hasMarketplace,
-  costType,
-  lotCost,
-  paper,
-  ink,
-  varnish,
-  otherMaterials,
-  labor,
-  energy,
-  equipment,
-  rent,
-  otherCosts,
-  fixedProfit,
 }) => {
-  const { user } = useAuth();
-  const { saveCalculation } = useCalculations();
-  const navigate = useNavigate();
-  const [saving, setSaving] = React.useState(false);
-
   const formatCurrency = (value: number) => {
     return value.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     });
-  };
-
-  const handleSave = async () => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-
-    setSaving(true);
-    await saveCalculation({
-      productName,
-      costType,
-      lotQuantity: quantity,
-      lotCost,
-      paperCost: paper,
-      inkCost: ink,
-      varnishCost: varnish,
-      otherMaterialCost: otherMaterials,
-      laborCost: labor,
-      energyCost: energy,
-      equipmentCost: equipment,
-      rentCost: rent,
-      otherOperationalCost: otherCosts,
-      marginPercentage: profitMargin,
-      fixedProfit: fixedProfit > 0 ? fixedProfit : null,
-      totalCost,
-      profit: profitValue,
-      salePrice: sellingPrice,
-      unitPrice,
-    });
-    setSaving(false);
   };
 
   return (
@@ -203,7 +130,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
       )}
 
       {/* Preço Final de Venda - Destaque */}
-      <div className="bg-foreground rounded-xl p-6 mb-6">
+      <div className="bg-foreground rounded-xl p-6">
         <div className="text-center">
           <span className="text-sm font-medium text-background/80 uppercase tracking-wide">
             Preço Final de Venda
@@ -218,23 +145,6 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Botão Salvar */}
-      <Button
-        variant="default"
-        className="w-full gap-2 bg-foreground hover:bg-foreground/90 text-background border-0"
-        onClick={handleSave}
-        disabled={saving}
-      >
-        {saving ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          <>
-            <Save className="w-4 h-4" />
-            {user ? 'Salvar' : 'Entrar para Salvar'}
-          </>
-        )}
-      </Button>
     </div>
   );
 };

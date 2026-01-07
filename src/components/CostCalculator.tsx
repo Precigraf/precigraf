@@ -4,38 +4,34 @@ import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
-import SavedCalculations from './SavedCalculations';
 import MarketplaceSection, { MarketplaceType, MARKETPLACE_CONFIG } from './MarketplaceSection';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { useAuth } from '@/hooks/useAuth';
 
 const CostCalculator: React.FC = () => {
-  const { user } = useAuth();
-  
   // Estado do formulário
-  const [productName, setProductName] = useState('Tag impressa 4x5cm');
+  const [productName, setProductName] = useState('');
   const [costType, setCostType] = useState<'lot' | 'unit'>('lot');
-  const [lotQuantity, setLotQuantity] = useState(500);
-  const [lotCost, setLotCost] = useState(150);
-  const [unitCost, setUnitCost] = useState(0.3);
+  const [lotQuantity, setLotQuantity] = useState(0);
+  const [lotCost, setLotCost] = useState(0);
+  const [unitCost, setUnitCost] = useState(0);
 
   // Matéria-prima
-  const [paper, setPaper] = useState(50);
-  const [ink, setInk] = useState(30);
-  const [varnish, setVarnish] = useState(15);
-  const [otherMaterials, setOtherMaterials] = useState(10);
+  const [paper, setPaper] = useState(0);
+  const [ink, setInk] = useState(0);
+  const [varnish, setVarnish] = useState(0);
+  const [otherMaterials, setOtherMaterials] = useState(0);
 
   // Custos operacionais
-  const [labor, setLabor] = useState(80);
-  const [energy, setEnergy] = useState(20);
-  const [equipment, setEquipment] = useState(25);
-  const [rent, setRent] = useState(40);
+  const [labor, setLabor] = useState(0);
+  const [energy, setEnergy] = useState(0);
+  const [equipment, setEquipment] = useState(0);
+  const [rent, setRent] = useState(0);
   const [otherCosts, setOtherCosts] = useState(0);
 
   // Margem de lucro
-  const [profitMargin, setProfitMargin] = useState(70);
+  const [profitMargin, setProfitMargin] = useState(0);
   const [fixedProfit, setFixedProfit] = useState(0);
 
   // Marketplace
@@ -132,9 +128,12 @@ const CostCalculator: React.FC = () => {
               type="text"
               value={productName}
               onChange={(e) => setProductName(e.target.value)}
-              placeholder="Ex: Tag impressa 4x5cm"
+              placeholder=""
               className="input-currency"
             />
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Ex: Mini sacola de papel personalizada
+            </p>
           </div>
         </FormSection>
 
@@ -266,7 +265,7 @@ const CostCalculator: React.FC = () => {
 
       </div>
 
-      {/* Coluna Direita - Resultados + Histórico */}
+      {/* Coluna Direita - Resultados */}
       <div className="space-y-6">
         <ResultPanel
           productName={productName}
@@ -275,35 +274,16 @@ const CostCalculator: React.FC = () => {
           rawMaterialsCost={calculations.rawMaterialsCost}
           operationalCost={calculations.operationalCost}
           productionCost={calculations.productionCost}
-          totalCost={calculations.totalCost}
           profitMargin={profitMargin}
-          profitValue={calculations.profitValue}
           desiredProfit={calculations.desiredProfit}
-          baseSellingPrice={calculations.baseSellingPrice}
           marketplaceCommission={calculations.marketplaceCommission}
           marketplaceFixedFees={calculations.marketplaceFixedFees}
           marketplaceTotalFees={calculations.marketplaceTotalFees}
           finalSellingPrice={calculations.finalSellingPrice}
-          sellingPrice={calculations.sellingPrice}
           unitPrice={calculations.unitPrice}
           isFixedProfit={calculations.isFixedProfit}
           hasMarketplace={marketplace !== 'none'}
-          costType={costType}
-          lotCost={costType === 'lot' ? lotCost : unitCost * lotQuantity}
-          paper={paper}
-          ink={ink}
-          varnish={varnish}
-          otherMaterials={otherMaterials}
-          labor={labor}
-          energy={energy}
-          equipment={equipment}
-          rent={rent}
-          otherCosts={otherCosts}
-          fixedProfit={fixedProfit}
         />
-        
-        {/* Histórico de Cálculos (apenas para usuários logados) */}
-        {user && <SavedCalculations />}
       </div>
     </div>
   );
