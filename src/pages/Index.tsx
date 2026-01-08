@@ -1,5 +1,6 @@
 import Header from '@/components/Header';
 import CostCalculator from '@/components/CostCalculator';
+import AIAssistant from '@/components/AIAssistant';
 
 const Index = () => {
   return (
@@ -18,6 +19,9 @@ const Index = () => {
           </p>
         </div>
       </footer>
+
+      {/* AI Assistant */}
+      <AIAssistant />
     </div>
   );
 };
