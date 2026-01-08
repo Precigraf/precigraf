@@ -105,6 +105,14 @@ async function streamChat({
   onDone();
 }
 
+const SUGGESTIONS = [
+  "Qual margem de lucro ideal para sacolas personalizadas?",
+  "Como calcular custo de mão de obra por unidade?",
+  "Quais taxas do Elo7 devo considerar?",
+  "Como reduzir custos de matéria-prima?",
+  "Devo incluir frete no preço do produto?",
+];
+
 const AIAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -197,10 +205,26 @@ const AIAssistant: React.FC = () => {
           {/* Messages */}
           <ScrollArea className="flex-1 p-4" ref={scrollRef}>
             {messages.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                <Bot className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">Olá! Sou o PreciGraf AI.</p>
-                <p className="text-xs mt-1">Posso ajudar com dúvidas sobre custos e precificação gráfica.</p>
+              <div className="text-center text-muted-foreground py-4">
+                <Bot className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm font-medium">Olá! Sou o PreciGraf AI.</p>
+                <p className="text-xs mt-1 mb-4">Posso ajudar com dúvidas sobre custos e precificação.</p>
+                
+                {/* Suggestions */}
+                <div className="flex flex-wrap gap-2 justify-center mt-3">
+                  {SUGGESTIONS.map((suggestion, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        setInput(suggestion);
+                        inputRef.current?.focus();
+                      }}
+                      className="text-xs bg-muted hover:bg-muted/80 text-muted-foreground px-3 py-1.5 rounded-full transition-colors text-left"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
