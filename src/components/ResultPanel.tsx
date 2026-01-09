@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React from 'react';
 import { TrendingUp, Package, DollarSign, Percent, Store } from 'lucide-react';
 
 interface ResultPanelProps {
@@ -18,7 +18,7 @@ interface ResultPanelProps {
   hasMarketplace: boolean;
 }
 
-const ResultPanel = forwardRef<HTMLDivElement, ResultPanelProps>(({
+const ResultPanel: React.FC<ResultPanelProps> = ({
   productName,
   quantity,
   rawMaterialsCost,
@@ -33,7 +33,7 @@ const ResultPanel = forwardRef<HTMLDivElement, ResultPanelProps>(({
   unitPrice,
   isFixedProfit,
   hasMarketplace,
-}, ref) => {
+}) => {
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) {
       return 'R$ 0,00';
@@ -48,7 +48,7 @@ const ResultPanel = forwardRef<HTMLDivElement, ResultPanelProps>(({
   const safeQuantity = Math.max(0, quantity || 0);
 
   return (
-    <div ref={ref} className="glass-card result-gradient p-6 sticky top-6 animate-slide-up">
+    <div className="glass-card result-gradient p-6 sticky top-6 animate-slide-up">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
           <TrendingUp className="w-5 h-5 text-background" />
@@ -147,8 +147,6 @@ const ResultPanel = forwardRef<HTMLDivElement, ResultPanelProps>(({
       </div>
     </div>
   );
-});
-
-ResultPanel.displayName = 'ResultPanel';
+};
 
 export default ResultPanel;

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, forwardRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Send, Bot, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -118,7 +118,7 @@ const SUGGESTIONS = [
   "Devo incluir frete no preço do produto?",
 ];
 
-const AIAssistant = forwardRef<HTMLDivElement>((_, ref) => {
+const AIAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -189,7 +189,7 @@ const AIAssistant = forwardRef<HTMLDivElement>((_, ref) => {
   };
 
   return (
-    <div ref={ref}>
+    <>
       {/* Floating Button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
@@ -215,67 +215,69 @@ const AIAssistant = forwardRef<HTMLDivElement>((_, ref) => {
           </div>
 
           {/* Messages */}
-          <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-            {messages.length === 0 ? (
-              <div className="text-center text-muted-foreground py-4">
-                <Bot className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                <p className="text-sm font-medium">Olá! Sou o PreciGraf AI.</p>
-                <p className="text-xs mt-1 mb-4">Posso ajudar com dúvidas sobre custos e precificação.</p>
-                
-                {/* Suggestions */}
-                <div className="flex flex-wrap gap-2 justify-center mt-3">
-                  {SUGGESTIONS.map((suggestion, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleSuggestionClick(suggestion)}
-                      className="text-xs bg-muted hover:bg-muted/80 text-muted-foreground px-3 py-1.5 rounded-full transition-colors text-left"
-                      type="button"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
+          <ScrollArea className="flex-1 p-4">
+            <div ref={scrollRef}>
+              {messages.length === 0 ? (
+                <div className="text-center text-muted-foreground py-4">
+                  <Bot className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm font-medium">Olá! Sou o PreciGraf AI.</p>
+                  <p className="text-xs mt-1 mb-4">Posso ajudar com dúvidas sobre custos e precificação.</p>
+                  
+                  {/* Suggestions */}
+                  <div className="flex flex-wrap gap-2 justify-center mt-3">
+                    {SUGGESTIONS.map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSuggestionClick(suggestion)}
+                        className="text-xs bg-muted hover:bg-muted/80 text-muted-foreground px-3 py-1.5 rounded-full transition-colors text-left"
+                        type="button"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {messages.map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    {msg.role === 'assistant' && (
+              ) : (
+                <div className="space-y-4">
+                  {messages.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {msg.role === 'assistant' && (
+                        <div className="bg-primary/10 p-1.5 rounded-full h-fit">
+                          <Bot className="h-4 w-4 text-primary" />
+                        </div>
+                      )}
+                      <div
+                        className={`max-w-[80%] p-3 rounded-lg text-sm ${
+                          msg.role === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        }`}
+                      >
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      </div>
+                      {msg.role === 'user' && (
+                        <div className="bg-secondary p-1.5 rounded-full h-fit">
+                          <User className="h-4 w-4 text-secondary-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
+                    <div className="flex gap-2 justify-start">
                       <div className="bg-primary/10 p-1.5 rounded-full h-fit">
                         <Bot className="h-4 w-4 text-primary" />
                       </div>
-                    )}
-                    <div
-                      className={`max-w-[80%] p-3 rounded-lg text-sm ${
-                        msg.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
-                    >
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                    {msg.role === 'user' && (
-                      <div className="bg-secondary p-1.5 rounded-full h-fit">
-                        <User className="h-4 w-4 text-secondary-foreground" />
+                      <div className="bg-muted p-3 rounded-lg">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                       </div>
-                    )}
-                  </div>
-                ))}
-                {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
-                  <div className="flex gap-2 justify-start">
-                    <div className="bg-primary/10 p-1.5 rounded-full h-fit">
-                      <Bot className="h-4 w-4 text-primary" />
                     </div>
-                    <div className="bg-muted p-3 rounded-lg">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
+            </div>
           </ScrollArea>
 
           {/* Input */}
@@ -303,10 +305,8 @@ const AIAssistant = forwardRef<HTMLDivElement>((_, ref) => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
-});
-
-AIAssistant.displayName = 'AIAssistant';
+};
 
 export default AIAssistant;
