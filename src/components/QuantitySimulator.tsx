@@ -81,6 +81,8 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
             : 0;
           const isBetter = priceDiff < 0;
 
+          const lotPrice = calc.unitPrice * qty;
+          
           return (
             <div 
               key={qty} 
@@ -91,10 +93,10 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
                   {qty} un
                 </span>
                 <span className="text-sm font-bold text-foreground block">
-                  {formatCurrency(calc.unitPrice)}
+                  {formatCurrency(lotPrice)}
                 </span>
-                <span className="text-xs text-muted-foreground block">
-                  /unidade
+                <span className="text-xs text-muted-foreground block mt-0.5">
+                  {formatCurrency(calc.unitPrice)}/un
                 </span>
                 
                 {currentQuantity > 0 && currentQuantity !== qty && Math.abs(priceDiff) > 0.01 && (

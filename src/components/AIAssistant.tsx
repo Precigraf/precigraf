@@ -193,16 +193,16 @@ const AIAssistant: React.FC = () => {
       {/* Floating Button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 bg-green-600 hover:bg-green-700"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg z-50 bg-background hover:bg-muted border border-border text-foreground"
         size="icon"
         aria-label={isOpen ? "Fechar assistente" : "Abrir assistente"}
       >
-        {isOpen ? <X className="h-6 w-6" /> : <Bot className="h-6 w-6" />}
+        {isOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Bot className="h-5 w-5 sm:h-6 sm:w-6" />}
       </Button>
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 w-[380px] h-[500px] bg-card border border-border rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden">
+        <div className="fixed bottom-20 right-4 sm:bottom-24 sm:right-6 w-[calc(100vw-2rem)] sm:w-[380px] max-w-[380px] h-[70vh] sm:h-[500px] max-h-[500px] bg-card border border-border rounded-xl shadow-2xl flex flex-col z-50 overflow-hidden">
           {/* Header */}
           <div className="bg-primary p-4 flex items-center gap-3">
             <div className="bg-primary-foreground/20 p-2 rounded-full">

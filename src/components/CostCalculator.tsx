@@ -317,7 +317,7 @@ const CostCalculator: React.FC = () => {
             label="Valor fixo de lucro (total)"
             value={fixedProfit}
             onChange={setFixedProfit}
-            helperText="Lucro total desejado sobre o lote (não por unidade)"
+            helperText="Lucro total desejado (não por unidade)"
             fullWidth
             tooltip="Defina um valor de lucro fixo em R$ ao invés de percentual. Útil quando você já sabe quanto quer ganhar no lote."
           />

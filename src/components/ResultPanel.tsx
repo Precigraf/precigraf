@@ -126,64 +126,80 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         </div>
       </div>
 
-      {/* Resumo de Valores */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Resumo de Valores - Layout Vertical */}
+      <div className="space-y-3">
         {/* Custo de Produção */}
         <div className="bg-secondary/50 rounded-lg p-3">
-          <div className="flex items-center gap-1.5 mb-1">
-            <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Custo Produção</span>
-          </div>
-          <div className="text-sm font-semibold text-foreground">
-            {formatCurrency(productionCost)}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {formatCurrency(unitProductionCost)}/un
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <DollarSign className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Custo Produção</span>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-semibold text-foreground">
+                {formatCurrency(productionCost)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {formatCurrency(unitProductionCost)}/un
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Lucro Desejado */}
         <div className="bg-secondary/50 rounded-lg p-3">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Wallet className="w-3.5 h-3.5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">
-              Lucro {isFixedProfit ? '(fixo)' : `(${profitMargin}%)`}
-            </span>
-          </div>
-          <div className="text-sm font-semibold text-success">
-            {formatCurrency(desiredProfit)}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {formatCurrency(unitProfit)}/un
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Wallet className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">
+                Lucro {isFixedProfit ? '(fixo)' : `(${profitMargin}%)`}
+              </span>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-semibold text-success">
+                {formatCurrency(desiredProfit)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {formatCurrency(unitProfit)}/un
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Lucro Líquido Total */}
         <div className="bg-success/10 rounded-lg p-3">
-          <div className="flex items-center gap-1.5 mb-1">
-            <TrendingUp className="w-3.5 h-3.5 text-success" />
-            <span className="text-xs text-success">Lucro Líquido Total</span>
-          </div>
-          <div className="text-sm font-semibold text-success">
-            {formatCurrency(netProfit)}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {formatCurrency(unitNetProfit)}/un
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <TrendingUp className="w-4 h-4 text-success" />
+              <span className="text-sm text-success">Lucro Líquido Total</span>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-semibold text-success">
+                {formatCurrency(netProfit)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {formatCurrency(unitNetProfit)}/un
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Taxas Marketplace */}
         {hasMarketplace && (
           <div className="bg-warning/10 rounded-lg p-3">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Store className="w-3.5 h-3.5 text-warning" />
-              <span className="text-xs text-warning">Taxas Marketplace</span>
-            </div>
-            <div className="text-sm font-semibold text-warning">
-              -{formatCurrency(marketplaceTotalFees)}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              Comissão + Taxa fixa
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Store className="w-4 h-4 text-warning" />
+                <span className="text-sm text-warning">Taxas Marketplace</span>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-semibold text-warning">
+                  -{formatCurrency(marketplaceTotalFees)}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Comissão + Taxa fixa
+                </div>
+              </div>
             </div>
           </div>
         )}
