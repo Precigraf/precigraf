@@ -19,6 +19,7 @@ interface AuthContextType {
   userData: UserData | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null; mustChangePassword: boolean }>;
+  signUp: (email: string, password: string, name?: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   changePassword: (newPassword: string) => Promise<{ error: string | null }>;
   refreshUserData: () => Promise<void>;
@@ -142,6 +143,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signUp = async (email: string, password: string, name?: string): Promise<{ error: string | null }> => {
+    try {
+      // Create user in Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: email.toLowerCase(),
+        password,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
+      });
+
+      if (error) {
+        if (error.message.includes('already registered')) {
+          return { error: 'Este email já está cadastrado.' };
+        }
+        return { error: 'Erro ao criar conta. Tente novamente.' };
+      }
+
+      if (data.user) {
+        // Create user in users table using the RPC function
+        const { error: insertError } = await supabase.rpc('create_webhook_user', {
+          p_user_id: data.user.id,
+          p_email: email.toLowerCase(),
+          p_name: name || null,
+        });
+
+        if (insertError) {
+          console.error('Error creating user record:', insertError);
+          // User was created in auth but not in users table - still allow login
+        }
+      }
+
+      return { error: null };
+    } catch (err) {
+      return { error: 'Erro ao criar conta. Tente novamente.' };
+    }
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -180,6 +219,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     userData,
     loading,
     signIn,
+    signUp,
     signOut,
     changePassword,
     refreshUserData,
