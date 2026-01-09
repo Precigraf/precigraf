@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import TooltipLabel from './TooltipLabel';
 
 interface CurrencyInputProps {
   label: string;
@@ -7,6 +8,7 @@ interface CurrencyInputProps {
   placeholder?: string;
   helperText?: string;
   fullWidth?: boolean;
+  tooltip?: string;
 }
 
 const CurrencyInput: React.FC<CurrencyInputProps> = ({
@@ -16,6 +18,7 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
   placeholder = "0,00",
   helperText,
   fullWidth = false,
+  tooltip,
 }) => {
   const [displayValue, setDisplayValue] = useState('');
 
@@ -54,9 +57,13 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
 
   return (
     <div className={`flex flex-col gap-2 ${fullWidth ? 'col-span-full' : ''}`}>
-      <label className="text-sm font-medium text-secondary-foreground">
-        {label}
-      </label>
+      {tooltip ? (
+        <TooltipLabel label={label} tooltip={tooltip} />
+      ) : (
+        <label className="text-sm font-medium text-secondary-foreground">
+          {label}
+        </label>
+      )}
       <div className="relative">
         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
           R$

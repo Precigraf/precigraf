@@ -1,7 +1,8 @@
 import React from 'react';
-import { Store, AlertTriangle, Info } from 'lucide-react';
+import { Store, AlertTriangle, Info, ShoppingBag, MessageCircle } from 'lucide-react';
 import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
+import TooltipLabel from './TooltipLabel';
 import {
   Select,
   SelectContent,
@@ -14,62 +15,93 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export type MarketplaceType =
   | 'none'
+  | 'direct_sale'
+  | 'instagram_whatsapp'
   | 'shopee_no_shipping'
   | 'shopee_free_shipping'
   | 'mercadolivre_free'
   | 'mercadolivre_classic'
   | 'mercadolivre_premium'
-  | 'elo7';
+  | 'elo7'
+  | 'custom';
 
 interface MarketplaceConfig {
   label: string;
   commissionPercentage: number;
   fixedFeePerItem: number;
-  isFixedFeeEditable: boolean;
+  isEditable: boolean;
+  description?: string;
 }
 
 export const MARKETPLACE_CONFIG: Record<MarketplaceType, MarketplaceConfig> = {
   none: {
-    label: 'Nenhum (Venda Direta)',
+    label: 'Selecione...',
     commissionPercentage: 0,
     fixedFeePerItem: 0,
-    isFixedFeeEditable: false,
+    isEditable: false,
+  },
+  direct_sale: {
+    label: 'Venda Direta (sem taxas)',
+    commissionPercentage: 0,
+    fixedFeePerItem: 0,
+    isEditable: false,
+    description: 'Venda presencial ou entrega direta, sem intermediários.',
+  },
+  instagram_whatsapp: {
+    label: 'Instagram / WhatsApp',
+    commissionPercentage: 0,
+    fixedFeePerItem: 0,
+    isEditable: true,
+    description: 'Venda por redes sociais. Adicione taxas de gateway de pagamento se usar.',
   },
   shopee_no_shipping: {
     label: 'Shopee (sem frete grátis)',
     commissionPercentage: 14,
     fixedFeePerItem: 4,
-    isFixedFeeEditable: false,
+    isEditable: false,
+    description: 'Taxa padrão da Shopee para vendas sem programa de frete grátis.',
   },
   shopee_free_shipping: {
     label: 'Shopee (com frete grátis)',
     commissionPercentage: 20,
     fixedFeePerItem: 4,
-    isFixedFeeEditable: false,
+    isEditable: false,
+    description: 'Inclui taxa adicional do programa de frete grátis.',
   },
   mercadolivre_free: {
     label: 'Mercado Livre – Grátis',
     commissionPercentage: 0,
     fixedFeePerItem: 0,
-    isFixedFeeEditable: false,
+    isEditable: false,
+    description: 'Anúncio gratuito com exposição limitada.',
   },
   mercadolivre_classic: {
     label: 'Mercado Livre – Clássico',
     commissionPercentage: 12,
     fixedFeePerItem: 0,
-    isFixedFeeEditable: true,
+    isEditable: true,
+    description: 'Boa exposição com taxa de comissão moderada.',
   },
   mercadolivre_premium: {
     label: 'Mercado Livre – Premium',
     commissionPercentage: 17,
     fixedFeePerItem: 0,
-    isFixedFeeEditable: true,
+    isEditable: true,
+    description: 'Máxima exposição e benefícios exclusivos.',
   },
   elo7: {
     label: 'Elo7',
     commissionPercentage: 15,
     fixedFeePerItem: 0,
-    isFixedFeeEditable: true,
+    isEditable: true,
+    description: 'Marketplace especializado em produtos artesanais.',
+  },
+  custom: {
+    label: 'Outro (personalizar)',
+    commissionPercentage: 0,
+    fixedFeePerItem: 0,
+    isEditable: true,
+    description: 'Configure manualmente as taxas do seu canal de vendas.',
   },
 };
 
@@ -95,10 +127,10 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   marketplaceTotalFees,
 }) => {
   const config = MARKETPLACE_CONFIG[marketplace];
-  const showWarning = marketplace !== 'none';
+  const showTaxFields = marketplace !== 'none' && marketplace !== 'direct_sale';
   
   // Verificar se as taxas excedem o lucro (apenas quando há valores válidos)
-  const feesExceedProfit = showWarning && 
+  const feesExceedProfit = showTaxFields && 
     marketplaceTotalFees > 0 && 
     profitValue > 0 && 
     marketplaceTotalFees > profitValue;
@@ -129,21 +161,29 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
       icon={<Store className="w-5 h-5 text-primary" />}
     >
       <div className="col-span-full">
-        <label className="text-sm font-medium text-secondary-foreground mb-2 block">
-          Onde você vai vender?
-        </label>
+        <TooltipLabel 
+          label="Onde você vai vender?"
+          tooltip="Cada marketplace cobra taxas diferentes. Escolha o canal para calcular o lucro líquido real após as taxas."
+        />
         <Select value={marketplace} onValueChange={handleMarketplaceChange}>
-          <SelectTrigger className="input-currency">
+          <SelectTrigger className="input-currency mt-2">
             <SelectValue placeholder="Selecione o marketplace" />
           </SelectTrigger>
           <SelectContent className="bg-card border-border z-50">
             {Object.entries(MARKETPLACE_CONFIG).map(([key, cfg]) => (
               <SelectItem key={key} value={key}>
-                {cfg.label}
+                <span className="flex items-center gap-2">
+                  {cfg.label}
+                </span>
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        {config.description && marketplace !== 'none' && (
+          <p className="text-xs text-muted-foreground mt-2">
+            {config.description}
+          </p>
+        )}
       </div>
 
       {marketplace === 'none' && (
@@ -155,21 +195,46 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
         </div>
       )}
 
-      {showWarning && (
+      {marketplace === 'direct_sale' && (
+        <div className="col-span-full">
+          <Alert className="bg-success/10 border-success/30">
+            <ShoppingBag className="w-4 h-4 text-success" />
+            <AlertDescription className="text-success text-sm">
+              Sem taxas! Você fica com 100% do lucro.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {marketplace === 'instagram_whatsapp' && (
+        <div className="col-span-full">
+          <Alert className="bg-primary/5 border-primary/20">
+            <MessageCircle className="w-4 h-4 text-primary" />
+            <AlertDescription className="text-primary text-sm">
+              Considere taxas de gateway de pagamento (ex: PagSeguro 3-5%, PIX 0-1%)
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {showTaxFields && (
         <>
-          <div className="col-span-full">
-            <Alert className="bg-warning/10 border-warning/30">
-              <Info className="w-4 h-4 text-warning" />
-              <AlertDescription className="text-warning text-sm">
-                Este marketplace cobra taxas sobre suas vendas
-              </AlertDescription>
-            </Alert>
-          </div>
+          {!config.isEditable && (
+            <div className="col-span-full">
+              <Alert className="bg-warning/10 border-warning/30">
+                <Info className="w-4 h-4 text-warning" />
+                <AlertDescription className="text-warning text-sm">
+                  Taxas padrão do marketplace aplicadas automaticamente
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-secondary-foreground">
-              Comissão (%)
-            </label>
+            <TooltipLabel 
+              label="Comissão (%)"
+              tooltip="Percentual cobrado pelo marketplace sobre cada venda. Varia de 0% a 20% dependendo do plano."
+            />
             <Input
               type="number"
               value={commissionPercentage}
@@ -178,14 +243,16 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
               min={0}
               max={100}
               step={0.1}
+              disabled={!config.isEditable && marketplace !== 'custom'}
             />
           </div>
 
           <CurrencyInput
-            label="Taxa fixa por item"
+            label="Taxa fixa por venda"
             value={fixedFeePerItem}
             onChange={onFixedFeeChange}
-            helperText={config.isFixedFeeEditable ? 'Valor configurável' : undefined}
+            helperText="Taxa única por pedido (não por unidade)"
+            tooltip="Valor fixo cobrado por transação, independente do valor da venda."
           />
 
           {feesExceedProfit && (

@@ -1,5 +1,8 @@
 import React from 'react';
-import { TrendingUp, Package, DollarSign, Percent, Store } from 'lucide-react';
+import { TrendingUp, Package, DollarSign, Percent, Store, Wallet, BadgeDollarSign } from 'lucide-react';
+import SmartAlerts from './SmartAlerts';
+import QuantitySimulator from './QuantitySimulator';
+import CostChart from './CostChart';
 
 interface ResultPanelProps {
   productName: string;
@@ -16,6 +19,12 @@ interface ResultPanelProps {
   unitPrice: number;
   isFixedProfit: boolean;
   hasMarketplace: boolean;
+  // Novos props para simulador
+  unitRawMaterialsCost: number;
+  operationalTotal: number;
+  fixedProfit: number;
+  commissionPercentage: number;
+  fixedFeePerItem: number;
 }
 
 const ResultPanel: React.FC<ResultPanelProps> = ({
@@ -33,6 +42,11 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   unitPrice,
   isFixedProfit,
   hasMarketplace,
+  unitRawMaterialsCost,
+  operationalTotal,
+  fixedProfit,
+  commissionPercentage,
+  fixedFeePerItem,
 }) => {
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) {
@@ -47,9 +61,21 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   // Garantir que quantity seja pelo menos 0 para exibição
   const safeQuantity = Math.max(0, quantity || 0);
 
+  // Cálculos adicionais
+  const unitProductionCost = safeQuantity > 0 ? productionCost / safeQuantity : 0;
+  const unitProfit = safeQuantity > 0 ? desiredProfit / safeQuantity : 0;
+  const netProfit = finalSellingPrice - productionCost - marketplaceTotalFees;
+  const unitNetProfit = safeQuantity > 0 ? netProfit / safeQuantity : 0;
+
+  // Margem real calculada
+  const realMarginPercentage = productionCost > 0 
+    ? Math.round((desiredProfit / productionCost) * 100) 
+    : profitMargin;
+
   return (
-    <div className="glass-card result-gradient p-6 sticky top-6 animate-slide-up">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="glass-card result-gradient p-6 sticky top-6 animate-slide-up space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
           <TrendingUp className="w-5 h-5 text-background" />
         </div>
@@ -61,90 +87,149 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         </div>
       </div>
 
-      {/* Custos Breakdown */}
-      <div className="space-y-4 mb-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Package className="w-4 h-4" />
-          <span>Custos para {safeQuantity} unidades</span>
+      {/* Alertas Inteligentes */}
+      <SmartAlerts
+        marginPercentage={realMarginPercentage}
+        netProfit={netProfit}
+        rawMaterialsCost={rawMaterialsCost}
+        operationalCost={operationalCost}
+        quantity={safeQuantity}
+      />
+
+      {/* PREÇO FINAL - DESTAQUE MÁXIMO */}
+      <div className="bg-foreground rounded-xl p-6">
+        <div className="text-center">
+          <span className="text-xs font-medium text-background/70 uppercase tracking-wide">
+            Preço Final de Venda
+          </span>
+          <div className="text-4xl font-bold text-background mt-1">
+            {formatCurrency(finalSellingPrice)}
+          </div>
+          <div className="text-sm text-background/80 mt-1">
+            para {safeQuantity} unidades
+          </div>
+        </div>
+      </div>
+
+      {/* Preço por Unidade */}
+      <div className="bg-success/10 border border-success/30 rounded-xl p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BadgeDollarSign className="w-5 h-5 text-success" />
+            <span className="text-sm font-medium text-foreground">
+              Preço por Unidade
+            </span>
+          </div>
+          <span className="text-2xl font-bold text-success">
+            {formatCurrency(unitPrice)}
+          </span>
+        </div>
+      </div>
+
+      {/* Resumo de Valores */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Custo de Produção */}
+        <div className="bg-secondary/50 rounded-lg p-3">
+          <div className="flex items-center gap-1.5 mb-1">
+            <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Custo Produção</span>
+          </div>
+          <div className="text-sm font-semibold text-foreground">
+            {formatCurrency(productionCost)}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {formatCurrency(unitProductionCost)}/un
+          </div>
         </div>
 
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
+        {/* Lucro Desejado */}
+        <div className="bg-secondary/50 rounded-lg p-3">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Wallet className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">
+              Lucro {isFixedProfit ? '(fixo)' : `(${profitMargin}%)`}
+            </span>
+          </div>
+          <div className="text-sm font-semibold text-success">
+            {formatCurrency(desiredProfit)}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {formatCurrency(unitProfit)}/un
+          </div>
+        </div>
+
+        {/* Lucro Líquido Total */}
+        <div className="bg-success/10 rounded-lg p-3">
+          <div className="flex items-center gap-1.5 mb-1">
+            <TrendingUp className="w-3.5 h-3.5 text-success" />
+            <span className="text-xs text-success">Lucro Líquido Total</span>
+          </div>
+          <div className="text-sm font-semibold text-success">
+            {formatCurrency(netProfit)}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {formatCurrency(unitNetProfit)}/un
+          </div>
+        </div>
+
+        {/* Taxas Marketplace */}
+        {hasMarketplace && (
+          <div className="bg-warning/10 rounded-lg p-3">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Store className="w-3.5 h-3.5 text-warning" />
+              <span className="text-xs text-warning">Taxas Marketplace</span>
+            </div>
+            <div className="text-sm font-semibold text-warning">
+              -{formatCurrency(marketplaceTotalFees)}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Comissão + Taxa fixa
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Breakdown Detalhado */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Package className="w-4 h-4" />
+          <span>Detalhamento dos Custos</span>
+        </div>
+
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between items-center py-1">
             <span className="text-secondary-foreground">Matéria-prima</span>
             <span className="font-medium text-foreground">{formatCurrency(rawMaterialsCost)}</span>
           </div>
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center py-1">
             <span className="text-secondary-foreground">Custos operacionais</span>
             <span className="font-medium text-foreground">{formatCurrency(operationalCost)}</span>
           </div>
-          
-          <div className="border-t border-border pt-3">
-            <div className="flex justify-between items-center">
-              <span className="font-semibold text-foreground flex items-center gap-2">
-                <DollarSign className="w-4 h-4 text-foreground" />
-                CUSTO DE PRODUÇÃO
-              </span>
-              <span className="font-bold text-lg text-foreground">{formatCurrency(productionCost)}</span>
-            </div>
+          <div className="flex justify-between items-center py-1 border-t border-border pt-2">
+            <span className="font-medium text-foreground">Custo Total de Produção</span>
+            <span className="font-bold text-foreground">{formatCurrency(productionCost)}</span>
           </div>
         </div>
       </div>
 
-      {/* Lucro Desejado */}
-      <div className="bg-secondary/50 rounded-xl p-4 mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <Percent className="w-4 h-4 text-foreground" />
-          <span className="text-sm text-secondary-foreground">
-            Lucro Desejado {isFixedProfit ? '(valor fixo)' : `(${profitMargin}%)`}
-          </span>
-        </div>
-        <span className="text-2xl font-bold text-success">
-          + {formatCurrency(desiredProfit)}
-        </span>
-      </div>
+      {/* Gráfico de Composição */}
+      <CostChart
+        rawMaterialsCost={rawMaterialsCost}
+        operationalCost={operationalCost}
+        profit={desiredProfit}
+        marketplaceFees={marketplaceTotalFees}
+      />
 
-      {/* Taxas do Marketplace */}
-      {hasMarketplace && (
-        <div className="bg-warning/10 border border-warning/30 rounded-xl p-4 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Store className="w-4 h-4 text-warning" />
-            <span className="text-sm font-medium text-warning">Taxas do Marketplace</span>
-          </div>
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between items-center">
-              <span className="text-secondary-foreground">• Comissão (%)</span>
-              <span className="text-foreground">{formatCurrency(marketplaceCommission)}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-secondary-foreground">• Taxa fixa ({safeQuantity} un)</span>
-              <span className="text-foreground">{formatCurrency(marketplaceFixedFees)}</span>
-            </div>
-            <div className="border-t border-warning/30 pt-2 mt-2">
-              <div className="flex justify-between items-center font-medium">
-                <span className="text-warning">Total de taxas</span>
-                <span className="text-warning">{formatCurrency(marketplaceTotalFees)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Preço Final de Venda - Destaque */}
-      <div className="bg-foreground rounded-xl p-6">
-        <div className="text-center">
-          <span className="text-sm font-medium text-background/80 uppercase tracking-wide">
-            Preço Final de Venda
-          </span>
-          <div className="text-4xl font-bold text-background mt-2 mb-3">
-            {formatCurrency(finalSellingPrice)}
-          </div>
-          <div className="bg-background/20 rounded-lg py-2 px-4 inline-block">
-            <span className="text-sm text-background">
-              Preço por unidade ({safeQuantity} un) → <strong>{formatCurrency(unitPrice)}</strong>
-            </span>
-          </div>
-        </div>
-      </div>
+      {/* Simulador de Quantidade */}
+      <QuantitySimulator
+        unitRawMaterialsCost={unitRawMaterialsCost}
+        operationalTotal={operationalTotal}
+        marginPercentage={profitMargin}
+        fixedProfit={fixedProfit}
+        commissionPercentage={commissionPercentage}
+        fixedFeePerItem={fixedFeePerItem}
+        currentQuantity={safeQuantity}
+      />
     </div>
   );
 };
