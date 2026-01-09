@@ -73,7 +73,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
         <span className="text-sm font-medium text-foreground">Simulador de Quantidade</span>
       </div>
 
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         {quantities.map((qty) => {
           const calc = calculateForQuantity(qty);
           const priceDiff = currentCalc.unitPrice > 0 
