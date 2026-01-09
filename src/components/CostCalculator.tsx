@@ -5,6 +5,8 @@ import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
 import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
+import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
+import TooltipLabel from './TooltipLabel';
 import { Input } from '@/components/ui/input';
 
 // Função auxiliar para garantir números válidos
@@ -17,6 +19,7 @@ const CostCalculator: React.FC = () => {
   // Estado do formulário
   const [productName, setProductName] = useState('');
   const [lotQuantity, setLotQuantity] = useState(0);
+  const [productPreset, setProductPreset] = useState<ProductPresetType>('custom');
 
   // Matéria-prima
   const [paper, setPaper] = useState(0);
@@ -50,6 +53,25 @@ const CostCalculator: React.FC = () => {
     const parsed = parseInt(value, 10);
     if (!isNaN(parsed) && parsed >= 0) {
       setLotQuantity(Math.min(parsed, 999999)); // Limite máximo
+    }
+  };
+
+  // Handler para preset de produto
+  const handlePresetChange = (preset: ProductPresetType) => {
+    setProductPreset(preset);
+    if (preset !== 'custom') {
+      const config = PRODUCT_PRESETS[preset];
+      setPaper(config.paper);
+      setInk(config.ink);
+      setVarnish(config.varnish);
+      setOtherMaterials(config.otherMaterials);
+      if (config.defaultQuantity > 0 && lotQuantity === 0) {
+        setLotQuantity(config.defaultQuantity);
+      }
+      // Definir nome do produto baseado no preset
+      if (!productName) {
+        setProductName(config.label);
+      }
     }
   };
 
@@ -118,6 +140,7 @@ const CostCalculator: React.FC = () => {
     return {
       rawMaterialsCost: safeNumber(rawMaterialsCost),
       operationalCost: safeNumber(operationalCost),
+      operationalTotal: safeNumber(operationalTotal),
       productionCost: safeNumber(productionCost),
       isFixedProfit,
       desiredProfit: safeNumber(desiredProfit),
@@ -127,6 +150,7 @@ const CostCalculator: React.FC = () => {
       marketplaceTotalFees: safeNumber(marketplaceTotalFees),
       finalSellingPrice: safeNumber(finalSellingPrice),
       unitPrice: safeNumber(unitPrice),
+      unitRawMaterialsCost: safeNumber(unitRawMaterialsCost),
       netProfit: safeNumber(netProfit),
       // Legacy compatibility
       totalCost: safeNumber(productionCost),
@@ -172,6 +196,13 @@ const CostCalculator: React.FC = () => {
               Ex: Mini sacola de papel personalizada
             </p>
           </div>
+          
+          <div className="col-span-full">
+            <ProductPresets 
+              value={productPreset} 
+              onChange={handlePresetChange} 
+            />
+          </div>
         </FormSection>
 
         {/* Seção 2: Quantidade */}
@@ -189,6 +220,11 @@ const CostCalculator: React.FC = () => {
               min={0}
               max={999999}
             />
+            {lotQuantity === 0 && (
+              <p className="text-xs text-warning mt-1.5">
+                Informe a quantidade para calcular os resultados
+              </p>
+            )}
           </div>
         </FormSection>
 
@@ -198,10 +234,30 @@ const CostCalculator: React.FC = () => {
           icon={<Layers className="w-5 h-5 text-primary" />}
           subtitle="Informe o custo de materiais por unidade"
         >
-          <CurrencyInput label="Papel" value={paper} onChange={setPaper} />
-          <CurrencyInput label="Alça" value={ink} onChange={setInk} />
-          <CurrencyInput label="Tinta" value={varnish} onChange={setVarnish} />
-          <CurrencyInput label="Outros" value={otherMaterials} onChange={setOtherMaterials} />
+          <CurrencyInput 
+            label="Papel" 
+            value={paper} 
+            onChange={setPaper}
+            tooltip="Custo do papel/substrato por unidade produzida."
+          />
+          <CurrencyInput 
+            label="Alça" 
+            value={ink} 
+            onChange={setInk}
+            tooltip="Custo de alças, cordões ou acabamentos por unidade."
+          />
+          <CurrencyInput 
+            label="Tinta" 
+            value={varnish} 
+            onChange={setVarnish}
+            tooltip="Custo de tinta, verniz ou laminação por unidade."
+          />
+          <CurrencyInput 
+            label="Outros" 
+            value={otherMaterials} 
+            onChange={setOtherMaterials}
+            tooltip="Outros materiais como cola, fita, embalagem, etc."
+          />
         </FormSection>
 
         {/* Seção 4: Custos Operacionais */}
@@ -210,15 +266,36 @@ const CostCalculator: React.FC = () => {
           icon={<Factory className="w-5 h-5 text-primary" />}
           subtitle="Informe o custo total de operação para este lote"
         >
-          <CurrencyInput label="Mão de obra" value={labor} onChange={setLabor} />
-          <CurrencyInput label="Energia" value={energy} onChange={setEnergy} />
-          <CurrencyInput label="Equipamentos" value={equipment} onChange={setEquipment} />
-          <CurrencyInput label="Aluguel" value={rent} onChange={setRent} />
+          <CurrencyInput 
+            label="Mão de obra" 
+            value={labor} 
+            onChange={setLabor}
+            tooltip="Custo de trabalho humano para produzir este lote. Inclua salários, encargos e benefícios proporcionais."
+          />
+          <CurrencyInput 
+            label="Energia" 
+            value={energy} 
+            onChange={setEnergy}
+            tooltip="Custo de energia elétrica consumida na produção deste lote."
+          />
+          <CurrencyInput 
+            label="Equipamentos" 
+            value={equipment} 
+            onChange={setEquipment}
+            tooltip="Depreciação de máquinas, manutenção preventiva e corretiva proporcionais a este lote."
+          />
+          <CurrencyInput 
+            label="Espaço" 
+            value={rent} 
+            onChange={setRent}
+            tooltip="Aluguel, água, internet, IPTU e outros custos fixos do espaço, proporcionais a este lote."
+          />
           <CurrencyInput
             label="Outros custos"
             value={otherCosts}
             onChange={setOtherCosts}
             fullWidth
+            tooltip="Taxas, impostos, frete de insumos, embalagem de envio, etc."
           />
         </FormSection>
 
@@ -247,8 +324,9 @@ const CostCalculator: React.FC = () => {
             label="Valor fixo de lucro (total)"
             value={fixedProfit}
             onChange={setFixedProfit}
-            helperText="Lucro total sobre o lote (não por unidade)"
+            helperText="Lucro total desejado sobre o lote (não por unidade)"
             fullWidth
+            tooltip="Defina um valor de lucro fixo em R$ ao invés de percentual. Útil quando você já sabe quanto quer ganhar no lote."
           />
         </FormSection>
 
@@ -282,7 +360,12 @@ const CostCalculator: React.FC = () => {
           finalSellingPrice={calculations.finalSellingPrice}
           unitPrice={calculations.unitPrice}
           isFixedProfit={calculations.isFixedProfit}
-          hasMarketplace={marketplace !== 'none'}
+          hasMarketplace={marketplace !== 'none' && marketplace !== 'direct_sale'}
+          unitRawMaterialsCost={calculations.unitRawMaterialsCost}
+          operationalTotal={calculations.operationalTotal}
+          fixedProfit={fixedProfit}
+          commissionPercentage={commissionPercentage}
+          fixedFeePerItem={fixedFeePerItem}
         />
       </div>
     </div>
