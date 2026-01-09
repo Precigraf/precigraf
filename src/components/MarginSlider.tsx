@@ -32,15 +32,15 @@ const MarginSlider: React.FC<MarginSliderProps> = ({
         value={[value]}
         onValueChange={(vals) => onChange(vals[0])}
         min={0}
-        max={100}
+        max={200}
         step={1}
         disabled={disabled}
         className={`${disabled ? 'opacity-50' : ''}`}
       />
       <div className="flex justify-between text-xs text-muted-foreground">
         <span>0%</span>
-        <span>50%</span>
         <span>100%</span>
+        <span>200%</span>
       </div>
     </div>
   );

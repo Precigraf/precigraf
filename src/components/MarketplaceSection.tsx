@@ -16,7 +16,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 export type MarketplaceType =
   | 'none'
   | 'direct_sale'
-  | 'instagram_whatsapp'
+  | 'facebook_ads'
+  | 'payment_link'
   | 'shopee_no_shipping'
   | 'shopee_free_shipping'
   | 'mercadolivre_free'
@@ -47,12 +48,19 @@ export const MARKETPLACE_CONFIG: Record<MarketplaceType, MarketplaceConfig> = {
     isEditable: false,
     description: 'Venda presencial ou entrega direta, sem intermediários.',
   },
-  instagram_whatsapp: {
-    label: 'Instagram / WhatsApp',
+  facebook_ads: {
+    label: 'Facebook Ads (Meta Ads)',
     commissionPercentage: 0,
     fixedFeePerItem: 0,
     isEditable: true,
-    description: 'Venda por redes sociais. Adicione taxas de gateway de pagamento se usar.',
+    description: 'Vendas via anúncios do Facebook/Instagram. Adicione o custo de tráfego pago.',
+  },
+  payment_link: {
+    label: 'Via Link de Pagamento',
+    commissionPercentage: 3.5,
+    fixedFeePerItem: 0,
+    isEditable: true,
+    description: 'PagSeguro, Mercado Pago, PicPay, etc. Taxa média de 3-5%.',
   },
   shopee_no_shipping: {
     label: 'Shopee (sem frete grátis)',
@@ -206,12 +214,23 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
         </div>
       )}
 
-      {marketplace === 'instagram_whatsapp' && (
+      {marketplace === 'facebook_ads' && (
         <div className="col-span-full">
           <Alert className="bg-primary/5 border-primary/20">
             <MessageCircle className="w-4 h-4 text-primary" />
             <AlertDescription className="text-primary text-sm">
-              Considere taxas de gateway de pagamento (ex: PagSeguro 3-5%, PIX 0-1%)
+              Lembre-se de incluir o custo de tráfego pago no seu cálculo de lucro.
+            </AlertDescription>
+          </Alert>
+        </div>
+      )}
+
+      {marketplace === 'payment_link' && (
+        <div className="col-span-full">
+          <Alert className="bg-primary/5 border-primary/20">
+            <MessageCircle className="w-4 h-4 text-primary" />
+            <AlertDescription className="text-primary text-sm">
+              Taxas variam de 1.99% a 4.99% dependendo do gateway escolhido.
             </AlertDescription>
           </Alert>
         </div>
