@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import ChangePassword from "./pages/ChangePassword";
 import NotFound from "./pages/NotFound";
 
@@ -23,7 +24,8 @@ const App = () => (
           <AuthProvider>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route 
+              <Route path="/criar-conta" element={<Register />} />
+              <Route
                 path="/alterar-senha" 
                 element={
                   <ProtectedRoute>
