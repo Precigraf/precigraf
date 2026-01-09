@@ -60,7 +60,8 @@ const CostCalculator: React.FC = () => {
 
     // Taxas do marketplace por unidade
     const unitMarketplaceCommission = unitBaseSellingPrice * (commissionPercentage / 100);
-    const unitMarketplaceFixedFees = fixedFeePerItem;
+    // Taxa fixa é única por venda, não por unidade
+    const unitMarketplaceFixedFees = lotQuantity > 0 ? fixedFeePerItem / lotQuantity : 0;
     const unitMarketplaceTotalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
 
     // Preço unitário final (com taxas)
@@ -143,9 +144,6 @@ const CostCalculator: React.FC = () => {
           icon={<Package className="w-5 h-5 text-primary" />}
         >
           <div className="col-span-full">
-            <label className="text-sm font-medium text-secondary-foreground mb-2 block">
-              Quantidade de unidades
-            </label>
             <Input
               type="number"
               value={lotQuantity || ''}
