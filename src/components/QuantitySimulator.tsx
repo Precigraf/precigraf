@@ -20,7 +20,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   fixedFeePerItem,
   currentQuantity,
 }) => {
-  const quantities = [50, 100, 500];
+  const quantities = [15, 20, 40, 50, 80, 100];
 
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) return 'R$ 0,00';
@@ -73,7 +73,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
         <span className="text-sm font-medium text-foreground">Simulador de Quantidade</span>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
         {quantities.map((qty) => {
           const calc = calculateForQuantity(qty);
           const priceDiff = currentCalc.unitPrice > 0 

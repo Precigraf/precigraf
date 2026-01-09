@@ -196,13 +196,6 @@ const CostCalculator: React.FC = () => {
               Ex: Mini sacola de papel personalizada
             </p>
           </div>
-          
-          <div className="col-span-full">
-            <ProductPresets 
-              value={productPreset} 
-              onChange={handlePresetChange} 
-            />
-          </div>
         </FormSection>
 
         {/* Seção 2: Quantidade */}
