@@ -91,15 +91,12 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Criar registro na tabela users
+    // Criar registro na tabela users usando função segura com SECURITY DEFINER
     const { error: userError } = await supabase
-      .from("users")
-      .insert({
-        user_id: authData.user.id,
-        email,
-        name,
-        status: "ativo",
-        must_change_password: true,
+      .rpc("create_webhook_user", {
+        p_user_id: authData.user.id,
+        p_email: email,
+        p_name: name || null,
       });
 
     if (userError) {
