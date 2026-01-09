@@ -178,6 +178,13 @@ CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT
 
 
 --
+-- Name: calculations Users can update their own calculations; Type: POLICY; Schema: public; Owner: -
+--
+
+CREATE POLICY "Users can update their own calculations" ON public.calculations FOR UPDATE USING ((auth.uid() = user_id)) WITH CHECK ((auth.uid() = user_id));
+
+
+--
 -- Name: profiles Users can update their own profile; Type: POLICY; Schema: public; Owner: -
 --
 
