@@ -1,11 +1,19 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Calculator, Sun, Moon } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Calculator, Sun, Moon, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
+  const { signOut, userData } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -25,7 +33,13 @@ const Header: React.FC = () => {
             </div>
           </Link>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {userData && (
+              <span className="text-sm text-muted-foreground hidden sm:inline">
+                {userData.email}
+              </span>
+            )}
+            
             {/* Theme Toggle */}
             <Button
               variant="ghost"
@@ -39,6 +53,17 @@ const Header: React.FC = () => {
               ) : (
                 <Moon className="w-5 h-5" />
               )}
+            </Button>
+
+            {/* Logout Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSignOut}
+              className="text-muted-foreground hover:text-foreground"
+              aria-label="Sair"
+            >
+              <LogOut className="w-5 h-5" />
             </Button>
           </div>
         </div>
