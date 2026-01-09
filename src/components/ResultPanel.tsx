@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { TrendingUp, Package, DollarSign, Percent, Store } from 'lucide-react';
 
 interface ResultPanelProps {
@@ -18,7 +18,7 @@ interface ResultPanelProps {
   hasMarketplace: boolean;
 }
 
-const ResultPanel: React.FC<ResultPanelProps> = ({
+const ResultPanel = forwardRef<HTMLDivElement, ResultPanelProps>(({
   productName,
   quantity,
   rawMaterialsCost,
@@ -33,16 +33,22 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   unitPrice,
   isFixedProfit,
   hasMarketplace,
-}) => {
+}, ref) => {
   const formatCurrency = (value: number) => {
+    if (!Number.isFinite(value) || isNaN(value)) {
+      return 'R$ 0,00';
+    }
     return value.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     });
   };
 
+  // Garantir que quantity seja pelo menos 0 para exibição
+  const safeQuantity = Math.max(0, quantity || 0);
+
   return (
-    <div className="glass-card result-gradient p-6 sticky top-6 animate-slide-up">
+    <div ref={ref} className="glass-card result-gradient p-6 sticky top-6 animate-slide-up">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
           <TrendingUp className="w-5 h-5 text-background" />
@@ -59,7 +65,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
       <div className="space-y-4 mb-6">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Package className="w-4 h-4" />
-          <span>Custos para {quantity} unidades</span>
+          <span>Custos para {safeQuantity} unidades</span>
         </div>
 
         <div className="space-y-3">
@@ -110,7 +116,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
               <span className="text-foreground">{formatCurrency(marketplaceCommission)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-secondary-foreground">• Taxa fixa ({quantity} un)</span>
+              <span className="text-secondary-foreground">• Taxa fixa ({safeQuantity} un)</span>
               <span className="text-foreground">{formatCurrency(marketplaceFixedFees)}</span>
             </div>
             <div className="border-t border-warning/30 pt-2 mt-2">
@@ -134,13 +140,15 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
           </div>
           <div className="bg-background/20 rounded-lg py-2 px-4 inline-block">
             <span className="text-sm text-background">
-              Preço por unidade ({quantity} un) → <strong>{formatCurrency(unitPrice)}</strong>
+              Preço por unidade ({safeQuantity} un) → <strong>{formatCurrency(unitPrice)}</strong>
             </span>
           </div>
         </div>
       </div>
     </div>
   );
-};
+});
+
+ResultPanel.displayName = 'ResultPanel';
 
 export default ResultPanel;
