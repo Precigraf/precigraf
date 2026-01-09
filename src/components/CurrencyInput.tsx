@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface CurrencyInputProps {
   label: string;
@@ -19,12 +19,15 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
 }) => {
   const [displayValue, setDisplayValue] = useState('');
 
-  const formatCurrency = (num: number): string => {
+  const formatCurrency = useCallback((num: number): string => {
+    if (!Number.isFinite(num) || isNaN(num)) {
+      return '0,00';
+    }
     return num.toLocaleString('pt-BR', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
-  };
+  }, []);
 
   useEffect(() => {
     if (value === 0) {
@@ -32,12 +35,14 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
     } else {
       setDisplayValue(formatCurrency(value));
     }
-  }, [value]);
+  }, [value, formatCurrency]);
 
   const parseCurrency = (str: string): number => {
     const cleaned = str.replace(/[^\d]/g, '');
     const num = parseInt(cleaned, 10) || 0;
-    return num / 100;
+    // Limitar a um valor máximo razoável (R$ 999.999.999,99)
+    const result = Math.min(num / 100, 999999999.99);
+    return result;
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,6 +68,7 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
           onChange={handleChange}
           placeholder={placeholder}
           className="input-currency w-full pl-12"
+          aria-label={label}
         />
       </div>
       {helperText && (

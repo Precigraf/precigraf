@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Bot, User, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect, forwardRef } from 'react';
+import { X, Send, Bot, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -23,86 +23,91 @@ async function streamChat({
   onDone: () => void;
   onError: (error: string) => void;
 }) {
-  const resp = await fetch(CHAT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-    },
-    body: JSON.stringify({ messages }),
-  });
+  try {
+    const resp = await fetch(CHAT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ messages }),
+    });
 
-  if (!resp.ok) {
-    if (resp.status === 429) {
-      onError("Limite de requisições excedido. Tente novamente em alguns segundos.");
+    if (!resp.ok) {
+      if (resp.status === 429) {
+        onError("Limite de requisições excedido. Tente novamente em alguns segundos.");
+        return;
+      }
+      if (resp.status === 402) {
+        onError("Créditos de IA esgotados.");
+        return;
+      }
+      onError("Erro ao conectar com o assistente.");
       return;
     }
-    if (resp.status === 402) {
-      onError("Créditos de IA esgotados.");
+
+    if (!resp.body) {
+      onError("Resposta inválida do servidor.");
       return;
     }
-    onError("Erro ao conectar com o assistente.");
-    return;
-  }
 
-  if (!resp.body) {
-    onError("Resposta inválida do servidor.");
-    return;
-  }
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let textBuffer = "";
+    let streamDone = false;
 
-  const reader = resp.body.getReader();
-  const decoder = new TextDecoder();
-  let textBuffer = "";
-  let streamDone = false;
+    while (!streamDone) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      textBuffer += decoder.decode(value, { stream: true });
 
-  while (!streamDone) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    textBuffer += decoder.decode(value, { stream: true });
+      let newlineIndex: number;
+      while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+        let line = textBuffer.slice(0, newlineIndex);
+        textBuffer = textBuffer.slice(newlineIndex + 1);
 
-    let newlineIndex: number;
-    while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-      let line = textBuffer.slice(0, newlineIndex);
-      textBuffer = textBuffer.slice(newlineIndex + 1);
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        if (line.startsWith(":") || line.trim() === "") continue;
+        if (!line.startsWith("data: ")) continue;
 
-      if (line.endsWith("\r")) line = line.slice(0, -1);
-      if (line.startsWith(":") || line.trim() === "") continue;
-      if (!line.startsWith("data: ")) continue;
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === "[DONE]") {
+          streamDone = true;
+          break;
+        }
 
-      const jsonStr = line.slice(6).trim();
-      if (jsonStr === "[DONE]") {
-        streamDone = true;
-        break;
-      }
-
-      try {
-        const parsed = JSON.parse(jsonStr);
-        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-        if (content) onDelta(content);
-      } catch {
-        textBuffer = line + "\n" + textBuffer;
-        break;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) onDelta(content);
+        } catch {
+          textBuffer = line + "\n" + textBuffer;
+          break;
+        }
       }
     }
-  }
 
-  if (textBuffer.trim()) {
-    for (let raw of textBuffer.split("\n")) {
-      if (!raw) continue;
-      if (raw.endsWith("\r")) raw = raw.slice(0, -1);
-      if (raw.startsWith(":") || raw.trim() === "") continue;
-      if (!raw.startsWith("data: ")) continue;
-      const jsonStr = raw.slice(6).trim();
-      if (jsonStr === "[DONE]") continue;
-      try {
-        const parsed = JSON.parse(jsonStr);
-        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-        if (content) onDelta(content);
-      } catch { /* ignore partial leftovers */ }
+    if (textBuffer.trim()) {
+      for (let raw of textBuffer.split("\n")) {
+        if (!raw) continue;
+        if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+        if (raw.startsWith(":") || raw.trim() === "") continue;
+        if (!raw.startsWith("data: ")) continue;
+        const jsonStr = raw.slice(6).trim();
+        if (jsonStr === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) onDelta(content);
+        } catch { /* ignore partial leftovers */ }
+      }
     }
-  }
 
-  onDone();
+    onDone();
+  } catch (error) {
+    console.error("Stream chat error:", error);
+    onError("Erro de conexão. Verifique sua internet.");
+  }
 }
 
 const SUGGESTIONS = [
@@ -113,7 +118,7 @@ const SUGGESTIONS = [
   "Devo incluir frete no preço do produto?",
 ];
 
-const AIAssistant: React.FC = () => {
+const AIAssistant = forwardRef<HTMLDivElement>((_, ref) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -134,9 +139,10 @@ const AIAssistant: React.FC = () => {
   }, [isOpen]);
 
   const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+    const trimmedInput = input.trim();
+    if (!trimmedInput || isLoading) return;
 
-    const userMsg: Message = { role: 'user', content: input.trim() };
+    const userMsg: Message = { role: 'user', content: trimmedInput };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsLoading(true);
@@ -177,13 +183,19 @@ const AIAssistant: React.FC = () => {
     }
   };
 
+  const handleSuggestionClick = (suggestion: string) => {
+    setInput(suggestion);
+    inputRef.current?.focus();
+  };
+
   return (
-    <>
+    <div ref={ref}>
       {/* Floating Button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50 bg-green-600 hover:bg-green-700"
         size="icon"
+        aria-label={isOpen ? "Fechar assistente" : "Abrir assistente"}
       >
         {isOpen ? <X className="h-6 w-6" /> : <Bot className="h-6 w-6" />}
       </Button>
@@ -215,11 +227,9 @@ const AIAssistant: React.FC = () => {
                   {SUGGESTIONS.map((suggestion, idx) => (
                     <button
                       key={idx}
-                      onClick={() => {
-                        setInput(suggestion);
-                        inputRef.current?.focus();
-                      }}
+                      onClick={() => handleSuggestionClick(suggestion)}
                       className="text-xs bg-muted hover:bg-muted/80 text-muted-foreground px-3 py-1.5 rounded-full transition-colors text-left"
+                      type="button"
                     >
                       {suggestion}
                     </button>
@@ -279,11 +289,13 @@ const AIAssistant: React.FC = () => {
                 placeholder="Digite sua dúvida..."
                 disabled={isLoading}
                 className="flex-1"
+                maxLength={1000}
               />
               <Button
                 onClick={sendMessage}
                 disabled={!input.trim() || isLoading}
                 size="icon"
+                aria-label="Enviar mensagem"
               >
                 <Send className="h-4 w-4" />
               </Button>
@@ -291,8 +303,10 @@ const AIAssistant: React.FC = () => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
-};
+});
+
+AIAssistant.displayName = 'AIAssistant';
 
 export default AIAssistant;

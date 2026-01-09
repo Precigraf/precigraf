@@ -96,13 +96,31 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
 }) => {
   const config = MARKETPLACE_CONFIG[marketplace];
   const showWarning = marketplace !== 'none';
-  const feesExceedProfit = marketplaceTotalFees > profitValue && marketplace !== 'none';
+  
+  // Verificar se as taxas excedem o lucro (apenas quando há valores válidos)
+  const feesExceedProfit = showWarning && 
+    marketplaceTotalFees > 0 && 
+    profitValue > 0 && 
+    marketplaceTotalFees > profitValue;
 
   const handleMarketplaceChange = (value: MarketplaceType) => {
     onMarketplaceChange(value);
     const newConfig = MARKETPLACE_CONFIG[value];
     onCommissionChange(newConfig.commissionPercentage);
     onFixedFeeChange(newConfig.fixedFeePerItem);
+  };
+
+  const handleCommissionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '') {
+      onCommissionChange(0);
+      return;
+    }
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed)) {
+      // Limitar entre 0 e 100
+      onCommissionChange(Math.min(Math.max(0, parsed), 100));
+    }
   };
 
   return (
@@ -155,7 +173,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
             <Input
               type="number"
               value={commissionPercentage}
-              onChange={(e) => onCommissionChange(parseFloat(e.target.value) || 0)}
+              onChange={handleCommissionChange}
               className="input-currency"
               min={0}
               max={100}

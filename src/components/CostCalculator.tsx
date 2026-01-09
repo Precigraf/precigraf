@@ -4,8 +4,14 @@ import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
-import MarketplaceSection, { MarketplaceType, MARKETPLACE_CONFIG } from './MarketplaceSection';
+import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
 import { Input } from '@/components/ui/input';
+
+// Função auxiliar para garantir números válidos
+const safeNumber = (value: number): number => {
+  if (!Number.isFinite(value) || isNaN(value)) return 0;
+  return Math.max(0, value);
+};
 
 const CostCalculator: React.FC = () => {
   // Estado do formulário
@@ -34,70 +40,98 @@ const CostCalculator: React.FC = () => {
   const [commissionPercentage, setCommissionPercentage] = useState(0);
   const [fixedFeePerItem, setFixedFeePerItem] = useState(0);
 
+  // Handler para quantidade com validação
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '') {
+      setLotQuantity(0);
+      return;
+    }
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed) && parsed >= 0) {
+      setLotQuantity(Math.min(parsed, 999999)); // Limite máximo
+    }
+  };
+
   // Cálculos em tempo real - CALCULADO POR UNIDADE e multiplicado pela quantidade
   const calculations = useMemo(() => {
+    const safeLotQuantity = safeNumber(lotQuantity);
+    const safePaper = safeNumber(paper);
+    const safeInk = safeNumber(ink);
+    const safeVarnish = safeNumber(varnish);
+    const safeOtherMaterials = safeNumber(otherMaterials);
+    const safeLabor = safeNumber(labor);
+    const safeEnergy = safeNumber(energy);
+    const safeEquipment = safeNumber(equipment);
+    const safeRent = safeNumber(rent);
+    const safeOtherCosts = safeNumber(otherCosts);
+    const safeProfitMargin = safeNumber(profitMargin);
+    const safeFixedProfit = safeNumber(fixedProfit);
+    const safeCommissionPercentage = Math.min(safeNumber(commissionPercentage), 100);
+    const safeFixedFeePerItem = safeNumber(fixedFeePerItem);
+
     // Matéria-prima por unidade (valores informados são por unidade)
-    const unitRawMaterialsCost = paper + ink + varnish + otherMaterials;
+    const unitRawMaterialsCost = safePaper + safeInk + safeVarnish + safeOtherMaterials;
     
     // Matéria-prima total = unitário × quantidade
-    const rawMaterialsCost = unitRawMaterialsCost * lotQuantity;
+    const rawMaterialsCost = unitRawMaterialsCost * safeLotQuantity;
 
     // Custos operacionais total (dividido por quantidade para obter por unidade)
-    const operationalTotal = labor + energy + equipment + rent + otherCosts;
-    const unitOperationalCost = lotQuantity > 0 ? operationalTotal / lotQuantity : 0;
+    const operationalTotal = safeLabor + safeEnergy + safeEquipment + safeRent + safeOtherCosts;
+    const unitOperationalCost = safeLotQuantity > 0 ? operationalTotal / safeLotQuantity : 0;
 
     // Custo de produção por unidade (apenas matéria-prima + operacional por unidade)
     const unitProductionCost = unitRawMaterialsCost + unitOperationalCost;
 
     // Lucro desejado por unidade (valor fixo tem prioridade)
-    const isFixedProfit = fixedProfit > 0;
+    const isFixedProfit = safeFixedProfit > 0;
     const unitDesiredProfit = isFixedProfit
-      ? (lotQuantity > 0 ? fixedProfit / lotQuantity : 0)
-      : unitProductionCost * (profitMargin / 100);
+      ? (safeLotQuantity > 0 ? safeFixedProfit / safeLotQuantity : 0)
+      : unitProductionCost * (safeProfitMargin / 100);
 
     // Preço base de venda por unidade (sem taxas)
     const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
 
     // Taxas do marketplace por unidade
-    const unitMarketplaceCommission = unitBaseSellingPrice * (commissionPercentage / 100);
+    const unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
     // Taxa fixa é única por venda, não por unidade
-    const unitMarketplaceFixedFees = lotQuantity > 0 ? fixedFeePerItem / lotQuantity : 0;
+    const unitMarketplaceFixedFees = safeLotQuantity > 0 ? safeFixedFeePerItem / safeLotQuantity : 0;
     const unitMarketplaceTotalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
 
     // Preço unitário final (com taxas)
     const unitPrice = unitBaseSellingPrice + unitMarketplaceTotalFees;
 
     // PREÇO FINAL = Preço unitário × Quantidade
-    const finalSellingPrice = unitPrice * lotQuantity;
+    const finalSellingPrice = unitPrice * safeLotQuantity;
 
     // Totais para exibição
     const operationalCost = operationalTotal;
-    const productionCost = unitProductionCost * lotQuantity;
-    const desiredProfit = unitDesiredProfit * lotQuantity;
-    const marketplaceCommission = unitMarketplaceCommission * lotQuantity;
-    const marketplaceFixedFees = unitMarketplaceFixedFees * lotQuantity;
-    const marketplaceTotalFees = unitMarketplaceTotalFees * lotQuantity;
+    const productionCost = unitProductionCost * safeLotQuantity;
+    const desiredProfit = unitDesiredProfit * safeLotQuantity;
+    const marketplaceCommission = unitMarketplaceCommission * safeLotQuantity;
+    const marketplaceFixedFees = unitMarketplaceFixedFees * safeLotQuantity;
+    const marketplaceTotalFees = unitMarketplaceTotalFees * safeLotQuantity;
 
     // Lucro líquido
     const netProfit = finalSellingPrice - productionCost - marketplaceTotalFees;
 
     return {
-      rawMaterialsCost,
-      operationalCost,
-      productionCost,
+      rawMaterialsCost: safeNumber(rawMaterialsCost),
+      operationalCost: safeNumber(operationalCost),
+      productionCost: safeNumber(productionCost),
       isFixedProfit,
-      desiredProfit,
-      baseSellingPrice: unitBaseSellingPrice * lotQuantity,
-      marketplaceCommission,
-      marketplaceFixedFees,
-      marketplaceTotalFees,
-      finalSellingPrice,
-      unitPrice,
-      netProfit,
+      desiredProfit: safeNumber(desiredProfit),
+      baseSellingPrice: safeNumber(unitBaseSellingPrice * safeLotQuantity),
+      marketplaceCommission: safeNumber(marketplaceCommission),
+      marketplaceFixedFees: safeNumber(marketplaceFixedFees),
+      marketplaceTotalFees: safeNumber(marketplaceTotalFees),
+      finalSellingPrice: safeNumber(finalSellingPrice),
+      unitPrice: safeNumber(unitPrice),
+      netProfit: safeNumber(netProfit),
       // Legacy compatibility
-      totalCost: productionCost,
-      profitValue: desiredProfit,
-      sellingPrice: finalSellingPrice,
+      totalCost: safeNumber(productionCost),
+      profitValue: safeNumber(desiredProfit),
+      sellingPrice: safeNumber(finalSellingPrice),
     };
   }, [
     lotQuantity,
@@ -115,6 +149,7 @@ const CostCalculator: React.FC = () => {
     commissionPercentage,
     fixedFeePerItem,
   ]);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
       {/* Coluna Esquerda - Formulário */}
@@ -131,6 +166,7 @@ const CostCalculator: React.FC = () => {
               onChange={(e) => setProductName(e.target.value)}
               placeholder=""
               className="input-currency"
+              maxLength={100}
             />
             <p className="text-xs text-muted-foreground mt-1.5">
               Ex: Mini sacola de papel personalizada
@@ -147,10 +183,11 @@ const CostCalculator: React.FC = () => {
             <Input
               type="number"
               value={lotQuantity || ''}
-              onChange={(e) => setLotQuantity(parseInt(e.target.value) || 0)}
+              onChange={handleQuantityChange}
               placeholder="0"
               className="input-currency"
-              min={1}
+              min={0}
+              max={999999}
             />
           </div>
         </FormSection>
