@@ -365,13 +365,7 @@ const CostCalculator: React.FC = () => {
           fixedProfit={fixedProfit}
           commissionPercentage={commissionPercentage}
           fixedFeePerItem={fixedFeePerItem}
-        />
-
-        {/* Botão Salvar Cálculo */}
-        <SaveCalculationButton
-          data={{
-            productName,
-            quantity: lotQuantity,
+          saveData={{
             paper,
             ink,
             varnish,
@@ -381,12 +375,6 @@ const CostCalculator: React.FC = () => {
             equipment,
             rent,
             otherCosts,
-            profitMargin,
-            fixedProfit,
-            productionCost: calculations.productionCost,
-            desiredProfit: calculations.desiredProfit,
-            finalSellingPrice: calculations.finalSellingPrice,
-            unitPrice: calculations.unitPrice,
           }}
           onSaved={handleCalculationSaved}
         />
