@@ -1,29 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Calculator, Sun, Moon, LogOut } from 'lucide-react';
+import { Calculator, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
-import { useAuth } from '@/contexts/AuthContext';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
-  const { userData, signOut } = useAuth();
-
-  const getInitials = (email: string) => {
-    return email.substring(0, 2).toUpperCase();
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
-  };
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -58,41 +40,6 @@ const Header: React.FC = () => {
                 <Moon className="w-5 h-5" />
               )}
             </Button>
-
-            {/* User Menu */}
-            {userData && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                    <Avatar className="h-9 w-9">
-                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                        {getInitials(userData.email)}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <div className="flex items-center justify-start gap-2 p-2">
-                    <div className="flex flex-col space-y-1 leading-none">
-                      {userData.name && (
-                        <p className="font-medium text-sm">{userData.name}</p>
-                      )}
-                      <p className="text-xs text-muted-foreground truncate">
-                        {userData.email}
-                      </p>
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={handleSignOut}
-                    className="text-destructive focus:text-destructive cursor-pointer"
-                  >
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Sair</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
           </div>
         </div>
       </div>
