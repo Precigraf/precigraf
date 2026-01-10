@@ -3,7 +3,7 @@ import { TrendingUp, Package, DollarSign, Percent, Store, Wallet, BadgeDollarSig
 import SmartAlerts from './SmartAlerts';
 import QuantitySimulator from './QuantitySimulator';
 import CostChart from './CostChart';
-
+import SaveCalculationButton from './SaveCalculationButton';
 interface ResultPanelProps {
   productName: string;
   quantity: number;
@@ -25,6 +25,19 @@ interface ResultPanelProps {
   fixedProfit: number;
   commissionPercentage: number;
   fixedFeePerItem: number;
+  // Props para salvar
+  saveData?: {
+    paper: number;
+    ink: number;
+    varnish: number;
+    otherMaterials: number;
+    labor: number;
+    energy: number;
+    equipment: number;
+    rent: number;
+    otherCosts: number;
+  };
+  onSaved?: () => void;
 }
 
 const ResultPanel: React.FC<ResultPanelProps> = ({
@@ -47,6 +60,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   fixedProfit,
   commissionPercentage,
   fixedFeePerItem,
+  saveData,
+  onSaved,
 }) => {
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) {
@@ -246,6 +261,32 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         fixedFeePerItem={fixedFeePerItem}
         currentQuantity={safeQuantity}
       />
+
+      {/* Botão Salvar Cálculo */}
+      {saveData && (
+        <SaveCalculationButton
+          data={{
+            productName,
+            quantity: safeQuantity,
+            paper: saveData.paper,
+            ink: saveData.ink,
+            varnish: saveData.varnish,
+            otherMaterials: saveData.otherMaterials,
+            labor: saveData.labor,
+            energy: saveData.energy,
+            equipment: saveData.equipment,
+            rent: saveData.rent,
+            otherCosts: saveData.otherCosts,
+            profitMargin,
+            fixedProfit,
+            productionCost,
+            desiredProfit,
+            finalSellingPrice,
+            unitPrice,
+          }}
+          onSaved={onSaved}
+        />
+      )}
     </div>
   );
 };
