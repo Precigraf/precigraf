@@ -1,11 +1,27 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Calculator, Sun, Moon } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Calculator, Sun, Moon, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
+  const { user, userData, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/auth');
+  };
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
@@ -25,7 +41,7 @@ const Header: React.FC = () => {
             </div>
           </Link>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {/* Theme Toggle */}
             <Button
               variant="ghost"
@@ -40,6 +56,41 @@ const Header: React.FC = () => {
                 <Moon className="w-5 h-5" />
               )}
             </Button>
+
+            {/* User Menu */}
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="gap-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="w-4 h-4 text-primary" />
+                    </div>
+                    <span className="hidden sm:inline text-sm font-medium">
+                      {userData?.name || user.email?.split('@')[0]}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-card border-border">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{userData?.name || 'Usuário'}</span>
+                      <span className="text-xs text-muted-foreground">{user.email}</span>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-destructive focus:text-destructive cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>
