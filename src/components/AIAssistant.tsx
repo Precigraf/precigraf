@@ -193,7 +193,7 @@ const AIAssistant: React.FC = () => {
       {/* Floating Button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg z-50 bg-background hover:bg-muted border border-border text-foreground"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg z-50 bg-white hover:bg-gray-100 border border-border text-black"
         size="icon"
         aria-label={isOpen ? "Fechar assistente" : "Abrir assistente"}
       >
