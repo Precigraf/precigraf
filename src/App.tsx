@@ -8,7 +8,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Bloqueado from "./pages/Bloqueado";
 import Perfil from "./pages/Perfil";
 import NotFound from "./pages/NotFound";
 
@@ -24,7 +23,6 @@ const App = () => (
             <Sonner />
             <Routes>
               <Route path="/auth" element={<Auth />} />
-              <Route path="/bloqueado" element={<Bloqueado />} />
               <Route 
                 path="/" 
                 element={

@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signIn, signUp, hasAccess } = useAuth();
+  const { user, loading: authLoading, signIn, signUp } = useAuth();
   const { toast } = useToast();
 
   // Form states
@@ -35,13 +35,9 @@ const Auth: React.FC = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && user) {
-      if (hasAccess) {
-        navigate('/');
-      } else {
-        navigate('/bloqueado');
-      }
+      navigate('/');
     }
-  }, [user, authLoading, hasAccess, navigate]);
+  }, [user, authLoading, navigate]);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

@@ -5,14 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requireAccess?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requireAccess = true 
-}) => {
-  const { user, loading, hasAccess } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -27,11 +23,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/auth" replace />;
   }
 
-  // Logged in but blocked -> redirect to blocked page
-  if (requireAccess && !hasAccess) {
-    return <Navigate to="/bloqueado" replace />;
-  }
-
+  // Authenticated users have immediate access
   return <>{children}</>;
 };
 
