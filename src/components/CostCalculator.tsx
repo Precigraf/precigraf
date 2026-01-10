@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Package, Layers, Factory, Percent, Tag } from 'lucide-react';
 import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
@@ -8,7 +8,8 @@ import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import TooltipLabel from './TooltipLabel';
 import { Input } from '@/components/ui/input';
-
+import SaveCalculationButton from './SaveCalculationButton';
+import CalculationHistory from './CalculationHistory';
 // Função auxiliar para garantir números válidos
 const safeNumber = (value: number): number => {
   if (!Number.isFinite(value) || isNaN(value)) return 0;
@@ -19,6 +20,7 @@ const CostCalculator: React.FC = () => {
   // Estado do formulário
   const [productName, setProductName] = useState('');
   const [lotQuantity, setLotQuantity] = useState(0);
+  const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [productPreset, setProductPreset] = useState<ProductPresetType>('custom');
 
   // Matéria-prima
@@ -74,6 +76,10 @@ const CostCalculator: React.FC = () => {
       }
     }
   };
+
+  const handleCalculationSaved = useCallback(() => {
+    setHistoryRefreshTrigger(prev => prev + 1);
+  }, []);
 
   // Cálculos em tempo real - CALCULADO POR UNIDADE e multiplicado pela quantidade
   const calculations = useMemo(() => {
@@ -360,6 +366,35 @@ const CostCalculator: React.FC = () => {
           commissionPercentage={commissionPercentage}
           fixedFeePerItem={fixedFeePerItem}
         />
+
+        {/* Botão Salvar Cálculo */}
+        <SaveCalculationButton
+          data={{
+            productName,
+            quantity: lotQuantity,
+            paper,
+            ink,
+            varnish,
+            otherMaterials,
+            labor,
+            energy,
+            equipment,
+            rent,
+            otherCosts,
+            profitMargin,
+            fixedProfit,
+            productionCost: calculations.productionCost,
+            desiredProfit: calculations.desiredProfit,
+            finalSellingPrice: calculations.finalSellingPrice,
+            unitPrice: calculations.unitPrice,
+          }}
+          onSaved={handleCalculationSaved}
+        />
+      </div>
+
+      {/* Histórico de Cálculos - Full Width */}
+      <div className="lg:col-span-2">
+        <CalculationHistory refreshTrigger={historyRefreshTrigger} />
       </div>
     </div>
   );
