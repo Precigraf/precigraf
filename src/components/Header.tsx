@@ -1,9 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sun, Moon } from 'lucide-react';
+import { Calculator, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
-import logo from '@/assets/logo.png';
 
 const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
@@ -13,8 +12,8 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center overflow-hidden">
-              <img src={logo} alt="PreciGraf Logo" className="w-6 h-6 invert dark:invert-0" />
+            <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
+              <Calculator className="w-5 h-5 text-background" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-foreground">
