@@ -23,6 +23,7 @@ export type Database = {
           fixed_profit: number | null
           id: string
           ink_cost: number
+          is_favorite: boolean
           labor_cost: number
           lot_cost: number
           lot_quantity: number
@@ -47,6 +48,7 @@ export type Database = {
           fixed_profit?: number | null
           id?: string
           ink_cost?: number
+          is_favorite?: boolean
           labor_cost?: number
           lot_cost?: number
           lot_quantity?: number
@@ -71,6 +73,7 @@ export type Database = {
           fixed_profit?: number | null
           id?: string
           ink_cost?: number
+          is_favorite?: boolean
           labor_cost?: number
           lot_cost?: number
           lot_quantity?: number
