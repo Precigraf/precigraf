@@ -4,6 +4,10 @@ import SmartAlerts from './SmartAlerts';
 import QuantitySimulator from './QuantitySimulator';
 import CostChart from './CostChart';
 import SaveCalculationButton from './SaveCalculationButton';
+import PriceBreakdown from './PriceBreakdown';
+import MarketplaceImpact from './MarketplaceImpact';
+import { MarketplaceType } from './MarketplaceSection';
+
 interface ResultPanelProps {
   productName: string;
   quantity: number;
@@ -25,6 +29,10 @@ interface ResultPanelProps {
   fixedProfit: number;
   commissionPercentage: number;
   fixedFeePerItem: number;
+  // Marketplace info
+  marketplace?: MarketplaceType;
+  // Custos operacionais preenchidos
+  hasOperationalCosts?: boolean;
   // Props para salvar
   saveData?: {
     paper: number;
@@ -60,6 +68,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   fixedProfit,
   commissionPercentage,
   fixedFeePerItem,
+  marketplace = 'none',
+  hasOperationalCosts = true,
   saveData,
   onSaved,
 }) => {
@@ -102,13 +112,16 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         </div>
       </div>
 
-      {/* Alertas Inteligentes */}
+      {/* Alertas Inteligentes Aprimorados */}
       <SmartAlerts
         marginPercentage={realMarginPercentage}
         netProfit={netProfit}
         rawMaterialsCost={rawMaterialsCost}
         operationalCost={operationalCost}
         quantity={safeQuantity}
+        hasOperationalCosts={hasOperationalCosts}
+        productionCost={productionCost}
+        finalSellingPrice={finalSellingPrice}
       />
 
       {/* PREÇO FINAL - DESTAQUE MÁXIMO */}
@@ -242,6 +255,25 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Resumo Detalhado do Preço */}
+      <PriceBreakdown
+        rawMaterialsCost={rawMaterialsCost}
+        operationalCost={operationalCost}
+        desiredProfit={desiredProfit}
+        marketplaceTotalFees={marketplaceTotalFees}
+        finalSellingPrice={finalSellingPrice}
+        quantity={safeQuantity}
+      />
+
+      {/* Impacto do Marketplace */}
+      <MarketplaceImpact
+        marketplace={marketplace}
+        unitPrice={unitPrice}
+        unitProfit={unitProfit}
+        marketplaceTotalFees={marketplaceTotalFees}
+        quantity={safeQuantity}
+      />
 
       {/* Gráfico de Composição */}
       <CostChart
