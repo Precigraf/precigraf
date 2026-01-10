@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calculator, Eye, EyeOff, Loader2, Mail, Lock, User } from 'lucide-react';
+import { Calculator, Eye, EyeOff, Loader2, Mail, Lock, User, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, signIn, signUp } = useAuth();
-  const { toast } = useToast();
 
   // Form states
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
@@ -32,16 +31,20 @@ const Auth: React.FC = () => {
   const [signupError, setSignupError] = useState('');
   const [signupSuccess, setSignupSuccess] = useState(false);
 
-  // Redirect if already logged in
-  useEffect(() => {
+  // Redirect if already logged in - use useCallback to prevent infinite loops
+  const handleRedirect = useCallback(() => {
     if (!authLoading && user) {
-      navigate('/');
+      navigate('/', { replace: true });
     }
-  }, [user, authLoading, navigate]);
+  }, [authLoading, user, navigate]);
+
+  useEffect(() => {
+    handleRedirect();
+  }, [handleRedirect]);
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    return emailRegex.test(email.trim());
   };
 
   const validatePassword = (password: string): boolean => {
@@ -50,92 +53,139 @@ const Auth: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isLoading) return;
+    
     setLoginError('');
 
-    if (!loginEmail || !loginPassword) {
+    const trimmedEmail = loginEmail.trim().toLowerCase();
+    const trimmedPassword = loginPassword;
+
+    if (!trimmedEmail || !trimmedPassword) {
       setLoginError('Preencha todos os campos');
       return;
     }
 
-    if (!validateEmail(loginEmail)) {
+    if (!validateEmail(trimmedEmail)) {
       setLoginError('Email inválido');
       return;
     }
 
     setIsLoading(true);
 
-    const { error } = await signIn(loginEmail, loginPassword);
+    try {
+      const { error } = await signIn(trimmedEmail, trimmedPassword);
 
-    setIsLoading(false);
-
-    if (error) {
-      if (error.message.includes('Invalid login credentials')) {
-        setLoginError('Email ou senha incorretos');
-      } else if (error.message.includes('Email not confirmed')) {
-        setLoginError('Confirme seu email antes de entrar');
-      } else {
-        setLoginError('Erro ao fazer login. Tente novamente.');
+      if (error) {
+        const errorMessage = error.message.toLowerCase();
+        
+        if (errorMessage.includes('invalid login credentials') || errorMessage.includes('invalid_credentials')) {
+          setLoginError('Email ou senha incorretos');
+        } else if (errorMessage.includes('email not confirmed')) {
+          setLoginError('Confirme seu email antes de entrar');
+        } else if (errorMessage.includes('too many requests') || errorMessage.includes('rate limit')) {
+          setLoginError('Muitas tentativas. Aguarde alguns minutos.');
+        } else {
+          setLoginError('Erro ao fazer login. Tente novamente.');
+        }
+        setIsLoading(false);
+        return;
       }
-      return;
-    }
 
-    toast({
-      title: 'Login realizado!',
-      description: 'Bem-vindo ao PreciGraf.',
-    });
+      toast.success('Login realizado! Bem-vindo ao PreciGraf.');
+      // Navigation will happen automatically via useEffect when user state updates
+    } catch (err) {
+      setLoginError('Erro inesperado. Tente novamente.');
+      setIsLoading(false);
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Prevent multiple submissions
+    if (isLoading) return;
+    
     setSignupError('');
     setSignupSuccess(false);
 
-    if (!signupName || !signupEmail || !signupPassword || !signupConfirmPassword) {
+    const trimmedName = signupName.trim();
+    const trimmedEmail = signupEmail.trim().toLowerCase();
+    const trimmedPassword = signupPassword;
+    const trimmedConfirmPassword = signupConfirmPassword;
+
+    if (!trimmedName || !trimmedEmail || !trimmedPassword || !trimmedConfirmPassword) {
       setSignupError('Preencha todos os campos');
       return;
     }
 
-    if (!validateEmail(signupEmail)) {
+    if (trimmedName.length < 2) {
+      setSignupError('Nome deve ter pelo menos 2 caracteres');
+      return;
+    }
+
+    if (!validateEmail(trimmedEmail)) {
       setSignupError('Email inválido');
       return;
     }
 
-    if (!validatePassword(signupPassword)) {
+    if (!validatePassword(trimmedPassword)) {
       setSignupError('A senha deve ter pelo menos 8 caracteres');
       return;
     }
 
-    if (signupPassword !== signupConfirmPassword) {
+    if (trimmedPassword !== trimmedConfirmPassword) {
       setSignupError('As senhas não coincidem');
       return;
     }
 
     setIsLoading(true);
 
-    const { error } = await signUp(signupEmail, signupPassword, signupName);
+    try {
+      const { error } = await signUp(trimmedEmail, trimmedPassword, trimmedName);
 
-    setIsLoading(false);
-
-    if (error) {
-      if (error.message.includes('already registered')) {
-        setSignupError('Este email já está cadastrado');
-      } else {
-        setSignupError('Erro ao criar conta. Tente novamente.');
+      if (error) {
+        const errorMessage = error.message.toLowerCase();
+        
+        if (errorMessage.includes('already registered') || errorMessage.includes('user_repeated_signup')) {
+          setSignupError('Este email já está cadastrado. Tente fazer login.');
+        } else if (errorMessage.includes('signup_disabled') || errorMessage.includes('signups not allowed')) {
+          setSignupError('Cadastros temporariamente desabilitados. Tente novamente em alguns minutos.');
+        } else if (errorMessage.includes('weak_password')) {
+          setSignupError('Senha muito fraca. Use letras, números e caracteres especiais.');
+        } else if (errorMessage.includes('rate limit') || errorMessage.includes('too many requests')) {
+          setSignupError('Muitas tentativas. Aguarde alguns minutos.');
+        } else {
+          setSignupError(`Erro ao criar conta: ${error.message}`);
+        }
+        setIsLoading(false);
+        return;
       }
-      return;
+
+      setSignupSuccess(true);
+      toast.success('Conta criada com sucesso! Bem-vindo ao PreciGraf.');
+
+      // Clear form
+      setSignupName('');
+      setSignupEmail('');
+      setSignupPassword('');
+      setSignupConfirmPassword('');
+
+      // With auto-confirm enabled, user is automatically logged in
+      // Navigation will happen via useEffect when user state updates
+    } catch (err) {
+      setSignupError('Erro inesperado. Tente novamente.');
+      setIsLoading(false);
     }
+  };
 
-    setSignupSuccess(true);
-    toast({
-      title: 'Conta criada!',
-      description: 'Bem-vindo ao PreciGraf.',
-    });
-
-    // Clear form
-    setSignupName('');
-    setSignupEmail('');
-    setSignupPassword('');
-    setSignupConfirmPassword('');
+  // Clear errors when switching tabs
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as 'login' | 'signup');
+    setLoginError('');
+    setSignupError('');
+    setSignupSuccess(false);
   };
 
   if (authLoading) {
@@ -169,7 +219,7 @@ const Auth: React.FC = () => {
           </div>
 
           {/* Tabs */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'signup')}>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="login" className="data-[state=active]:bg-foreground data-[state=active]:text-background">
                 Entrar
@@ -260,9 +310,10 @@ const Auth: React.FC = () => {
                 )}
 
                 {signupSuccess && (
-                  <Alert className="bg-success/10 border-success/30">
-                    <AlertDescription className="text-success text-sm">
-                      Conta criada com sucesso! Você já pode acessar o sistema.
+                  <Alert className="bg-green-500/10 border-green-500/30">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <AlertDescription className="text-green-500 text-sm ml-2">
+                      Conta criada com sucesso! Redirecionando...
                     </AlertDescription>
                   </Alert>
                 )}
