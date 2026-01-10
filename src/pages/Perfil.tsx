@@ -12,12 +12,15 @@ import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 
 const Perfil: React.FC = () => {
-  const { user, userData } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  
+  // Get user name from Supabase Auth metadata
+  const currentName = user?.user_metadata?.name || '';
 
   // Name state
-  const [name, setName] = useState(userData?.name || '');
+  const [name, setName] = useState(currentName);
   const [isUpdatingName, setIsUpdatingName] = useState(false);
 
   // Password state
@@ -44,10 +47,10 @@ const Perfil: React.FC = () => {
     setIsUpdatingName(true);
 
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ name: name.trim() })
-        .eq('user_id', user?.id);
+      // Update user metadata in Supabase Auth
+      const { error } = await supabase.auth.updateUser({
+        data: { name: name.trim() }
+      });
 
       if (error) throw error;
 
@@ -56,7 +59,7 @@ const Perfil: React.FC = () => {
         description: 'Seu nome foi alterado com sucesso.',
       });
 
-      // Refresh page to update context
+      // Refresh to update context
       window.location.reload();
     } catch (error: any) {
       toast({
@@ -108,14 +111,6 @@ const Perfil: React.FC = () => {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-
-      // Update must_change_password flag if needed
-      if (userData?.must_change_password) {
-        await supabase
-          .from('users')
-          .update({ must_change_password: false })
-          .eq('user_id', user?.id);
-      }
     } catch (error: any) {
       toast({
         title: 'Erro ao atualizar senha',
