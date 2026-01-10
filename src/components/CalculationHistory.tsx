@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { logError } from '@/lib/logger';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,14 +77,14 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching calculations:', error);
+        logError('Error fetching calculations:', error);
         toast.error('Erro ao carregar histórico');
         return;
       }
 
       setCalculations(data || []);
     } catch (error) {
-      console.error('Error fetching calculations:', error);
+      logError('Error fetching calculations:', error);
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +111,7 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
         .eq('id', id);
 
       if (error) {
-        console.error('Error toggling favorite:', error);
+        logError('Error toggling favorite:', error);
         toast.error('Erro ao atualizar favorito');
         return;
       }
@@ -128,7 +129,7 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
 
       toast.success(currentValue ? 'Removido dos favoritos' : 'Adicionado aos favoritos');
     } catch (error) {
-      console.error('Error toggling favorite:', error);
+      logError('Error toggling favorite:', error);
     }
   };
 
@@ -141,7 +142,7 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
         .eq('id', id);
 
       if (error) {
-        console.error('Error deleting calculation:', error);
+        logError('Error deleting calculation:', error);
         toast.error('Erro ao excluir cálculo');
         return;
       }
@@ -149,7 +150,7 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
       setCalculations(prev => prev.filter(calc => calc.id !== id));
       toast.success('Cálculo excluído');
     } catch (error) {
-      console.error('Error deleting calculation:', error);
+      logError('Error deleting calculation:', error);
     } finally {
       setDeletingId(null);
     }
@@ -188,7 +189,7 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
 
       toast.success(`Exportado como ${format.toUpperCase()}`);
     } catch (error) {
-      console.error('Error exporting:', error);
+      logError('Error exporting:', error);
       toast.error('Erro ao exportar');
     } finally {
       setExportingId(null);
