@@ -33,7 +33,7 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onS
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
 
-  const isValid = data.productName.trim().length > 0 && data.quantity > 0;
+  const isValid = data.productName.trim().length > 0 && data.quantity > 0 && data.finalSellingPrice > 0;
 
   const handleSave = async () => {
     if (!isValid) return;

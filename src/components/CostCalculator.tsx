@@ -18,6 +18,11 @@ const safeNumber = (value: number): number => {
   return Math.max(0, value);
 };
 
+// Função para arredondar valores monetários (2 casas decimais)
+const roundCurrency = (value: number): number => {
+  return Math.round(value * 100) / 100;
+};
+
 const CostCalculator: React.FC = () => {
   // Estado do formulário
   const [productName, setProductName] = useState('');
@@ -115,7 +120,7 @@ const CostCalculator: React.FC = () => {
 
   // Cálculos em tempo real - CALCULADO POR UNIDADE e multiplicado pela quantidade
   const calculations = useMemo(() => {
-    const safeLotQuantity = safeNumber(lotQuantity);
+    const safeLotQuantity = Math.max(0, Math.floor(safeNumber(lotQuantity)));
     const safePaper = safeNumber(paper);
     const safeInk = safeNumber(ink);
     const safeVarnish = safeNumber(varnish);
@@ -125,75 +130,98 @@ const CostCalculator: React.FC = () => {
     const safeEquipment = safeNumber(equipment);
     const safeRent = safeNumber(rent);
     const safeOtherCosts = safeNumber(otherCosts);
-    const safeProfitMargin = safeNumber(profitMargin);
+    const safeProfitMargin = Math.min(safeNumber(profitMargin), 1000); // Limite de 1000%
     const safeFixedProfit = safeNumber(fixedProfit);
     const safeCommissionPercentage = Math.min(safeNumber(commissionPercentage), 100);
     const safeFixedFeePerItem = safeNumber(fixedFeePerItem);
 
+    // Se quantidade é zero, retorna valores zerados
+    if (safeLotQuantity === 0) {
+      return {
+        rawMaterialsCost: 0,
+        operationalCost: 0,
+        operationalTotal: 0,
+        productionCost: 0,
+        isFixedProfit: safeFixedProfit > 0,
+        desiredProfit: 0,
+        baseSellingPrice: 0,
+        marketplaceCommission: 0,
+        marketplaceFixedFees: 0,
+        marketplaceTotalFees: 0,
+        finalSellingPrice: 0,
+        unitPrice: 0,
+        unitRawMaterialsCost: 0,
+        netProfit: 0,
+        totalCost: 0,
+        profitValue: 0,
+        sellingPrice: 0,
+      };
+    }
+
     // Matéria-prima por unidade (valores informados são por unidade)
-    const unitRawMaterialsCost = safePaper + safeInk + safeVarnish + safeOtherMaterials;
+    const unitRawMaterialsCost = roundCurrency(safePaper + safeInk + safeVarnish + safeOtherMaterials);
     
     // Matéria-prima total = unitário × quantidade
-    const rawMaterialsCost = unitRawMaterialsCost * safeLotQuantity;
+    const rawMaterialsCost = roundCurrency(unitRawMaterialsCost * safeLotQuantity);
 
     // Custos operacionais total (dividido por quantidade para obter por unidade)
-    const operationalTotal = safeLabor + safeEnergy + safeEquipment + safeRent + safeOtherCosts;
-    const unitOperationalCost = safeLotQuantity > 0 ? operationalTotal / safeLotQuantity : 0;
+    const operationalTotal = roundCurrency(safeLabor + safeEnergy + safeEquipment + safeRent + safeOtherCosts);
+    const unitOperationalCost = roundCurrency(operationalTotal / safeLotQuantity);
 
     // Custo de produção por unidade (apenas matéria-prima + operacional por unidade)
-    const unitProductionCost = unitRawMaterialsCost + unitOperationalCost;
+    const unitProductionCost = roundCurrency(unitRawMaterialsCost + unitOperationalCost);
 
     // Lucro desejado por unidade (valor fixo tem prioridade)
     const isFixedProfit = safeFixedProfit > 0;
     const unitDesiredProfit = isFixedProfit
-      ? (safeLotQuantity > 0 ? safeFixedProfit / safeLotQuantity : 0)
-      : unitProductionCost * (safeProfitMargin / 100);
+      ? roundCurrency(safeFixedProfit / safeLotQuantity)
+      : roundCurrency(unitProductionCost * (safeProfitMargin / 100));
 
     // Preço base de venda por unidade (sem taxas)
-    const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
+    const unitBaseSellingPrice = roundCurrency(unitProductionCost + unitDesiredProfit);
 
     // Taxas do marketplace por unidade
-    const unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
+    const unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
     // Taxa fixa é única por venda, não por unidade
-    const unitMarketplaceFixedFees = safeLotQuantity > 0 ? safeFixedFeePerItem / safeLotQuantity : 0;
-    const unitMarketplaceTotalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
+    const unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);
+    const unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
 
     // Preço unitário final (com taxas)
-    const unitPrice = unitBaseSellingPrice + unitMarketplaceTotalFees;
+    const unitPrice = roundCurrency(unitBaseSellingPrice + unitMarketplaceTotalFees);
 
     // PREÇO FINAL = Preço unitário × Quantidade
-    const finalSellingPrice = unitPrice * safeLotQuantity;
+    const finalSellingPrice = roundCurrency(unitPrice * safeLotQuantity);
 
     // Totais para exibição
     const operationalCost = operationalTotal;
-    const productionCost = unitProductionCost * safeLotQuantity;
-    const desiredProfit = unitDesiredProfit * safeLotQuantity;
-    const marketplaceCommission = unitMarketplaceCommission * safeLotQuantity;
-    const marketplaceFixedFees = unitMarketplaceFixedFees * safeLotQuantity;
-    const marketplaceTotalFees = unitMarketplaceTotalFees * safeLotQuantity;
+    const productionCost = roundCurrency(unitProductionCost * safeLotQuantity);
+    const desiredProfit = roundCurrency(unitDesiredProfit * safeLotQuantity);
+    const marketplaceCommission = roundCurrency(unitMarketplaceCommission * safeLotQuantity);
+    const marketplaceFixedFees = roundCurrency(unitMarketplaceFixedFees * safeLotQuantity);
+    const marketplaceTotalFees = roundCurrency(unitMarketplaceTotalFees * safeLotQuantity);
 
-    // Lucro líquido
-    const netProfit = finalSellingPrice - productionCost - marketplaceTotalFees;
+    // Lucro líquido (pode ser negativo em caso de prejuízo)
+    const netProfit = roundCurrency(finalSellingPrice - productionCost - marketplaceTotalFees);
 
     return {
-      rawMaterialsCost: safeNumber(rawMaterialsCost),
-      operationalCost: safeNumber(operationalCost),
-      operationalTotal: safeNumber(operationalTotal),
-      productionCost: safeNumber(productionCost),
+      rawMaterialsCost,
+      operationalCost,
+      operationalTotal,
+      productionCost,
       isFixedProfit,
-      desiredProfit: safeNumber(desiredProfit),
-      baseSellingPrice: safeNumber(unitBaseSellingPrice * safeLotQuantity),
-      marketplaceCommission: safeNumber(marketplaceCommission),
-      marketplaceFixedFees: safeNumber(marketplaceFixedFees),
-      marketplaceTotalFees: safeNumber(marketplaceTotalFees),
-      finalSellingPrice: safeNumber(finalSellingPrice),
-      unitPrice: safeNumber(unitPrice),
-      unitRawMaterialsCost: safeNumber(unitRawMaterialsCost),
-      netProfit: safeNumber(netProfit),
+      desiredProfit,
+      baseSellingPrice: roundCurrency(unitBaseSellingPrice * safeLotQuantity),
+      marketplaceCommission,
+      marketplaceFixedFees,
+      marketplaceTotalFees,
+      finalSellingPrice,
+      unitPrice,
+      unitRawMaterialsCost,
+      netProfit,
       // Legacy compatibility
-      totalCost: safeNumber(productionCost),
-      profitValue: safeNumber(desiredProfit),
-      sellingPrice: safeNumber(finalSellingPrice),
+      totalCost: productionCost,
+      profitValue: desiredProfit,
+      sellingPrice: finalSellingPrice,
     };
   }, [
     lotQuantity,

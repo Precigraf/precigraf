@@ -21,20 +21,28 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
     if (!Number.isFinite(value) || isNaN(value)) {
       return 'R$ 0,00';
     }
-    return value.toLocaleString('pt-BR', {
+    const rounded = Math.round(value * 100) / 100;
+    return rounded.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     });
   };
 
-  if (marketplace === 'none' || marketplace === 'direct_sale' || quantity <= 0) {
+  // Proteção contra valores inválidos
+  const safeQuantity = Math.max(1, Math.floor(quantity || 1));
+  const safeMarketplaceTotalFees = Math.max(0, marketplaceTotalFees || 0);
+  const safeUnitProfit = Math.max(0, unitProfit || 0);
+
+  if (marketplace === 'none' || marketplace === 'direct_sale' || safeQuantity <= 0) {
     return null;
   }
 
   const config = MARKETPLACE_CONFIG[marketplace];
-  const unitFees = quantity > 0 ? marketplaceTotalFees / quantity : 0;
-  const netUnitProfit = unitProfit - unitFees;
-  const profitImpactPercentage = unitProfit > 0 ? ((unitFees / unitProfit) * 100).toFixed(1) : '0';
+  const unitFees = Math.round((safeMarketplaceTotalFees / safeQuantity) * 100) / 100;
+  const netUnitProfit = Math.round((safeUnitProfit - unitFees) * 100) / 100;
+  const profitImpactPercentage = safeUnitProfit > 0 
+    ? Math.round((unitFees / safeUnitProfit) * 1000) / 10 
+    : 0;
 
   return (
     <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 space-y-3">

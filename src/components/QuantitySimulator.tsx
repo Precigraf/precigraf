@@ -30,37 +30,50 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   const calculateForQuantity = (qty: number) => {
     if (qty <= 0) return { unitPrice: 0, lotPrice: 0, margin: 0 };
 
+    // Proteção contra divisão por zero e valores inválidos
+    const safeQty = Math.max(1, Math.floor(qty));
+    const safeOperationalTotal = Math.max(0, operationalTotal || 0);
+    const safeUnitRawMaterialsCost = Math.max(0, unitRawMaterialsCost || 0);
+    const safeMarginPercentage = Math.min(Math.max(0, marginPercentage || 0), 1000);
+    const safeFixedProfit = Math.max(0, fixedProfit || 0);
+    const safeCommissionPercentage = Math.min(Math.max(0, commissionPercentage || 0), 100);
+    const safeFixedFeePerItem = Math.max(0, fixedFeePerItem || 0);
+
     // Custo operacional por unidade
-    const unitOperationalCost = operationalTotal / qty;
+    const unitOperationalCost = safeOperationalTotal / safeQty;
     
     // Custo de produção por unidade
-    const unitProductionCost = unitRawMaterialsCost + unitOperationalCost;
+    const unitProductionCost = safeUnitRawMaterialsCost + unitOperationalCost;
 
     // Lucro desejado por unidade
-    const isFixedProfit = fixedProfit > 0;
+    const isFixedProfit = safeFixedProfit > 0;
     const unitDesiredProfit = isFixedProfit
-      ? fixedProfit / qty
-      : unitProductionCost * (marginPercentage / 100);
+      ? safeFixedProfit / safeQty
+      : unitProductionCost * (safeMarginPercentage / 100);
 
     // Preço base de venda por unidade
     const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
 
     // Taxas do marketplace
-    const unitMarketplaceCommission = unitBaseSellingPrice * (commissionPercentage / 100);
-    const unitMarketplaceFixedFees = fixedFeePerItem / qty;
+    const unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
+    const unitMarketplaceFixedFees = safeFixedFeePerItem / safeQty;
 
     // Preço unitário final
     const unitPrice = unitBaseSellingPrice + unitMarketplaceCommission + unitMarketplaceFixedFees;
 
     // Preço do lote
-    const lotPrice = unitPrice * qty;
+    const lotPrice = unitPrice * safeQty;
 
     // Margem real calculada
     const realMargin = unitProductionCost > 0 
       ? ((unitDesiredProfit / unitProductionCost) * 100) 
-      : marginPercentage;
+      : safeMarginPercentage;
 
-    return { unitPrice, lotPrice, margin: realMargin };
+    return { 
+      unitPrice: Math.round(unitPrice * 100) / 100, 
+      lotPrice: Math.round(lotPrice * 100) / 100, 
+      margin: Math.round(realMargin * 100) / 100 
+    };
   };
 
   // Calcular valores atuais para comparação
