@@ -86,30 +86,31 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
           return (
             <div 
               key={qty} 
-              className="bg-card rounded-lg p-3 border border-border hover:border-primary/50 transition-colors"
+              className="bg-card rounded-lg p-4 border border-border hover:border-primary/50 transition-colors overflow-hidden flex flex-col items-center justify-center"
             >
-              <div className="text-center">
-                <span className="text-xs text-muted-foreground block mb-1">
-                  {qty} un
-                </span>
-                <span className="text-sm font-bold text-foreground block">
-                  {formatCurrency(lotPrice)}
-                </span>
-                <span className="text-xs text-muted-foreground block mt-0.5">
-                  {formatCurrency(calc.unitPrice)}/un
-                </span>
-                
-                {currentQuantity > 0 && currentQuantity !== qty && Math.abs(priceDiff) > 0.01 && (
-                  <div className={`flex items-center justify-center gap-1 mt-2 text-xs ${isBetter ? 'text-success' : 'text-warning'}`}>
-                    {isBetter ? (
-                      <TrendingDown className="w-3 h-3" />
-                    ) : (
-                      <TrendingUp className="w-3 h-3" />
-                    )}
-                    <span>{Math.abs(priceDiff).toFixed(1)}%</span>
-                  </div>
-                )}
-              </div>
+              <span className="text-xs text-muted-foreground whitespace-nowrap mb-1">
+                {qty} un
+              </span>
+              <span 
+                className="font-bold text-foreground whitespace-nowrap max-w-full overflow-hidden text-ellipsis text-center"
+                style={{ fontSize: 'clamp(14px, 3.5vw, 18px)' }}
+              >
+                {formatCurrency(lotPrice)}
+              </span>
+              <span className="text-sm text-muted-foreground/80 whitespace-nowrap mt-0.5">
+                {formatCurrency(calc.unitPrice)}/un
+              </span>
+              
+              {currentQuantity > 0 && currentQuantity !== qty && Math.abs(priceDiff) > 0.01 && (
+                <div className={`flex items-center justify-center gap-1 mt-2 whitespace-nowrap ${isBetter ? 'text-success' : 'text-warning'}`}>
+                  {isBetter ? (
+                    <TrendingDown className="w-3 h-3 flex-shrink-0" />
+                  ) : (
+                    <TrendingUp className="w-3 h-3 flex-shrink-0" />
+                  )}
+                  <span className="text-[13px] font-semibold">{Math.abs(priceDiff).toFixed(1)}%</span>
+                </div>
+              )}
             </div>
           );
         })}
