@@ -3,6 +3,7 @@ import { Save, Loader2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logError } from '@/lib/logger';
 
 interface CalculationData {
   productName: string;
@@ -71,7 +72,7 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onS
       });
 
       if (error) {
-        console.error('Error saving calculation:', error);
+        logError('Error saving calculation:', error);
         toast.error('Erro ao salvar cálculo');
         return;
       }
@@ -84,7 +85,7 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onS
         setJustSaved(false);
       }, 2000);
     } catch (error) {
-      console.error('Error saving calculation:', error);
+      logError('Error saving calculation:', error);
       toast.error('Erro ao salvar cálculo');
     } finally {
       setIsSaving(false);

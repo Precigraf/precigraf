@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { logError } from '@/lib/logger';
 
 interface UserData {
   id: string;
@@ -47,13 +48,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
-        console.error('Error fetching user data:', error);
+        logError('Error fetching user data:', error);
         return null;
       }
 
       return data as UserData;
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      logError('Error fetching user data:', error);
       return null;
     }
   };
@@ -140,7 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         if (insertError) {
-          console.error('Error creating user record:', insertError);
+          logError('Error creating user record:', insertError);
         }
 
         // Also create profile
@@ -151,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
 
         if (profileError) {
-          console.error('Error creating profile:', profileError);
+          logError('Error creating profile:', profileError);
         }
       }
 

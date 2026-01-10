@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
+import { logError } from '@/lib/logger';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -105,7 +106,7 @@ async function streamChat({
 
     onDone();
   } catch (error) {
-    console.error("Stream chat error:", error);
+    logError("Stream chat error:", error);
     onError("Erro de conexão. Verifique sua internet.");
   }
 }
@@ -170,7 +171,7 @@ const AIAssistant: React.FC = () => {
         },
       });
     } catch (e) {
-      console.error(e);
+      logError("Send message error:", e);
       toast.error("Erro ao enviar mensagem");
       setIsLoading(false);
     }
