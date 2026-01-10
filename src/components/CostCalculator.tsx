@@ -8,8 +8,10 @@ import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import TooltipLabel from './TooltipLabel';
 import { Input } from '@/components/ui/input';
-import SaveCalculationButton from './SaveCalculationButton';
 import CalculationHistory from './CalculationHistory';
+import SuggestMarginButton from './SuggestMarginButton';
+import OnboardingTour from './OnboardingTour';
+
 // Função auxiliar para garantir números válidos
 const safeNumber = (value: number): number => {
   if (!Number.isFinite(value) || isNaN(value)) return 0;
@@ -80,6 +82,36 @@ const CostCalculator: React.FC = () => {
   const handleCalculationSaved = useCallback(() => {
     setHistoryRefreshTrigger(prev => prev + 1);
   }, []);
+
+  // Handler para sugestão de margem
+  const handleSuggestMargin = useCallback((suggestedMargin: number) => {
+    setProfitMargin(suggestedMargin);
+    setFixedProfit(0); // Limpar lucro fixo ao usar margem percentual
+  }, []);
+
+  // Handler para carregar exemplo
+  const handleLoadExample = useCallback(() => {
+    setProductName('Sacola de Papel Kraft');
+    setLotQuantity(100);
+    setPaper(1.50);
+    setInk(0.30);
+    setVarnish(0);
+    setOtherMaterials(0.20);
+    setLabor(50);
+    setEnergy(15);
+    setEquipment(10);
+    setRent(25);
+    setOtherCosts(10);
+    setProfitMargin(35);
+    setFixedProfit(0);
+    setMarketplace('direct_sale');
+    setCommissionPercentage(0);
+    setFixedFeePerItem(0);
+    setProductPreset('paper_bag');
+  }, []);
+
+  // Verificar se custos operacionais estão preenchidos
+  const hasOperationalCosts = labor > 0 || energy > 0 || equipment > 0 || rent > 0 || otherCosts > 0;
 
   // Cálculos em tempo real - CALCULADO POR UNIDADE e multiplicado pela quantidade
   const calculations = useMemo(() => {
@@ -184,6 +216,11 @@ const CostCalculator: React.FC = () => {
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
       {/* Coluna Esquerda - Formulário */}
       <div className="space-y-6">
+        {/* Onboarding e Exemplo */}
+        <div className="flex items-center gap-3 mb-2">
+          <OnboardingTour onLoadExample={handleLoadExample} />
+        </div>
+
         {/* Seção 1: Nome do Produto */}
         <FormSection title="Produto" icon={<Tag className="w-5 h-5 text-primary" />}>
           <div className="col-span-full">
@@ -194,19 +231,19 @@ const CostCalculator: React.FC = () => {
               type="text"
               value={productName}
               onChange={(e) => setProductName(e.target.value)}
-              placeholder=""
+              placeholder="Ex: Sacola de papel personalizada"
               className="input-currency"
               maxLength={100}
             />
             <p className="text-xs text-muted-foreground mt-1.5">
-              Ex: Mini sacola de papel personalizada
+              Dê um nome para identificar este cálculo
             </p>
           </div>
         </FormSection>
 
         {/* Seção 2: Quantidade */}
         <FormSection
-          title="Quantidade"
+          title="Quantidade do Lote"
           icon={<Package className="w-5 h-5 text-primary" />}
         >
           <div className="col-span-full">
@@ -214,16 +251,14 @@ const CostCalculator: React.FC = () => {
               type="number"
               value={lotQuantity || ''}
               onChange={handleQuantityChange}
-              placeholder="0"
+              placeholder="Quantas unidades você vai produzir?"
               className="input-currency"
               min={0}
               max={999999}
             />
-            {lotQuantity === 0 && (
-              <p className="text-xs text-warning mt-1.5">
-                Informe a quantidade para calcular os resultados
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground mt-1.5">
+              Total de unidades a serem produzidas neste lote
+            </p>
           </div>
         </FormSection>
 
@@ -303,7 +338,18 @@ const CostCalculator: React.FC = () => {
           title="Margem de Lucro"
           icon={<Percent className="w-5 h-5 text-primary" />}
         >
-          <div className="col-span-full">
+          <div className="col-span-full space-y-4">
+            {/* Botão de Sugestão de Margem */}
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Precisa de ajuda?</span>
+              <SuggestMarginButton
+                productPreset={productPreset}
+                quantity={lotQuantity}
+                onSuggest={handleSuggestMargin}
+                disabled={fixedProfit > 0}
+              />
+            </div>
+
             <MarginSlider
               value={profitMargin}
               onChange={setProfitMargin}
@@ -323,7 +369,7 @@ const CostCalculator: React.FC = () => {
             label="Valor fixo de lucro (total)"
             value={fixedProfit}
             onChange={setFixedProfit}
-            helperText="Lucro total desejado (não por unidade)"
+            helperText="Lucro total desejado para o lote inteiro"
             fullWidth
             tooltip="Defina um valor de lucro fixo em R$ ao invés de percentual. Útil quando você já sabe quanto quer ganhar no lote."
           />
@@ -365,6 +411,8 @@ const CostCalculator: React.FC = () => {
           fixedProfit={fixedProfit}
           commissionPercentage={commissionPercentage}
           fixedFeePerItem={fixedFeePerItem}
+          marketplace={marketplace}
+          hasOperationalCosts={hasOperationalCosts}
           saveData={{
             paper,
             ink,
