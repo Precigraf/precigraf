@@ -1,12 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calculator, Clock, LogOut, Mail } from 'lucide-react';
+import { Calculator, ShieldX, LogOut, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 
-const Pagamento: React.FC = () => {
+const Bloqueado: React.FC = () => {
   const navigate = useNavigate();
-  const { user, userData, signOut } = useAuth();
+  const { userData, signOut } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
@@ -17,18 +17,18 @@ const Pagamento: React.FC = () => {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       {/* Background gradient effect */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-warning/5 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-warning/5 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-destructive/5 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-destructive/5 rounded-full blur-3xl" />
       </div>
 
       <div className="w-full max-w-md relative z-10">
         <div className="glass-card p-8 text-center animate-slide-up">
-          {/* Logo */}
+          {/* Icon */}
           <div className="flex flex-col items-center mb-6">
-            <div className="w-16 h-16 rounded-2xl bg-warning/20 flex items-center justify-center mb-4">
-              <Clock className="w-8 h-8 text-warning" />
+            <div className="w-16 h-16 rounded-2xl bg-destructive/20 flex items-center justify-center mb-4">
+              <ShieldX className="w-8 h-8 text-destructive" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Acesso Pendente</h1>
+            <h1 className="text-2xl font-bold text-foreground">Acesso Bloqueado</h1>
           </div>
 
           {/* User info */}
@@ -43,10 +43,10 @@ const Pagamento: React.FC = () => {
           {/* Message */}
           <div className="space-y-4 mb-8">
             <p className="text-muted-foreground">
-              Sua conta foi criada com sucesso, mas o acesso ao sistema ainda não foi liberado.
+              Seu acesso ao sistema PreciGraf foi temporariamente bloqueado.
             </p>
             <p className="text-muted-foreground">
-              O acesso será liberado automaticamente após a confirmação do pagamento.
+              Entre em contato com o suporte para mais informações sobre como reativar sua conta.
             </p>
           </div>
 
@@ -83,4 +83,4 @@ const Pagamento: React.FC = () => {
   );
 };
 
-export default Pagamento;
+export default Bloqueado;

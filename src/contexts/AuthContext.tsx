@@ -137,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           user_id: data.user.id,
           email,
           name,
-          status: 'pending', // Pending until payment is confirmed
+          status: 'ativo', // Active by default - open access
         });
 
         if (insertError) {
@@ -169,8 +169,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserData(null);
   };
 
-  // User has access if status is 'active'
-  const hasAccess = userData?.status === 'active';
+  // User has access if status is 'ativo' (not blocked)
+  const hasAccess = userData?.status === 'ativo';
 
   return (
     <AuthContext.Provider

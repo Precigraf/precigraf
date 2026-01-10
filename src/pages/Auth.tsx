@@ -38,7 +38,7 @@ const Auth: React.FC = () => {
       if (hasAccess) {
         navigate('/');
       } else {
-        navigate('/pagamento');
+        navigate('/bloqueado');
       }
     }
   }, [user, authLoading, hasAccess, navigate]);
@@ -132,7 +132,7 @@ const Auth: React.FC = () => {
     setSignupSuccess(true);
     toast({
       title: 'Conta criada!',
-      description: 'Aguarde a confirmação do pagamento para acessar o sistema.',
+      description: 'Bem-vindo ao PreciGraf.',
     });
 
     // Clear form
@@ -266,7 +266,7 @@ const Auth: React.FC = () => {
                 {signupSuccess && (
                   <Alert className="bg-success/10 border-success/30">
                     <AlertDescription className="text-success text-sm">
-                      Conta criada com sucesso! Aguarde a confirmação do pagamento.
+                      Conta criada com sucesso! Você já pode acessar o sistema.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -372,12 +372,6 @@ const Auth: React.FC = () => {
                   )}
                 </Button>
 
-                {/* Informative message */}
-                <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 mt-4">
-                  <p className="text-sm text-warning text-center">
-                    Criar conta não libera o acesso automaticamente. O uso do sistema é liberado após a confirmação do pagamento.
-                  </p>
-                </div>
               </form>
             </TabsContent>
           </Tabs>

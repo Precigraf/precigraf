@@ -27,9 +27,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/auth" replace />;
   }
 
-  // Logged in but no access and access is required -> redirect to payment
+  // Logged in but blocked -> redirect to blocked page
   if (requireAccess && !hasAccess) {
-    return <Navigate to="/pagamento" replace />;
+    return <Navigate to="/bloqueado" replace />;
   }
 
   return <>{children}</>;
