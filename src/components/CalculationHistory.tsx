@@ -196,7 +196,11 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
   };
 
   const formatCurrency = (value: number) => {
-    return value.toLocaleString('pt-BR', {
+    if (!Number.isFinite(value) || isNaN(value)) {
+      return 'R$ 0,00';
+    }
+    const rounded = Math.round(value * 100) / 100;
+    return rounded.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     });

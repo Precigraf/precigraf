@@ -42,10 +42,14 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
 
   const parseCurrency = (str: string): number => {
     const cleaned = str.replace(/[^\d]/g, '');
+    // Proteção contra valores muito grandes que causam overflow
+    if (cleaned.length > 12) {
+      return 999999999.99;
+    }
     const num = parseInt(cleaned, 10) || 0;
     // Limitar a um valor máximo razoável (R$ 999.999.999,99)
     const result = Math.min(num / 100, 999999999.99);
-    return result;
+    return Math.round(result * 100) / 100;
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
