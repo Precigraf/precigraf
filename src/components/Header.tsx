@@ -15,8 +15,11 @@ import {
 
 const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
-  const { user, userData, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  
+  // Get user name from Supabase Auth metadata
+  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
 
   const handleLogout = async () => {
     await signOut();
@@ -69,14 +72,14 @@ const Header: React.FC = () => {
                       <User className="w-4 h-4 text-primary" />
                     </div>
                     <span className="hidden sm:inline text-sm font-medium">
-                      {userData?.name || user.email?.split('@')[0]}
+                      {userName}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-card border-border">
                   <DropdownMenuLabel>
                     <div className="flex flex-col">
-                      <span className="font-medium">{userData?.name || 'Usuário'}</span>
+                      <span className="font-medium">{userName}</span>
                       <span className="text-xs text-muted-foreground">{user.email}</span>
                     </div>
                   </DropdownMenuLabel>
