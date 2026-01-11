@@ -33,7 +33,7 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
   const safeMarketplaceTotalFees = Math.max(0, marketplaceTotalFees || 0);
   const safeUnitProfit = Math.max(0, unitProfit || 0);
 
-  if (marketplace === 'none' || marketplace === 'direct_sale' || safeQuantity <= 0) {
+  if (marketplace === 'none' || safeQuantity <= 0) {
     return null;
   }
 

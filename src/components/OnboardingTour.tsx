@@ -77,7 +77,7 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ onLoadExample }) => {
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-md bg-card border-border">
+        <DialogContent className="sm:max-w-md bg-card border-border [&>button]:hidden">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div className="text-4xl mb-2">{currentStep.icon}</div>

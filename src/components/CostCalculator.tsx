@@ -109,9 +109,9 @@ const CostCalculator: React.FC = () => {
     setOtherCosts(10);
     setProfitMargin(35);
     setFixedProfit(0);
-    setMarketplace('direct_sale');
-    setCommissionPercentage(0);
-    setFixedFeePerItem(0);
+      setMarketplace('none');
+      setCommissionPercentage(0);
+      setFixedFeePerItem(0);
     setProductPreset('paper_bag');
   }, []);
 
@@ -433,7 +433,7 @@ const CostCalculator: React.FC = () => {
           finalSellingPrice={calculations.finalSellingPrice}
           unitPrice={calculations.unitPrice}
           isFixedProfit={calculations.isFixedProfit}
-          hasMarketplace={marketplace !== 'none' && marketplace !== 'direct_sale'}
+          hasMarketplace={marketplace !== 'none'}
           unitRawMaterialsCost={calculations.unitRawMaterialsCost}
           operationalTotal={calculations.operationalTotal}
           fixedProfit={fixedProfit}
