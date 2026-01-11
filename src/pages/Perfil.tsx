@@ -117,19 +117,26 @@ const Perfil: React.FC = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      // Get signed URL (valid for 1 year = 31536000 seconds)
+      const { data: signedData, error: signedError } = await supabase.storage
         .from('armazenamento')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 31536000);
 
-      // Update user metadata
+      if (signedError) throw signedError;
+
+      const signedUrl = signedData.signedUrl;
+
+      // Update user metadata with signed URL
       const { error: updateError } = await supabase.auth.updateUser({
-        data: { avatar_url: publicUrl }
+        data: { 
+          avatar_url: signedUrl,
+          avatar_path: fileName // Store path for future signed URL generation
+        }
       });
 
       if (updateError) throw updateError;
 
-      setAvatarUrl(publicUrl);
+      setAvatarUrl(signedUrl);
 
       toast({
         title: 'Foto atualizada!',
