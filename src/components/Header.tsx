@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Sun, Moon, LogOut, User, Settings } from 'lucide-react';
-import logoSymbol from '@/assets/logo-symbol.png';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
@@ -33,7 +34,7 @@ const Header: React.FC = () => {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
-              <img src={logoSymbol} alt="PreciGraf" className="w-5 h-5 object-contain" />
+              <img src={theme === 'dark' ? logoDark : logoLight} alt="PreciGraf" className="w-5 h-5 object-contain" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-foreground">
