@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -155,50 +155,122 @@ export const exportToExcel = async (data: CalculationExportData): Promise<void> 
   
   const formattedDate = format(new Date(data.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR });
   
-  const worksheetData = [
-    ['PreciGraf - Calculadora de Precificação'],
-    [],
-    ['INFORMAÇÕES DO PRODUTO'],
-    ['Produto', data.productName],
-    ['Quantidade', data.quantity],
-    ['Data do Cálculo', formattedDate],
-    [],
-    ['RESULTADOS'],
-    ['Preço Final de Venda', data.salePrice],
-    ['Preço por Unidade', data.unitPrice],
-    [],
-    ['MATÉRIA-PRIMA (por unidade)'],
-    ['Papel', data.paperCost],
-    ['Alça', data.inkCost],
-    ['Tinta', data.varnishCost],
-    ['Outros materiais', data.otherMaterialCost],
-    ['Subtotal Matéria-prima (total)', rawMaterialsTotal * data.quantity],
-    [],
-    ['CUSTOS OPERACIONAIS (total do lote)'],
-    ['Mão de obra', data.laborCost],
-    ['Energia', data.energyCost],
-    ['Equipamentos', data.equipmentCost],
-    ['Espaço', data.rentCost],
-    ['Outros custos', data.otherOperationalCost],
-    ['Subtotal Operacional', operationalTotal],
-    [],
-    ['RESUMO'],
-    ['Custo Total de Produção', data.totalCost],
-    ['Margem de Lucro', data.fixedProfit ? `R$ ${data.fixedProfit.toFixed(2)} (fixo)` : `${data.marginPercentage}%`],
-    ['Lucro', data.profit],
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'PreciGraf';
+  workbook.created = new Date();
+  
+  const worksheet = workbook.addWorksheet('Cálculo');
+  
+  // Set column widths
+  worksheet.columns = [
+    { width: 35 },
+    { width: 25 },
   ];
-
-  const workbook = XLSX.utils.book_new();
-  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-
-  // Column widths
-  worksheet['!cols'] = [
-    { wch: 30 },
-    { wch: 20 },
-  ];
-
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Cálculo');
-
+  
+  // Header styling
+  const headerStyle: Partial<ExcelJS.Style> = {
+    font: { bold: true, size: 14 },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1a1a1a' } },
+  };
+  
+  const sectionStyle: Partial<ExcelJS.Style> = {
+    font: { bold: true },
+    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } },
+  };
+  
+  // Title
+  const titleRow = worksheet.addRow(['PreciGraf - Calculadora de Precificação']);
+  titleRow.font = { bold: true, size: 16 };
+  worksheet.mergeCells('A1:B1');
+  
+  worksheet.addRow([]);
+  
+  // Product Info Section
+  const infoHeader = worksheet.addRow(['INFORMAÇÕES DO PRODUTO', '']);
+  infoHeader.eachCell((cell) => {
+    cell.font = { bold: true };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
+  });
+  worksheet.addRow(['Produto', data.productName]);
+  worksheet.addRow(['Quantidade', data.quantity]);
+  worksheet.addRow(['Data do Cálculo', formattedDate]);
+  
+  worksheet.addRow([]);
+  
+  // Results Section
+  const resultsHeader = worksheet.addRow(['RESULTADOS', '']);
+  resultsHeader.eachCell((cell) => {
+    cell.font = { bold: true };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
+  });
+  const salePriceRow = worksheet.addRow(['Preço Final de Venda', data.salePrice]);
+  salePriceRow.getCell(2).numFmt = '"R$" #,##0.00';
+  const unitPriceRow = worksheet.addRow(['Preço por Unidade', data.unitPrice]);
+  unitPriceRow.getCell(2).numFmt = '"R$" #,##0.00';
+  
+  worksheet.addRow([]);
+  
+  // Raw Materials Section
+  const rawHeader = worksheet.addRow(['MATÉRIA-PRIMA (por unidade)', '']);
+  rawHeader.eachCell((cell) => {
+    cell.font = { bold: true };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
+  });
+  
+  const addCurrencyRow = (label: string, value: number) => {
+    const row = worksheet.addRow([label, value]);
+    row.getCell(2).numFmt = '"R$" #,##0.00';
+    return row;
+  };
+  
+  addCurrencyRow('Papel', data.paperCost);
+  addCurrencyRow('Alça', data.inkCost);
+  addCurrencyRow('Tinta', data.varnishCost);
+  addCurrencyRow('Outros materiais', data.otherMaterialCost);
+  const subtotalRaw = addCurrencyRow('Subtotal Matéria-prima (total)', rawMaterialsTotal * data.quantity);
+  subtotalRaw.font = { bold: true };
+  
+  worksheet.addRow([]);
+  
+  // Operational Costs Section
+  const opHeader = worksheet.addRow(['CUSTOS OPERACIONAIS (total do lote)', '']);
+  opHeader.eachCell((cell) => {
+    cell.font = { bold: true };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
+  });
+  
+  addCurrencyRow('Mão de obra', data.laborCost);
+  addCurrencyRow('Energia', data.energyCost);
+  addCurrencyRow('Equipamentos', data.equipmentCost);
+  addCurrencyRow('Espaço', data.rentCost);
+  addCurrencyRow('Outros custos', data.otherOperationalCost);
+  const subtotalOp = addCurrencyRow('Subtotal Operacional', operationalTotal);
+  subtotalOp.font = { bold: true };
+  
+  worksheet.addRow([]);
+  
+  // Summary Section
+  const summaryHeader = worksheet.addRow(['RESUMO', '']);
+  summaryHeader.eachCell((cell) => {
+    cell.font = { bold: true };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
+  });
+  
+  addCurrencyRow('Custo Total de Produção', data.totalCost);
+  worksheet.addRow(['Margem de Lucro', data.fixedProfit ? `R$ ${data.fixedProfit.toFixed(2)} (fixo)` : `${data.marginPercentage}%`]);
+  addCurrencyRow('Lucro', data.profit);
+  
+  // Generate and download file
   const fileName = `precigraf-${data.productName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()}-${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
-  XLSX.writeFile(workbook, fileName);
+  
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 };
