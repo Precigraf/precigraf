@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, Mail, Lock, User, CheckCircle } from 'lucide-react';
-import logoDark from '@/assets/logo-dark.png';
-import logoLight from '@/assets/logo-light.png';
+import logoSymbol from '@/assets/logo-symbol.png';
 import { Button } from '@/components/ui/button';
-import { useTheme } from '@/hooks/useTheme';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -14,7 +12,7 @@ import { toast } from 'sonner';
 const Auth: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, signIn, signUp } = useAuth();
-  const { theme } = useTheme();
+
   // Form states
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
   const [isLoading, setIsLoading] = useState(false);
@@ -213,7 +211,7 @@ const Auth: React.FC = () => {
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
             <div className="w-16 h-16 rounded-2xl bg-foreground flex items-center justify-center mb-4">
-              <img src={theme === 'dark' ? logoDark : logoLight} alt="PreciGraf" className="w-8 h-8 object-contain" />
+              <img src={logoSymbol} alt="PreciGraf" className="w-8 h-8 object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">PreciGraf</h1>
             <p className="text-sm text-muted-foreground mt-1">
