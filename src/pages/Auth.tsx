@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Loader2, Mail, Lock, User, CheckCircle } from 'lucide-react';
-import logoSymbol from '@/assets/logo-symbol.png';
+import LogoIcon from '@/components/LogoIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -211,7 +211,7 @@ const Auth: React.FC = () => {
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
             <div className="w-16 h-16 rounded-2xl bg-foreground flex items-center justify-center mb-4">
-              <img src={logoSymbol} alt="PreciGraf" className="w-8 h-8 object-contain" />
+              <LogoIcon className="w-8 h-8 text-background" />
             </div>
             <h1 className="text-2xl font-bold text-foreground">PreciGraf</h1>
             <p className="text-sm text-muted-foreground mt-1">
