@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calculator, TrendingUp, TrendingDown } from 'lucide-react';
+import { Calculator } from 'lucide-react';
 
 interface QuantitySimulatorProps {
   unitRawMaterialsCost: number;
@@ -112,21 +112,9 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
                   {formatCurrency(lotPrice)}
                 </span>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground/80">
-                  {formatCurrency(calc.unitPrice)}/un
-                </span>
-                {currentQuantity > 0 && currentQuantity !== qty && Math.abs(priceDiff) > 0.01 && (
-                  <div className={`flex items-center gap-1 min-w-[60px] justify-end ${isBetter ? 'text-success' : 'text-warning'}`}>
-                    {isBetter ? (
-                      <TrendingDown className="w-3 h-3 flex-shrink-0" />
-                    ) : (
-                      <TrendingUp className="w-3 h-3 flex-shrink-0" />
-                    )}
-                    <span className="text-sm font-semibold">{Math.abs(priceDiff).toFixed(1)}%</span>
-                  </div>
-                )}
-              </div>
+              <span className="text-sm text-muted-foreground/80">
+                {formatCurrency(calc.unitPrice)}/un
+              </span>
             </div>
           );
         })}
