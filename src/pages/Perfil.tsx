@@ -1,18 +1,17 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Lock, Save, ArrowLeft, Eye, EyeOff, CheckCircle, Camera, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-const Perfil: React.FC = () => {
+const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -31,10 +30,8 @@ const Perfil: React.FC = () => {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Password state
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
@@ -189,7 +186,6 @@ const Perfil: React.FC = () => {
       });
 
       // Clear fields
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {
@@ -204,7 +200,7 @@ const Perfil: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div ref={ref} className="min-h-screen bg-background">
       <Header />
       
       <main className="container mx-auto px-4 py-8 max-w-2xl">
@@ -416,6 +412,8 @@ const Perfil: React.FC = () => {
       </main>
     </div>
   );
-};
+});
+
+Perfil.displayName = 'Perfil';
 
 export default Perfil;

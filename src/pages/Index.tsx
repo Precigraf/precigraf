@@ -1,10 +1,11 @@
+import React, { forwardRef } from 'react';
 import Header from '@/components/Header';
 import CostCalculator from '@/components/CostCalculator';
 import AIAssistant from '@/components/AIAssistant';
 
-const Index = () => {
+const Index = forwardRef<HTMLDivElement>((_, ref) => {
   return (
-    <div className="min-h-screen bg-background">
+    <div ref={ref} className="min-h-screen bg-background">
       <Header />
       
       <main className="container mx-auto px-4 py-8">
@@ -24,6 +25,8 @@ const Index = () => {
       <AIAssistant />
     </div>
   );
-};
+});
+
+Index.displayName = 'Index';
 
 export default Index;
