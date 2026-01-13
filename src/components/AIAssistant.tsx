@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { logError } from '@/lib/logger';
+import { supabase } from '@/integrations/supabase/client';
 
 type Message = {
   role: 'user' | 'assistant';
@@ -25,16 +26,28 @@ async function streamChat({
   onError: (error: string) => void;
 }) {
   try {
+    // Get user's session token for authentication
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      onError("Você precisa estar autenticado para usar o assistente.");
+      return;
+    }
+
     const resp = await fetch(CHAT_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        Authorization: `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({ messages }),
     });
 
     if (!resp.ok) {
+      if (resp.status === 401) {
+        onError("Sessão expirada. Faça login novamente.");
+        return;
+      }
       if (resp.status === 429) {
         onError("Limite de requisições excedido. Tente novamente em alguns segundos.");
         return;
