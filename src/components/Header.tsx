@@ -5,6 +5,9 @@ import LogoIcon from '@/components/LogoIcon';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserPlan } from '@/hooks/useUserPlan';
+import PlanBadge from '@/components/PlanBadge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,10 +20,12 @@ import {
 const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
+  const { plan } = useUserPlan();
   const navigate = useNavigate();
   
-  // Get user name from Supabase Auth metadata
+  // Get user name and avatar from Supabase Auth metadata
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
+  const userAvatar = user?.user_metadata?.avatar_url || '';
 
   const handleLogout = async () => {
     await signOut();
@@ -69,12 +74,23 @@ const Header: React.FC = () => {
                     variant="ghost"
                     className="gap-2 text-muted-foreground hover:text-foreground"
                   >
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="w-4 h-4 text-primary" />
-                    </div>
+                    <Avatar className="w-8 h-8 border border-border">
+                      <AvatarImage src={userAvatar} alt="Foto de perfil" />
+                      <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                        {userName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
                     <span className="hidden sm:inline text-sm font-medium">
                       {userName}
                     </span>
+                    <PlanBadge 
+                      plan={plan} 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate('/upgrade');
+                      }}
+                      className="hidden md:flex"
+                    />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-card border-border">

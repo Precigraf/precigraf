@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, forwardRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Mail, Lock, User } from 'lucide-react';
 import LogoIcon from '@/components/LogoIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,18 +8,19 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-const Auth = forwardRef<HTMLDivElement>((_, ref) => {
+const Cadastro = forwardRef<HTMLDivElement>((_, ref) => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signIn } = useAuth();
+  const { user, loading: authLoading, signUp } = useAuth();
 
   // Form states
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Login form
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
+  // Signup form
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
   // Redirect if already logged in
   const handleRedirect = useCallback(() => {
@@ -37,50 +38,62 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
     return emailRegex.test(email.trim());
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (isLoading) return;
     
-    setLoginError('');
+    setError('');
 
-    const trimmedEmail = loginEmail.trim().toLowerCase();
-    const trimmedPassword = loginPassword;
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password;
 
-    if (!trimmedEmail || !trimmedPassword) {
-      setLoginError('Preencha todos os campos');
+    if (!trimmedName || !trimmedEmail || !trimmedPassword) {
+      setError('Preencha todos os campos');
+      return;
+    }
+
+    if (trimmedName.length < 2) {
+      setError('Nome deve ter pelo menos 2 caracteres');
       return;
     }
 
     if (!validateEmail(trimmedEmail)) {
-      setLoginError('Email inválido');
+      setError('Email inválido');
+      return;
+    }
+
+    if (trimmedPassword.length < 8) {
+      setError('Senha deve ter pelo menos 8 caracteres');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const { error } = await signIn(trimmedEmail, trimmedPassword);
+      const { error } = await signUp(trimmedEmail, trimmedPassword, trimmedName);
 
       if (error) {
         const errorMessage = error.message.toLowerCase();
         
-        if (errorMessage.includes('invalid login credentials') || errorMessage.includes('invalid_credentials')) {
-          setLoginError('Email ou senha incorretos');
-        } else if (errorMessage.includes('email not confirmed')) {
-          setLoginError('Confirme seu email antes de entrar');
+        if (errorMessage.includes('user already registered') || errorMessage.includes('already been registered')) {
+          setError('Este email já está cadastrado');
+        } else if (errorMessage.includes('password')) {
+          setError('Senha muito fraca. Use letras e números.');
         } else if (errorMessage.includes('too many requests') || errorMessage.includes('rate limit')) {
-          setLoginError('Muitas tentativas. Aguarde alguns minutos.');
+          setError('Muitas tentativas. Aguarde alguns minutos.');
         } else {
-          setLoginError('Erro ao fazer login. Tente novamente.');
+          setError('Erro ao criar conta. Tente novamente.');
         }
         setIsLoading(false);
         return;
       }
 
-      toast.success('Login realizado! Bem-vindo ao PreciGraf.');
+      toast.success('Conta criada! Bem-vindo ao PreciGraf.');
+      navigate('/', { replace: true });
     } catch (err) {
-      setLoginError('Erro inesperado. Tente novamente.');
+      setError('Erro inesperado. Tente novamente.');
       setIsLoading(false);
     }
   };
@@ -109,21 +122,36 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
             <div className="w-16 h-16 rounded-2xl bg-foreground flex items-center justify-center mb-4">
               <LogoIcon className="w-8 h-8 text-background" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">PreciGraf</h1>
+            <h1 className="text-2xl font-bold text-foreground">Criar Conta</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Calculadora de Preços para Gráficas
+              Comece a usar o PreciGraf gratuitamente
             </p>
           </div>
 
-          {/* Login Form */}
-          <form onSubmit={handleLogin} className="space-y-4">
-            {loginError && (
+          {/* Signup Form */}
+          <form onSubmit={handleSignUp} className="space-y-4">
+            {error && (
               <Alert className="bg-destructive/10 border-destructive/30">
                 <AlertDescription className="text-destructive text-sm">
-                  {loginError}
+                  {error}
                 </AlertDescription>
               </Alert>
             )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Nome</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Seu nome completo"
+                  className="input-currency pl-10"
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Email</label>
@@ -131,8 +159,8 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="email"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="seu@email.com"
                   className="input-currency pl-10"
                   disabled={isLoading}
@@ -146,9 +174,9 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type={showPassword ? 'text' : 'password'}
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
                   className="input-currency pl-10 pr-10"
                   disabled={isLoading}
                 />
@@ -174,20 +202,23 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Entrando...
+                  Criando conta...
                 </>
               ) : (
-              'Entrar'
-            )}
-          </Button>
-        </form>
+                'Criar conta gratuita'
+              )}
+            </Button>
+          </form>
 
-        {/* Link to create account */}
-        <div className="mt-6 text-center">
-          <Link to="/cadastro" className="text-sm text-primary hover:underline font-medium">
-            Criar conta gratuitamente
-          </Link>
-        </div>
+          {/* Link to login */}
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Já tem uma conta?{' '}
+              <Link to="/auth" className="text-primary hover:underline font-medium">
+                Entrar
+              </Link>
+            </p>
+          </div>
         </div>
 
         {/* Footer */}
@@ -199,6 +230,6 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
   );
 });
 
-Auth.displayName = 'Auth';
+Cadastro.displayName = 'Cadastro';
 
-export default Auth;
+export default Cadastro;
