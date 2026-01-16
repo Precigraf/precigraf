@@ -19,7 +19,7 @@ const PlanBadge: React.FC<PlanBadgeProps> = ({ plan, onClick, className }) => {
         'cursor-pointer text-xs transition-all hover:scale-105',
         isPro 
           ? 'bg-primary/90 hover:bg-primary text-primary-foreground' 
-          : 'bg-muted hover:bg-muted/80 text-muted-foreground',
+          : 'bg-success hover:bg-success/90 text-white',
         className
       )}
       onClick={onClick}
