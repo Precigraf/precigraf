@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logError } from '@/lib/logger';
+import { useUserPlan } from '@/hooks/useUserPlan';
+import UpgradePlanModal from '@/components/UpgradePlanModal';
+import { useNavigate } from 'react-router-dom';
 
 interface CalculationData {
   productName: string;
@@ -33,11 +36,20 @@ interface SaveCalculationButtonProps {
 const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onSaved }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const { canSaveCalculation, refetch } = useUserPlan();
+  const navigate = useNavigate();
 
   const isValid = data.productName.trim().length > 0 && data.quantity > 0 && data.finalSellingPrice > 0;
 
   const handleSave = async () => {
     if (!isValid) return;
+
+    // Check if user can save more calculations
+    if (!canSaveCalculation) {
+      setShowUpgradeModal(true);
+      return;
+    }
 
     setIsSaving(true);
 
@@ -80,6 +92,7 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onS
       setJustSaved(true);
       toast.success('Cálculo salvo com sucesso!');
       onSaved?.();
+      await refetch(); // Update calculations count
 
       setTimeout(() => {
         setJustSaved(false);
@@ -93,29 +106,40 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onS
   };
 
   return (
-    <Button
-      onClick={handleSave}
-      disabled={!isValid || isSaving || justSaved}
-      className="w-full gap-2"
-      variant={justSaved ? 'default' : 'outline'}
-    >
-      {isSaving ? (
-        <>
-          <Loader2 className="w-4 h-4 animate-spin" />
-          Salvando...
-        </>
-      ) : justSaved ? (
-        <>
-          <Check className="w-4 h-4" />
-          Salvo!
-        </>
-      ) : (
-        <>
-          <Save className="w-4 h-4" />
-          Salvar cálculo
-        </>
-      )}
-    </Button>
+    <>
+      <Button
+        onClick={handleSave}
+        disabled={!isValid || isSaving || justSaved}
+        className="w-full gap-2"
+        variant={justSaved ? 'default' : 'outline'}
+      >
+        {isSaving ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Salvando...
+          </>
+        ) : justSaved ? (
+          <>
+            <Check className="w-4 h-4" />
+            Salvo!
+          </>
+        ) : (
+          <>
+            <Save className="w-4 h-4" />
+            Salvar cálculo
+          </>
+        )}
+      </Button>
+
+      <UpgradePlanModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onUpgrade={() => {
+          setShowUpgradeModal(false);
+          navigate('/upgrade');
+        }}
+      />
+    </>
   );
 };
 

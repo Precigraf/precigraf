@@ -1,6 +1,6 @@
 import React, { useState, useRef, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, Save, ArrowLeft, Eye, EyeOff, CheckCircle, Camera, Loader2 } from 'lucide-react';
+import { User, Lock, Save, ArrowLeft, Eye, EyeOff, CheckCircle, Camera, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const { user } = useAuth();
@@ -28,6 +38,8 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   // Avatar state
   const [avatarUrl, setAvatarUrl] = useState(currentAvatar);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Password state
   const [newPassword, setNewPassword] = useState('');
@@ -150,6 +162,47 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
     }
   };
 
+  const handleDeleteAvatar = async () => {
+    if (!user) return;
+
+    setIsDeletingAvatar(true);
+    setShowDeleteConfirm(false);
+
+    try {
+      const avatarPath = user.user_metadata?.avatar_path;
+      
+      // Delete from storage if path exists
+      if (avatarPath) {
+        await supabase.storage.from('armazenamento').remove([avatarPath]);
+      }
+
+      // Update user metadata to remove avatar
+      const { error } = await supabase.auth.updateUser({
+        data: { 
+          avatar_url: null,
+          avatar_path: null
+        }
+      });
+
+      if (error) throw error;
+
+      setAvatarUrl('');
+
+      toast({
+        title: 'Foto removida!',
+        description: 'Sua foto de perfil foi removida com sucesso.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao remover foto',
+        description: error.message || 'Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeletingAvatar(false);
+    }
+  };
+
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -219,7 +272,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
           <Card className="bg-card border-border">
             <CardHeader>
               <div className="flex items-center gap-4">
-                {/* Avatar with upload */}
+                {/* Avatar with upload and delete */}
                 <div className="relative group">
                   <Avatar className="w-16 h-16 border-2 border-primary/20">
                     <AvatarImage src={avatarUrl} alt="Foto de perfil" />
@@ -227,21 +280,37 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
                       {currentName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingAvatar}
-                    className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                  >
-                    {isUploadingAvatar ? (
+                  
+                  {/* Overlay with camera/loader or delete button */}
+                  <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    {isUploadingAvatar || isDeletingAvatar ? (
                       <Loader2 className="w-5 h-5 text-white animate-spin" />
                     ) : (
-                      <Camera className="w-5 h-5 text-white" />
+                      <>
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                          title="Alterar foto"
+                        >
+                          <Camera className="w-4 h-4 text-white" />
+                        </button>
+                        {avatarUrl && (
+                          <button
+                            onClick={() => setShowDeleteConfirm(true)}
+                            className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                            title="Remover foto"
+                          >
+                            <Trash2 className="w-4 h-4 text-white" />
+                          </button>
+                        )}
+                      </>
                     )}
-                  </button>
+                  </div>
+                  
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/webp"
+                    accept="image/jpeg,image/png"
                     onChange={handleAvatarUpload}
                     className="hidden"
                   />
@@ -250,7 +319,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
                   <CardTitle className="text-xl">Meu Perfil</CardTitle>
                   <CardDescription>{user?.email}</CardDescription>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Clique na foto para alterar
+                    {avatarUrl ? 'Passe o mouse na foto para editar' : 'Clique na foto para adicionar'}
                   </p>
                 </div>
               </div>
@@ -410,10 +479,27 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
           </Card>
         </div>
       </main>
+
+      {/* Delete Avatar Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover foto de perfil?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sua foto de perfil será removida e o avatar padrão será exibido novamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAvatar} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });
-
 Perfil.displayName = 'Perfil';
 
 export default Perfil;
