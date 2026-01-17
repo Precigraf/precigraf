@@ -115,6 +115,43 @@ const CostCalculator: React.FC = () => {
     setProductPreset('paper_bag');
   }, []);
 
+  // Handler para visualizar cálculo do histórico
+  const handleViewCalculation = useCallback((calc: {
+    product_name: string;
+    lot_quantity: number;
+    paper_cost: number;
+    ink_cost: number;
+    varnish_cost: number;
+    other_material_cost: number;
+    labor_cost: number;
+    energy_cost: number;
+    equipment_cost: number;
+    rent_cost: number;
+    other_operational_cost: number;
+    margin_percentage: number;
+    fixed_profit: number | null;
+  }) => {
+    setProductName(calc.product_name);
+    setLotQuantity(calc.lot_quantity);
+    setPaper(calc.paper_cost);
+    setInk(calc.ink_cost);
+    setVarnish(calc.varnish_cost);
+    setOtherMaterials(calc.other_material_cost);
+    setLabor(calc.labor_cost);
+    setEnergy(calc.energy_cost);
+    setEquipment(calc.equipment_cost);
+    setRent(calc.rent_cost);
+    setOtherCosts(calc.other_operational_cost);
+    setProfitMargin(calc.margin_percentage);
+    setFixedProfit(calc.fixed_profit || 0);
+    setMarketplace('none');
+    setCommissionPercentage(0);
+    setFixedFeePerItem(0);
+    setProductPreset('custom');
+    // Scroll para o topo do formulário
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   // Verificar se custos operacionais estão preenchidos
   const hasOperationalCosts = labor > 0 || energy > 0 || equipment > 0 || rent > 0 || otherCosts > 0;
 
@@ -458,7 +495,7 @@ const CostCalculator: React.FC = () => {
 
       {/* Histórico de Cálculos - Full Width */}
       <div className="lg:col-span-2">
-        <CalculationHistory refreshTrigger={historyRefreshTrigger} />
+        <CalculationHistory refreshTrigger={historyRefreshTrigger} onViewCalculation={handleViewCalculation} />
       </div>
     </div>
   );
