@@ -1,6 +1,6 @@
-import React, { useState, useRef, forwardRef } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, Save, ArrowLeft, Eye, EyeOff, CheckCircle, Camera, Loader2, Trash2 } from 'lucide-react';
+import { User, Lock, Save, ArrowLeft, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,37 +9,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Get user name and avatar from Supabase Auth metadata
+  // Get user name from Supabase Auth metadata
   const currentName = user?.user_metadata?.name || '';
-  const currentAvatar = user?.user_metadata?.avatar_url || '';
 
   // Name state
   const [name, setName] = useState(currentName);
   const [isUpdatingName, setIsUpdatingName] = useState(false);
-
-  // Avatar state
-  const [avatarUrl, setAvatarUrl] = useState(currentAvatar);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [isDeletingAvatar, setIsDeletingAvatar] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Password state
   const [newPassword, setNewPassword] = useState('');
@@ -85,121 +67,6 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
       });
     } finally {
       setIsUpdatingName(false);
-    }
-  };
-
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      toast({
-        title: 'Tipo de arquivo inválido',
-        description: 'Por favor, envie uma imagem JPG, PNG ou WebP.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast({
-        title: 'Arquivo muito grande',
-        description: 'A imagem deve ter no máximo 2MB.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsUploadingAvatar(true);
-
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
-
-      // Upload to storage
-      const { error: uploadError } = await supabase.storage
-        .from('armazenamento')
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // Get signed URL (valid for 1 year = 31536000 seconds)
-      const { data: signedData, error: signedError } = await supabase.storage
-        .from('armazenamento')
-        .createSignedUrl(fileName, 31536000);
-
-      if (signedError) throw signedError;
-
-      const signedUrl = signedData.signedUrl;
-
-      // Update user metadata with signed URL
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: { 
-          avatar_url: signedUrl,
-          avatar_path: fileName // Store path for future signed URL generation
-        }
-      });
-
-      if (updateError) throw updateError;
-
-      setAvatarUrl(signedUrl);
-
-      toast({
-        title: 'Foto atualizada!',
-        description: 'Sua foto de perfil foi alterada com sucesso.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Erro ao enviar foto',
-        description: error.message || 'Tente novamente.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsUploadingAvatar(false);
-    }
-  };
-
-  const handleDeleteAvatar = async () => {
-    if (!user) return;
-
-    setIsDeletingAvatar(true);
-    setShowDeleteConfirm(false);
-
-    try {
-      const avatarPath = user.user_metadata?.avatar_path;
-      
-      // Delete from storage if path exists
-      if (avatarPath) {
-        await supabase.storage.from('armazenamento').remove([avatarPath]);
-      }
-
-      // Update user metadata to remove avatar
-      const { error } = await supabase.auth.updateUser({
-        data: { 
-          avatar_url: null,
-          avatar_path: null
-        }
-      });
-
-      if (error) throw error;
-
-      setAvatarUrl('');
-
-      toast({
-        title: 'Foto removida!',
-        description: 'Sua foto de perfil foi removida com sucesso.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Erro ao remover foto',
-        description: error.message || 'Tente novamente.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsDeletingAvatar(false);
     }
   };
 
@@ -272,55 +139,15 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
           <Card className="bg-card border-border">
             <CardHeader>
               <div className="flex items-center gap-4">
-                {/* Avatar with upload and delete */}
-                <div className="relative group">
-                  <Avatar className="w-16 h-16 border-2 border-primary/20">
-                    <AvatarImage src={avatarUrl} alt="Foto de perfil" />
-                    <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                      {currentName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  {/* Overlay with camera/loader or delete button */}
-                  <div className="absolute inset-0 flex items-center justify-center gap-1 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                    {isUploadingAvatar || isDeletingAvatar ? (
-                      <Loader2 className="w-5 h-5 text-white animate-spin" />
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => fileInputRef.current?.click()}
-                          className="p-1 hover:bg-white/20 rounded-full transition-colors"
-                          title="Alterar foto"
-                        >
-                          <Camera className="w-4 h-4 text-white" />
-                        </button>
-                        {avatarUrl && (
-                          <button
-                            onClick={() => setShowDeleteConfirm(true)}
-                            className="p-1 hover:bg-white/20 rounded-full transition-colors"
-                            title="Remover foto"
-                          >
-                            <Trash2 className="w-4 h-4 text-white" />
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
-                </div>
+                {/* Avatar - apenas ícone padrão, sem upload */}
+                <Avatar className="w-16 h-16 border-2 border-primary/20">
+                  <AvatarFallback className="bg-primary/10 text-primary text-xl">
+                    {currentName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
                   <CardTitle className="text-xl">Meu Perfil</CardTitle>
                   <CardDescription>{user?.email}</CardDescription>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {avatarUrl ? 'Passe o mouse na foto para editar' : 'Clique na foto para adicionar'}
-                  </p>
                 </div>
               </div>
             </CardHeader>
@@ -479,27 +306,10 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
           </Card>
         </div>
       </main>
-
-      {/* Delete Avatar Confirmation Dialog */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remover foto de perfil?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Sua foto de perfil será removida e o avatar padrão será exibido novamente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteAvatar} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Remover
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 });
+
 Perfil.displayName = 'Perfil';
 
 export default Perfil;

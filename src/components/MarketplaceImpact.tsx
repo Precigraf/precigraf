@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingDown, DollarSign, Info } from 'lucide-react';
+import { TrendingDown, Info, Lightbulb } from 'lucide-react';
 import { MarketplaceType, MARKETPLACE_CONFIG } from './MarketplaceSection';
 
 interface MarketplaceImpactProps {
@@ -44,6 +44,12 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
     ? Math.round((unitFees / safeUnitProfit) * 1000) / 10 
     : 0;
 
+  // Calcular margem sugerida quando taxas consomem muito lucro
+  const feesExceedingProfit = profitImpactPercentage > 50;
+  const suggestedMargin = feesExceedingProfit 
+    ? Math.ceil(profitImpactPercentage + 30) // Margem mínima sugerida
+    : null;
+
   return (
     <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 space-y-3">
       <div className="flex items-center gap-2">
@@ -72,6 +78,22 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
           As taxas do {config.label} consomem <strong className="text-warning">{profitImpactPercentage}%</strong> do seu lucro por unidade.
         </span>
       </div>
+
+      {/* Sugestão de margem quando taxas estão altas */}
+      {suggestedMargin && (
+        <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 mt-2">
+          <div className="flex items-start gap-2">
+            <Lightbulb className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+            <div className="text-xs">
+              <p className="font-medium text-primary mb-1">Sugestão de margem</p>
+              <p className="text-muted-foreground">
+                As taxas do marketplace estão reduzindo significativamente seu lucro. 
+                Considere trabalhar com uma margem mínima de <strong className="text-primary">{suggestedMargin}%</strong> para manter lucratividade.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

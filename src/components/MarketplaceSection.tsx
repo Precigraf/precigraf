@@ -17,7 +17,6 @@ export type MarketplaceType =
   | 'none'
   | 'shopee_no_shipping'
   | 'shopee_free_shipping'
-  | 'mercadolivre_free'
   | 'mercadolivre_classic'
   | 'mercadolivre_premium'
   | 'custom';
@@ -50,13 +49,6 @@ export const MARKETPLACE_CONFIG: Record<MarketplaceType, MarketplaceConfig> = {
     fixedFeePerItem: 4,
     isEditable: false,
     description: 'Inclui taxa adicional do programa de frete grátis.',
-  },
-  mercadolivre_free: {
-    label: 'Mercado Livre – Grátis',
-    commissionPercentage: 0,
-    fixedFeePerItem: 0,
-    isEditable: false,
-    description: 'Anúncio gratuito com exposição limitada.',
   },
   mercadolivre_classic: {
     label: 'Mercado Livre – Clássico',
@@ -201,13 +193,22 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
             />
           </div>
 
-          <CurrencyInput
-            label="Taxa fixa por venda"
-            value={fixedFeePerItem}
-            onChange={onFixedFeeChange}
-            helperText="Taxa única por pedido (não por unidade)"
-            tooltip="Valor fixo cobrado por transação, independente do valor da venda."
-          />
+          <div className="flex flex-col gap-2">
+            <TooltipLabel 
+              label="Taxa fixa por venda"
+              tooltip="Valor fixo cobrado por transação, independente do valor da venda. Este valor é definido pelo marketplace e não pode ser alterado."
+            />
+            <Input
+              type="text"
+              value={`R$ ${fixedFeePerItem.toFixed(2).replace('.', ',')}`}
+              className="input-currency bg-muted/50"
+              disabled
+              readOnly
+            />
+            <p className="text-xs text-muted-foreground">
+              Taxa única por pedido (não pode ser alterada)
+            </p>
+          </div>
 
           {feesExceedProfit && (
             <div className="col-span-full">

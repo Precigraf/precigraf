@@ -83,14 +83,6 @@ const Header: React.FC = () => {
                     <span className="hidden sm:inline text-sm font-medium">
                       {userName}
                     </span>
-                    <PlanBadge 
-                      plan={plan} 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate('/upgrade');
-                      }}
-                      className="hidden md:flex"
-                    />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-card border-border">
