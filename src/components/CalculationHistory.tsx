@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { History, Search, Star, FileText, FileSpreadsheet, Trash2, Loader2 } from 'lucide-react';
+import { History, Search, Star, FileText, FileSpreadsheet, Trash2, Loader2, Lock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +7,9 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { logError } from '@/lib/logger';
+import { useUserPlan } from '@/hooks/useUserPlan';
+import UpgradePlanModal from '@/components/UpgradePlanModal';
+import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +62,13 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
   const [searchQuery, setSearchQuery] = useState('');
   const [exportingId, setExportingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const { plan, calculationsCount, maxCalculations, refetch } = useUserPlan();
+  const navigate = useNavigate();
+
+  const isFreePlan = plan === 'free';
+  const remainingCalculations = isFreePlan ? Math.max(0, maxCalculations - calculationsCount) : Infinity;
+  const hasReachedLimit = isFreePlan && calculationsCount >= maxCalculations;
 
   const fetchCalculations = async () => {
     try {
@@ -92,6 +102,7 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
 
   useEffect(() => {
     fetchCalculations();
+    refetch();
   }, [refreshTrigger]);
 
   const filteredCalculations = useMemo(() => {
@@ -149,6 +160,7 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
 
       setCalculations(prev => prev.filter(calc => calc.id !== id));
       toast.success('Cálculo excluído');
+      refetch(); // Update the count
     } catch (error) {
       logError('Error deleting calculation:', error);
     } finally {
@@ -156,7 +168,13 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
     }
   };
 
-  const handleExport = async (calc: Calculation, format: 'pdf' | 'excel') => {
+  const handleExport = async (calc: Calculation, formatType: 'pdf' | 'excel') => {
+    // Check if user has reached limit
+    if (hasReachedLimit) {
+      setShowUpgradeModal(true);
+      return;
+    }
+
     setExportingId(calc.id);
     
     try {
@@ -181,13 +199,13 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
         createdAt: calc.created_at,
       };
 
-      if (format === 'pdf') {
+      if (formatType === 'pdf') {
         await exportToPdf(exportData);
       } else {
         await exportToExcel(exportData);
       }
 
-      toast.success(`Exportado como ${format.toUpperCase()}`);
+      toast.success(`Exportado como ${formatType.toUpperCase()}`);
     } catch (error) {
       logError('Error exporting:', error);
       toast.error('Erro ao exportar');
@@ -218,164 +236,199 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
   }
 
   return (
-    <div className="glass-card p-6 mt-6">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <History className="w-5 h-5 text-primary" />
+    <>
+      <div className="glass-card p-6 mt-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <History className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-foreground">Histórico de Cálculos</h2>
+              <p className="text-sm text-muted-foreground">
+                {calculations.length} cálculo{calculations.length !== 1 ? 's' : ''} salvo{calculations.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          
+          {/* Counter for free plan */}
+          {isFreePlan && (
+            <div className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+              hasReachedLimit 
+                ? 'bg-destructive/10 text-destructive border border-destructive/30' 
+                : 'bg-primary/10 text-primary border border-primary/30'
+            }`}>
+              {hasReachedLimit ? (
+                <span className="flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5" />
+                  Limite atingido
+                </span>
+              ) : (
+                <span>Cálculos restantes: {remainingCalculations}</span>
+              )}
+            </div>
+          )}
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Histórico de Cálculos</h2>
-          <p className="text-sm text-muted-foreground">
-            {calculations.length} cálculo{calculations.length !== 1 ? 's' : ''} salvo{calculations.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-      </div>
 
-      {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Buscar por nome do produto..."
-          className="pl-10"
-        />
-      </div>
-
-      {/* List */}
-      {calculations.length === 0 ? (
-        <div className="text-center py-12">
-          <History className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-          <p className="text-muted-foreground">
-            Você ainda não salvou nenhum cálculo
-          </p>
+        {/* Search */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar por nome do produto..."
+            className="pl-10"
+          />
         </div>
-      ) : filteredCalculations.length === 0 ? (
-        <div className="text-center py-12">
-          <Search className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-          <p className="text-muted-foreground">
-            Nenhum cálculo encontrado para esta busca
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filteredCalculations.map((calc) => (
-            <div
-              key={calc.id}
-              className={`p-4 rounded-lg border transition-colors ${
-                calc.is_favorite
-                  ? 'bg-warning/5 border-warning/30'
-                  : 'bg-secondary/30 border-border hover:bg-secondary/50'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleToggleFavorite(calc.id, calc.is_favorite)}
-                      className="shrink-0"
-                    >
-                      <Star
-                        className={`w-5 h-5 transition-colors ${
-                          calc.is_favorite
-                            ? 'fill-warning text-warning'
-                            : 'text-muted-foreground hover:text-warning'
-                        }`}
-                      />
-                    </button>
-                    <h3 className="font-semibold text-foreground truncate">
-                      {calc.product_name}
-                    </h3>
-                  </div>
-                  <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Qtd:</span>{' '}
-                      <span className="font-medium">{calc.lot_quantity}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Total:</span>{' '}
-                      <span className="font-medium text-primary">{formatCurrency(calc.sale_price)}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Unit:</span>{' '}
-                      <span className="font-medium text-success">{formatCurrency(calc.unit_price)}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">
-                        {format(new Date(calc.created_at), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-1 shrink-0">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        disabled={exportingId === calc.id}
+        {/* List */}
+        {calculations.length === 0 ? (
+          <div className="text-center py-12">
+            <History className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+            <p className="text-muted-foreground">
+              Você ainda não salvou nenhum cálculo
+            </p>
+          </div>
+        ) : filteredCalculations.length === 0 ? (
+          <div className="text-center py-12">
+            <Search className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+            <p className="text-muted-foreground">
+              Nenhum cálculo encontrado para esta busca
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredCalculations.map((calc) => (
+              <div
+                key={calc.id}
+                className={`p-4 rounded-lg border transition-colors ${
+                  calc.is_favorite
+                    ? 'bg-warning/5 border-warning/30'
+                    : 'bg-secondary/30 border-border hover:bg-secondary/50'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleToggleFavorite(calc.id, calc.is_favorite)}
+                        className="shrink-0"
                       >
-                        {exportingId === calc.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <FileText className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleExport(calc, 'pdf')}>
-                        <FileText className="w-4 h-4 mr-2" />
-                        Exportar PDF
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleExport(calc, 'excel')}>
-                        <FileSpreadsheet className="w-4 h-4 mr-2" />
-                        Exportar Excel
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                        <Star
+                          className={`w-5 h-5 transition-colors ${
+                            calc.is_favorite
+                              ? 'fill-warning text-warning'
+                              : 'text-muted-foreground hover:text-warning'
+                          }`}
+                        />
+                      </button>
+                      <h3 className="font-semibold text-foreground truncate">
+                        {calc.product_name}
+                      </h3>
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Qtd:</span>{' '}
+                        <span className="font-medium">{calc.lot_quantity}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Total:</span>{' '}
+                        <span className="font-medium text-primary">{formatCurrency(calc.sale_price)}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Unit:</span>{' '}
+                        <span className="font-medium text-success">{formatCurrency(calc.unit_price)}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">
+                          {format(new Date(calc.created_at), "dd/MM/yy 'às' HH:mm", { locale: ptBR })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        disabled={deletingId === calc.id}
-                      >
-                        {deletingId === calc.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir cálculo?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Esta ação não pode ser desfeita. O cálculo "{calc.product_name}" será removido permanentemente.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction 
-                          onClick={() => handleDelete(calc.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  <div className="flex items-center gap-1 shrink-0">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          disabled={exportingId === calc.id}
                         >
-                          Excluir
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                          {exportingId === calc.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : hasReachedLimit ? (
+                            <Lock className="w-4 h-4 text-muted-foreground" />
+                          ) : (
+                            <FileText className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleExport(calc, 'pdf')}>
+                          <FileText className="w-4 h-4 mr-2" />
+                          Exportar PDF
+                          {hasReachedLimit && <Lock className="w-3 h-3 ml-2 text-muted-foreground" />}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExport(calc, 'excel')}>
+                          <FileSpreadsheet className="w-4 h-4 mr-2" />
+                          Exportar Excel
+                          {hasReachedLimit && <Lock className="w-3 h-3 ml-2 text-muted-foreground" />}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          disabled={deletingId === calc.id}
+                        >
+                          {deletingId === calc.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir cálculo?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Esta ação não pode ser desfeita. O cálculo "{calc.product_name}" será removido permanentemente.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleDelete(calc.id)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <UpgradePlanModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onUpgrade={() => {
+          setShowUpgradeModal(false);
+          navigate('/upgrade');
+        }}
+      />
+    </>
   );
 };
 

@@ -1,6 +1,6 @@
 import React, { forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Crown, Check, Zap } from 'lucide-react';
+import { ArrowLeft, Crown, Check, Zap, Infinity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/Header';
@@ -13,7 +13,8 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
     'Exportação para PDF e Excel',
     'Histórico completo',
     'Suporte prioritário',
-    'Acesso a novos recursos',
+    'Acesso vitalício (sem mensalidade)',
+    'Todas as atualizações futuras',
   ];
 
   return (
@@ -35,9 +36,9 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <Crown className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Plano Profissional</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Acesso Vitalício PreciGraf</h1>
           <p className="text-muted-foreground">
-            Desbloqueie todo o potencial do PreciGraf
+            Pague uma vez, use para sempre!
           </p>
         </div>
 
@@ -63,10 +64,16 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
               ))}
             </ul>
 
-            <div className="text-center p-6 bg-muted/50 rounded-lg mb-6">
-              <p className="text-sm text-muted-foreground mb-2">Em breve</p>
-              <p className="text-3xl font-bold text-foreground">
-                R$ 29,90<span className="text-lg font-normal text-muted-foreground">/mês</span>
+            <div className="text-center p-6 bg-primary/5 border border-primary/20 rounded-lg mb-6">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Infinity className="w-5 h-5 text-primary" />
+                <p className="text-sm font-medium text-primary">Pagamento único</p>
+              </div>
+              <p className="text-4xl font-bold text-foreground">
+                R$ 19,90
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Sem mensalidade, sem recorrência
               </p>
             </div>
 
@@ -80,7 +87,7 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
             </Button>
 
             <p className="text-center text-xs text-muted-foreground mt-4">
-              Estamos preparando a melhor experiência para você.
+              Estamos integrando o sistema de pagamento.
               Fique atento às novidades!
             </p>
           </CardContent>

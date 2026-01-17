@@ -12,7 +12,7 @@ interface UserPlanData {
   refetch: () => Promise<void>;
 }
 
-const FREE_PLAN_LIMIT = 3;
+const FREE_PLAN_LIMIT = 2;
 
 export const useUserPlan = (): UserPlanData => {
   const { user } = useAuth();
