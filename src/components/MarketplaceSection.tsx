@@ -17,8 +17,6 @@ export type MarketplaceType =
   | 'none'
   | 'shopee_no_shipping'
   | 'shopee_free_shipping'
-  | 'mercadolivre_classic'
-  | 'mercadolivre_premium'
   | 'custom';
 
 interface MarketplaceConfig {
@@ -49,20 +47,6 @@ export const MARKETPLACE_CONFIG: Record<MarketplaceType, MarketplaceConfig> = {
     fixedFeePerItem: 4,
     isEditable: false,
     description: 'Inclui taxa adicional do programa de frete grátis.',
-  },
-  mercadolivre_classic: {
-    label: 'Mercado Livre – Clássico',
-    commissionPercentage: 12,
-    fixedFeePerItem: 0,
-    isEditable: true,
-    description: 'Boa exposição com taxa de comissão moderada.',
-  },
-  mercadolivre_premium: {
-    label: 'Mercado Livre – Premium',
-    commissionPercentage: 17,
-    fixedFeePerItem: 0,
-    isEditable: true,
-    description: 'Máxima exposição e benefícios exclusivos.',
   },
   custom: {
     label: 'Outro (personalizar)',
