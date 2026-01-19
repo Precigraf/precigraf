@@ -1,7 +1,6 @@
 import React, { forwardRef } from 'react';
 import Header from '@/components/Header';
 import CostCalculator from '@/components/CostCalculator';
-import AIAssistant from '@/components/AIAssistant';
 
 const Index = forwardRef<HTMLDivElement>((_, ref) => {
   return (
@@ -20,9 +19,6 @@ const Index = forwardRef<HTMLDivElement>((_, ref) => {
           </p>
         </div>
       </footer>
-
-      {/* AI Assistant */}
-      <AIAssistant />
     </div>
   );
 });
