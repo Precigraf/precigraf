@@ -1,6 +1,7 @@
-import React from 'react';
-import { TrendingDown, Info, Lightbulb } from 'lucide-react';
+import React, { useState } from 'react';
+import { TrendingDown, Info, Lightbulb, Check } from 'lucide-react';
 import { MarketplaceType, MARKETPLACE_CONFIG } from './MarketplaceSection';
+import { Button } from '@/components/ui/button';
 
 interface MarketplaceImpactProps {
   marketplace: MarketplaceType;
@@ -8,6 +9,7 @@ interface MarketplaceImpactProps {
   unitProfit: number;
   marketplaceTotalFees: number;
   quantity: number;
+  onApplySuggestedMargin?: (margin: number) => void;
 }
 
 const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
@@ -16,7 +18,10 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
   unitProfit,
   marketplaceTotalFees,
   quantity,
+  onApplySuggestedMargin,
 }) => {
+  const [applied, setApplied] = useState(false);
+
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) {
       return 'R$ 0,00';
@@ -49,6 +54,14 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
   const suggestedMargin = feesExceedingProfit 
     ? Math.ceil(profitImpactPercentage + 30) // Margem mínima sugerida
     : null;
+
+  const handleApplyMargin = () => {
+    if (suggestedMargin && onApplySuggestedMargin) {
+      onApplySuggestedMargin(suggestedMargin);
+      setApplied(true);
+      setTimeout(() => setApplied(false), 2000);
+    }
+  };
 
   return (
     <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 space-y-3">
@@ -84,12 +97,33 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
         <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 mt-2">
           <div className="flex items-start gap-2">
             <Lightbulb className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-            <div className="text-xs">
+            <div className="text-xs flex-1">
               <p className="font-medium text-primary mb-1">Sugestão de margem</p>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground mb-2">
                 As taxas do marketplace estão reduzindo significativamente seu lucro. 
-                Considere trabalhar com uma margem mínima de <strong className="text-primary">{suggestedMargin}%</strong> para manter lucratividade.
+                Sugerimos uma margem mínima de <strong className="text-primary">{suggestedMargin}%</strong> para manter lucratividade.
               </p>
+              {onApplySuggestedMargin && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleApplyMargin}
+                  className="w-full text-xs h-8 border-primary/30 text-primary hover:bg-primary/10"
+                  disabled={applied}
+                >
+                  {applied ? (
+                    <>
+                      <Check className="w-3 h-3 mr-1" />
+                      Margem aplicada!
+                    </>
+                  ) : (
+                    <>
+                      <Lightbulb className="w-3 h-3 mr-1" />
+                      Clique para aplicar margem de {suggestedMargin}%
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </div>
