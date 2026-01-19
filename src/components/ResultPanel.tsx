@@ -46,6 +46,10 @@ interface ResultPanelProps {
     otherCosts: number;
   };
   onSaved?: () => void;
+  // Nova prop para sugestão de margem do MarketplaceImpact
+  onApplySuggestedMargin?: (margin: number) => void;
+  // Prop para indicar se está bloqueado
+  isBlocked?: boolean;
 }
 
 const ResultPanel: React.FC<ResultPanelProps> = ({
@@ -72,6 +76,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   hasOperationalCosts = true,
   saveData,
   onSaved,
+  onApplySuggestedMargin,
+  isBlocked = false,
 }) => {
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) {
@@ -275,6 +281,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         unitProfit={unitProfit}
         marketplaceTotalFees={marketplaceTotalFees}
         quantity={safeQuantity}
+        onApplySuggestedMargin={onApplySuggestedMargin}
       />
 
       {/* Gráfico de Composição */}

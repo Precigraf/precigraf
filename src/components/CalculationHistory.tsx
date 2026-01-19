@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { History, Search, Star, FileText, FileSpreadsheet, Trash2, Loader2, Lock, Eye } from 'lucide-react';
+import { History, Search, Star, FileText, FileSpreadsheet, Trash2, Loader2, Lock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -54,10 +54,9 @@ interface Calculation {
 
 interface CalculationHistoryProps {
   refreshTrigger?: number;
-  onViewCalculation?: (calc: Calculation) => void;
 }
 
-const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger, onViewCalculation }) => {
+const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger }) => {
   const [calculations, setCalculations] = useState<Calculation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -350,16 +349,6 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger,
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    {onViewCalculation && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onViewCalculation(calc)}
-                        title="Visualizar cálculo"
-                      >
-                        <Eye className="w-4 h-4 text-primary" />
-                      </Button>
-                    )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button 

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Package, Layers, Factory, Percent, Tag } from 'lucide-react';
+import { Package, Layers, Factory, Percent, Tag, Lock } from 'lucide-react';
 import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
@@ -11,6 +11,9 @@ import { Input } from '@/components/ui/input';
 import CalculationHistory from './CalculationHistory';
 import SuggestMarginButton from './SuggestMarginButton';
 import OnboardingTour from './OnboardingTour';
+import { useUserPlan } from '@/hooks/useUserPlan';
+import UpgradePlanModal from './UpgradePlanModal';
+import { useNavigate } from 'react-router-dom';
 
 // Função auxiliar para garantir números válidos
 const safeNumber = (value: number): number => {
@@ -24,6 +27,12 @@ const roundCurrency = (value: number): number => {
 };
 
 const CostCalculator: React.FC = () => {
+  const navigate = useNavigate();
+  const { plan, calculationsCount, maxCalculations, loading: planLoading } = useUserPlan();
+  const isFreePlan = plan === 'free';
+  const hasReachedLimit = isFreePlan && calculationsCount >= maxCalculations;
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
   // Estado do formulário
   const [productName, setProductName] = useState('');
   const [lotQuantity, setLotQuantity] = useState(0);
@@ -88,11 +97,22 @@ const CostCalculator: React.FC = () => {
     setHistoryRefreshTrigger(prev => prev + 1);
   }, []);
 
-  // Handler para sugestão de margem
+  // Handler para sugestão de margem (também usado pelo MarketplaceImpact)
   const handleSuggestMargin = useCallback((suggestedMargin: number) => {
+    if (hasReachedLimit) {
+      setShowUpgradeModal(true);
+      return;
+    }
     setProfitMargin(suggestedMargin);
     setFixedProfit(0); // Limpar lucro fixo ao usar margem percentual
-  }, []);
+  }, [hasReachedLimit]);
+
+  // Handler para bloqueio de campos quando limite atingido
+  const handleBlockedClick = useCallback(() => {
+    if (hasReachedLimit) {
+      setShowUpgradeModal(true);
+    }
+  }, [hasReachedLimit]);
 
   // Handler para carregar exemplo
   const handleLoadExample = useCallback(() => {
@@ -115,42 +135,6 @@ const CostCalculator: React.FC = () => {
     setProductPreset('paper_bag');
   }, []);
 
-  // Handler para visualizar cálculo do histórico
-  const handleViewCalculation = useCallback((calc: {
-    product_name: string;
-    lot_quantity: number;
-    paper_cost: number;
-    ink_cost: number;
-    varnish_cost: number;
-    other_material_cost: number;
-    labor_cost: number;
-    energy_cost: number;
-    equipment_cost: number;
-    rent_cost: number;
-    other_operational_cost: number;
-    margin_percentage: number;
-    fixed_profit: number | null;
-  }) => {
-    setProductName(calc.product_name);
-    setLotQuantity(calc.lot_quantity);
-    setPaper(calc.paper_cost);
-    setInk(calc.ink_cost);
-    setVarnish(calc.varnish_cost);
-    setOtherMaterials(calc.other_material_cost);
-    setLabor(calc.labor_cost);
-    setEnergy(calc.energy_cost);
-    setEquipment(calc.equipment_cost);
-    setRent(calc.rent_cost);
-    setOtherCosts(calc.other_operational_cost);
-    setProfitMargin(calc.margin_percentage);
-    setFixedProfit(calc.fixed_profit || 0);
-    setMarketplace('none');
-    setCommissionPercentage(0);
-    setFixedFeePerItem(0);
-    setProductPreset('custom');
-    // Scroll para o topo do formulário
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
 
   // Verificar se custos operacionais estão preenchidos
   const hasOperationalCosts = labor > 0 || energy > 0 || equipment > 0 || rent > 0 || otherCosts > 0;
@@ -278,9 +262,43 @@ const CostCalculator: React.FC = () => {
   ]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
-      {/* Coluna Esquerda - Formulário */}
-      <div className="space-y-6">
+    <>
+      {/* Overlay de bloqueio quando limite atingido */}
+      {hasReachedLimit && (
+        <div 
+          className="fixed inset-0 z-40 cursor-not-allowed"
+          onClick={handleBlockedClick}
+          style={{ background: 'transparent' }}
+        />
+      )}
+
+      <div className={`grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 ${hasReachedLimit ? 'pointer-events-none opacity-60' : ''}`}>
+        {/* Banner de bloqueio */}
+        {hasReachedLimit && (
+          <div className="lg:col-span-2 bg-destructive/10 border border-destructive/30 rounded-lg p-4 pointer-events-auto">
+            <div className="flex items-center gap-3">
+              <Lock className="w-5 h-5 text-destructive" />
+              <div className="flex-1">
+                <p className="font-medium text-destructive">Sistema bloqueado</p>
+                <p className="text-sm text-muted-foreground">
+                  Você atingiu o limite de {maxCalculations} cálculos do plano gratuito. Faça upgrade para continuar.
+                </p>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowUpgradeModal(true);
+                }}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors pointer-events-auto"
+              >
+                Fazer upgrade
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Coluna Esquerda - Formulário */}
+        <div className="space-y-6">
         {/* Onboarding e Exemplo */}
         <div className="flex items-center gap-3 mb-2">
           <OnboardingTour onLoadExample={handleLoadExample} />
@@ -490,14 +508,27 @@ const CostCalculator: React.FC = () => {
             otherCosts,
           }}
           onSaved={handleCalculationSaved}
+          onApplySuggestedMargin={handleSuggestMargin}
+          isBlocked={hasReachedLimit}
         />
       </div>
 
-      {/* Histórico de Cálculos - Full Width */}
-      <div className="lg:col-span-2">
-        <CalculationHistory refreshTrigger={historyRefreshTrigger} onViewCalculation={handleViewCalculation} />
+        {/* Histórico de Cálculos - Full Width */}
+        <div className="lg:col-span-2">
+          <CalculationHistory refreshTrigger={historyRefreshTrigger} />
+        </div>
       </div>
-    </div>
+
+      <UpgradePlanModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onUpgrade={() => {
+          setShowUpgradeModal(false);
+          navigate('/upgrade');
+        }}
+        message="Faça o upgrade para continuar utilizando o sistema."
+      />
+    </>
   );
 };
 
