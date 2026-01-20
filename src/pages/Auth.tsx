@@ -1,32 +1,74 @@
 import React, { useState, useEffect, useCallback, forwardRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, Mail, Lock } from 'lucide-react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff, Loader2, Mail, Lock, CheckCircle } from 'lucide-react';
 import LogoIcon from '@/components/LogoIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const Auth = forwardRef<HTMLDivElement>((_, ref) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading: authLoading, signIn } = useAuth();
 
   // Form states
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
 
   // Login form
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
+  // Handle payment success from InfinitePay redirect
+  const handlePaymentSuccess = useCallback(async () => {
+    const paymentStatus = searchParams.get('payment');
+    const paymentUserId = searchParams.get('user_id');
+
+    if (paymentStatus === 'success' && paymentUserId) {
+      setPaymentProcessing(true);
+      
+      try {
+        // Update user's plan to 'pro' in the profiles table
+        const { error } = await supabase
+          .from('profiles')
+          .update({ plan: 'pro' })
+          .eq('user_id', paymentUserId);
+
+        if (error) {
+          console.error('Error updating plan:', error);
+          toast.error('Erro ao ativar plano. Entre em contato com o suporte.');
+        } else {
+          toast.success('🎉 Pagamento confirmado! Seu plano vitalício foi ativado.', {
+            duration: 5000,
+          });
+        }
+
+        // Clear URL params
+        navigate('/auth', { replace: true });
+      } catch (err) {
+        console.error('Error processing payment:', err);
+        toast.error('Erro ao processar pagamento.');
+      } finally {
+        setPaymentProcessing(false);
+      }
+    }
+  }, [searchParams, navigate]);
+
+  useEffect(() => {
+    handlePaymentSuccess();
+  }, [handlePaymentSuccess]);
+
   // Redirect if already logged in
   const handleRedirect = useCallback(() => {
-    if (!authLoading && user) {
+    if (!authLoading && user && !paymentProcessing) {
       navigate('/', { replace: true });
     }
-  }, [authLoading, user, navigate]);
+  }, [authLoading, user, navigate, paymentProcessing]);
 
   useEffect(() => {
     handleRedirect();
@@ -85,10 +127,13 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || paymentProcessing) {
     return (
-      <div ref={ref} className="min-h-screen bg-background flex items-center justify-center">
+      <div ref={ref} className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        {paymentProcessing && (
+          <p className="text-muted-foreground">Processando seu pagamento...</p>
+        )}
       </div>
     );
   }

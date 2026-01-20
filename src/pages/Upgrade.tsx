@@ -1,12 +1,15 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Crown, Check, Zap, Infinity } from 'lucide-react';
+import { ArrowLeft, Crown, Check, Zap, Infinity, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Header from '@/components/Header';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
   const features = [
     'Cálculos ilimitados',
@@ -16,6 +19,47 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
     'Acesso vitalício (sem mensalidade)',
     'Todas as atualizações futuras',
   ];
+
+  const handleUpgrade = async () => {
+    setIsLoading(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('Você precisa estar logado para fazer upgrade');
+        navigate('/auth');
+        return;
+      }
+
+      const response = await supabase.functions.invoke('create-checkout', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (response.error) {
+        console.error('Checkout error:', response.error);
+        toast.error('Erro ao criar link de pagamento. Tente novamente.');
+        setIsLoading(false);
+        return;
+      }
+
+      const { checkout_url } = response.data;
+
+      if (checkout_url) {
+        // Redirect to InfinitePay checkout
+        window.location.href = checkout_url;
+      } else {
+        toast.error('Erro ao obter link de pagamento');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Error creating checkout:', error);
+      toast.error('Erro inesperado. Tente novamente.');
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div ref={ref} className="min-h-screen bg-background">
@@ -80,15 +124,24 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
             <Button 
               className="w-full gap-2" 
               size="lg"
-              disabled
+              onClick={handleUpgrade}
+              disabled={isLoading}
             >
-              <Crown className="w-5 h-5" />
-              Em breve disponível
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Redirecionando...
+                </>
+              ) : (
+                <>
+                  <Crown className="w-5 h-5" />
+                  Desbloquear acesso vitalício
+                </>
+              )}
             </Button>
 
             <p className="text-center text-xs text-muted-foreground mt-4">
-              Estamos integrando o sistema de pagamento.
-              Fique atento às novidades!
+              Pagamento seguro via InfinitePay
             </p>
           </CardContent>
         </Card>
