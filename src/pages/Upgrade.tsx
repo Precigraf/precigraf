@@ -32,30 +32,13 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
         return;
       }
 
-      const response = await supabase.functions.invoke('create-checkout', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      // Store user_id in localStorage to identify after payment return
+      localStorage.setItem('pending_upgrade_user_id', session.user.id);
 
-      if (response.error) {
-        console.error('Checkout error:', response.error);
-        toast.error('Erro ao criar link de pagamento. Tente novamente.');
-        setIsLoading(false);
-        return;
-      }
-
-      const { checkout_url } = response.data;
-
-      if (checkout_url) {
-        // Redirect to InfinitePay checkout
-        window.location.href = checkout_url;
-      } else {
-        toast.error('Erro ao obter link de pagamento');
-        setIsLoading(false);
-      }
+      // Redirect to InfinitePay static checkout link
+      window.location.href = 'https://checkout.infinitepay.io/israel-shaina-wanderley/1BZoKkfXPl';
     } catch (error) {
-      console.error('Error creating checkout:', error);
+      console.error('Error starting checkout:', error);
       toast.error('Erro inesperado. Tente novamente.');
       setIsLoading(false);
     }

@@ -26,10 +26,14 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
 
   // Handle payment success from InfinitePay redirect
   const handlePaymentSuccess = useCallback(async () => {
-    const paymentStatus = searchParams.get('payment');
-    const paymentUserId = searchParams.get('user_id');
-
-    if (paymentStatus === 'success' && paymentUserId) {
+    // Check for pending upgrade from localStorage (set before redirect to InfinitePay)
+    const pendingUserId = localStorage.getItem('pending_upgrade_user_id');
+    
+    // Check if user is returning from payment (InfinitePay redirects back)
+    const isReturningFromPayment = document.referrer.includes('infinitepay.io') || 
+                                    document.referrer.includes('checkout.infinitepay.io');
+    
+    if (pendingUserId && isReturningFromPayment) {
       setPaymentProcessing(true);
       
       try {
@@ -37,7 +41,7 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
         const { error } = await supabase
           .from('profiles')
           .update({ plan: 'pro' })
-          .eq('user_id', paymentUserId);
+          .eq('user_id', pendingUserId);
 
         if (error) {
           console.error('Error updating plan:', error);
@@ -48,8 +52,8 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
           });
         }
 
-        // Clear URL params
-        navigate('/auth', { replace: true });
+        // Clear pending upgrade
+        localStorage.removeItem('pending_upgrade_user_id');
       } catch (err) {
         console.error('Error processing payment:', err);
         toast.error('Erro ao processar pagamento.');
@@ -57,7 +61,7 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
         setPaymentProcessing(false);
       }
     }
-  }, [searchParams, navigate]);
+  }, []);
 
   useEffect(() => {
     handlePaymentSuccess();
