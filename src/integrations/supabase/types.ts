@@ -98,6 +98,7 @@ export type Database = {
           email: string | null
           id: string
           plan: string
+          plan_id: string | null
           profile_image_url: string | null
           updated_at: string
           user_id: string
@@ -107,6 +108,7 @@ export type Database = {
           email?: string | null
           id?: string
           plan?: string
+          plan_id?: string | null
           profile_image_url?: string | null
           updated_at?: string
           user_id: string
@@ -116,9 +118,42 @@ export type Database = {
           email?: string | null
           id?: string
           plan?: string
+          plan_id?: string | null
           profile_image_url?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          can_export: boolean | null
+          created_at: string | null
+          id: string
+          max_calculations: number
+          name: string
+        }
+        Insert: {
+          can_export?: boolean | null
+          created_at?: string | null
+          id?: string
+          max_calculations: number
+          name: string
+        }
+        Update: {
+          can_export?: boolean | null
+          created_at?: string | null
+          id?: string
+          max_calculations?: number
+          name?: string
         }
         Relationships: []
       }

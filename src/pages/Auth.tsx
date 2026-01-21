@@ -37,19 +37,46 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
       setPaymentProcessing(true);
       
       try {
-        // Update user's plan to 'pro' in the profiles table
-        const { error } = await supabase
-          .from('profiles')
-          .update({ plan: 'pro' })
-          .eq('user_id', pendingUserId);
+        // Get the lifetime plan ID from subscription_plans
+        const { data: lifetimePlan } = await supabase
+          .from('subscription_plans')
+          .select('id')
+          .eq('name', 'lifetime')
+          .single();
 
-        if (error) {
-          console.error('Error updating plan:', error);
-          toast.error('Erro ao ativar plano. Entre em contato com o suporte.');
+        if (lifetimePlan) {
+          // Update user's plan to 'lifetime' in the profiles table
+          const { error } = await supabase
+            .from('profiles')
+            .update({ 
+              plan: 'pro',
+              plan_id: lifetimePlan.id 
+            })
+            .eq('user_id', pendingUserId);
+
+          if (error) {
+            console.error('Error updating plan:', error);
+            toast.error('Erro ao ativar plano. Entre em contato com o suporte.');
+          } else {
+            toast.success('🎉 Pagamento confirmado! Seu plano vitalício foi ativado.', {
+              duration: 5000,
+            });
+          }
         } else {
-          toast.success('🎉 Pagamento confirmado! Seu plano vitalício foi ativado.', {
-            duration: 5000,
-          });
+          // Fallback: update only the plan column
+          const { error } = await supabase
+            .from('profiles')
+            .update({ plan: 'pro' })
+            .eq('user_id', pendingUserId);
+
+          if (error) {
+            console.error('Error updating plan:', error);
+            toast.error('Erro ao ativar plano. Entre em contato com o suporte.');
+          } else {
+            toast.success('🎉 Pagamento confirmado! Seu plano vitalício foi ativado.', {
+              duration: 5000,
+            });
+          }
         }
 
         // Clear pending upgrade
