@@ -1,227 +1,120 @@
-CREATE EXTENSION IF NOT EXISTS "pg_graphql";
-CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
-CREATE EXTENSION IF NOT EXISTS "plpgsql";
-CREATE EXTENSION IF NOT EXISTS "supabase_vault";
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
-BEGIN;
+-- ===============================
+-- 1. EXTENSÕES
+-- ===============================
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
---
--- PostgreSQL database dump
---
+-- ===============================
+-- 2. TABELA DE PLANOS DE ASSINATURA
+-- ===============================
+CREATE TABLE IF NOT EXISTS public.subscription_plans (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text UNIQUE NOT NULL,
+  max_calculations integer NOT NULL,
+  can_export boolean DEFAULT false,
+  created_at timestamptz DEFAULT now()
+);
 
+-- Inserir planos
+INSERT INTO public.subscription_plans (name, max_calculations, can_export)
+VALUES
+  ('free', 2, false),
+  ('lifetime', 999999, true)
+ON CONFLICT (name) DO NOTHING;
 
--- Dumped from database version 17.6
--- Dumped by pg_dump version 18.1
+-- ===============================
+-- 3. AJUSTES EM PROFILES
+-- ===============================
+-- Adicionar plan_id se não existir
+ALTER TABLE public.profiles
+ADD COLUMN IF NOT EXISTS plan_id uuid;
 
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
---
--- Name: public; Type: SCHEMA; Schema: -; Owner: -
---
-
-
-
---
--- Name: handle_new_user(); Type: FUNCTION; Schema: public; Owner: -
---
-
-CREATE FUNCTION public.handle_new_user() RETURNS trigger
-    LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'public'
-    AS $$
+-- Vincular plan_id à tabela de planos
+DO $$
 BEGIN
-  INSERT INTO public.profiles (user_id, email)
-  VALUES (new.id, new.email);
-  RETURN new;
-END;
-$$;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'profiles_plan_id_fkey'
+  ) THEN
+    ALTER TABLE public.profiles
+    ADD CONSTRAINT profiles_plan_id_fkey
+    FOREIGN KEY (plan_id) REFERENCES public.subscription_plans(id);
+  END IF;
+END $$;
 
+-- Definir plano FREE para usuários sem plan_id (baseado na coluna plan existente)
+UPDATE public.profiles
+SET plan_id = (SELECT id FROM public.subscription_plans WHERE name = 'free')
+WHERE plan_id IS NULL AND (plan IS NULL OR plan = 'free');
 
---
--- Name: update_updated_at_column(); Type: FUNCTION; Schema: public; Owner: -
---
+UPDATE public.profiles
+SET plan_id = (SELECT id FROM public.subscription_plans WHERE name = 'lifetime')
+WHERE plan_id IS NULL AND plan = 'pro';
 
-CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
-    LANGUAGE plpgsql
-    SET search_path TO 'public'
-    AS $$
+-- ===============================
+-- 4. FUNÇÃO DE LIMITE DE CÁLCULOS
+-- ===============================
+CREATE OR REPLACE FUNCTION public.check_calculation_limit()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  calc_count integer;
+  max_allowed integer;
 BEGIN
-  NEW.updated_at = now();
+  SELECT COUNT(*) INTO calc_count
+  FROM public.calculations
+  WHERE user_id = NEW.user_id;
+
+  SELECT sp.max_calculations INTO max_allowed
+  FROM public.profiles p
+  JOIN public.subscription_plans sp ON sp.id = p.plan_id
+  WHERE p.user_id = NEW.user_id;
+
+  -- Se não encontrar plano, assume limite free
+  IF max_allowed IS NULL THEN
+    max_allowed := 2;
+  END IF;
+
+  IF calc_count >= max_allowed THEN
+    RAISE EXCEPTION 'Limite de cálculos atingido. Faça upgrade para continuar.';
+  END IF;
+
   RETURN NEW;
 END;
 $$;
 
+-- Criar trigger apenas se não existir
+DROP TRIGGER IF EXISTS limit_calculations ON public.calculations;
+CREATE TRIGGER limit_calculations
+BEFORE INSERT ON public.calculations
+FOR EACH ROW
+EXECUTE FUNCTION public.check_calculation_limit();
 
-SET default_table_access_method = heap;
+-- ===============================
+-- 5. RLS PARA SUBSCRIPTION_PLANS
+-- ===============================
+ALTER TABLE public.subscription_plans ENABLE ROW LEVEL SECURITY;
 
---
--- Name: calculations; Type: TABLE; Schema: public; Owner: -
---
+-- Todos podem ver os planos (são dados públicos)
+CREATE POLICY "Anyone can view subscription plans"
+ON public.subscription_plans
+FOR SELECT
+TO authenticated
+USING (true);
 
-CREATE TABLE public.calculations (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id uuid NOT NULL,
-    product_name text NOT NULL,
-    cost_type text DEFAULT 'lot'::text NOT NULL,
-    lot_quantity integer DEFAULT 500 NOT NULL,
-    lot_cost numeric(12,2) DEFAULT 0 NOT NULL,
-    paper_cost numeric(12,2) DEFAULT 0 NOT NULL,
-    ink_cost numeric(12,2) DEFAULT 0 NOT NULL,
-    varnish_cost numeric(12,2) DEFAULT 0 NOT NULL,
-    other_material_cost numeric(12,2) DEFAULT 0 NOT NULL,
-    labor_cost numeric(12,2) DEFAULT 0 NOT NULL,
-    energy_cost numeric(12,2) DEFAULT 0 NOT NULL,
-    equipment_cost numeric(12,2) DEFAULT 0 NOT NULL,
-    rent_cost numeric(12,2) DEFAULT 0 NOT NULL,
-    other_operational_cost numeric(12,2) DEFAULT 0 NOT NULL,
-    margin_percentage numeric(5,2) DEFAULT 70 NOT NULL,
-    fixed_profit numeric(12,2),
-    total_cost numeric(12,2) NOT NULL,
-    profit numeric(12,2) NOT NULL,
-    sale_price numeric(12,2) NOT NULL,
-    unit_price numeric(12,2) NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: profiles; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.profiles (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
-    user_id uuid NOT NULL,
-    email text,
-    plan text DEFAULT 'free'::text NOT NULL,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
-);
-
-
---
--- Name: calculations calculations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.calculations
-    ADD CONSTRAINT calculations_pkey PRIMARY KEY (id);
-
-
---
--- Name: profiles profiles_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.profiles
-    ADD CONSTRAINT profiles_pkey PRIMARY KEY (id);
-
-
---
--- Name: profiles profiles_user_id_key; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.profiles
-    ADD CONSTRAINT profiles_user_id_key UNIQUE (user_id);
-
-
---
--- Name: profiles update_profiles_updated_at; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-
-
---
--- Name: calculations calculations_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.calculations
-    ADD CONSTRAINT calculations_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
-
---
--- Name: profiles profiles_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.profiles
-    ADD CONSTRAINT profiles_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
-
---
--- Name: calculations Users can delete their own calculations; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can delete their own calculations" ON public.calculations FOR DELETE USING ((auth.uid() = user_id));
-
-
---
--- Name: calculations Users can insert their own calculations; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can insert their own calculations" ON public.calculations FOR INSERT WITH CHECK ((auth.uid() = user_id));
-
-
---
--- Name: profiles Users can insert their own profile; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK ((auth.uid() = user_id));
-
-
---
--- Name: calculations Users can update their own calculations; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can update their own calculations" ON public.calculations FOR UPDATE USING ((auth.uid() = user_id)) WITH CHECK ((auth.uid() = user_id));
-
-
---
--- Name: profiles Users can update their own profile; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING ((auth.uid() = user_id));
-
-
---
--- Name: calculations Users can view their own calculations; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can view their own calculations" ON public.calculations FOR SELECT USING ((auth.uid() = user_id));
-
-
---
--- Name: profiles Users can view their own profile; Type: POLICY; Schema: public; Owner: -
---
-
-CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING ((auth.uid() = user_id));
-
-
---
--- Name: calculations; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.calculations ENABLE ROW LEVEL SECURITY;
-
---
--- Name: profiles; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-
---
--- PostgreSQL database dump complete
---
-
-
-
-
-COMMIT;
+-- ===============================
+-- 6. GARANTIR PROFILES COM PLAN_ID
+-- ===============================
+INSERT INTO public.profiles (user_id, email, plan, plan_id)
+SELECT
+  u.id,
+  u.email,
+  'free',
+  (SELECT id FROM public.subscription_plans WHERE name = 'free')
+FROM auth.users u
+LEFT JOIN public.profiles p ON p.user_id = u.id
+WHERE p.user_id IS NULL
+ON CONFLICT (user_id) DO NOTHING;
