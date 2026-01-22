@@ -92,6 +92,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_payments: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          csrf_token: string
+          expires_at: string
+          id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          csrf_token: string
+          expires_at?: string
+          id?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          csrf_token?: string
+          expires_at?: string
+          id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -226,6 +256,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      verify_and_complete_payment: {
+        Args: { p_csrf_token: string }
+        Returns: Json
       }
     }
     Enums: {
