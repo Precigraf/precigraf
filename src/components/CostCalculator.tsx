@@ -263,11 +263,10 @@ const CostCalculator: React.FC = () => {
 
   return (
     <>
-      {/* Overlay de bloqueio quando limite atingido */}
+      {/* Overlay de bloqueio quando limite atingido - pointer-events: none para não bloquear cliques */}
       {hasReachedLimit && (
         <div 
-          className="fixed inset-0 z-40 cursor-not-allowed"
-          onClick={handleBlockedClick}
+          className="fixed inset-0 z-40 pointer-events-none"
           style={{ background: 'transparent' }}
         />
       )}
