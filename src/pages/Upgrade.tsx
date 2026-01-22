@@ -32,8 +32,26 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
         return;
       }
 
-      // Store user_id in localStorage to identify after payment return
-      localStorage.setItem('pending_upgrade_user_id', session.user.id);
+      // Generate secure CSRF token
+      const csrfToken = crypto.randomUUID();
+      
+      // Store pending payment in database (secure, not localStorage)
+      const { error: insertError } = await supabase
+        .from('pending_payments')
+        .insert({
+          user_id: session.user.id,
+          csrf_token: csrfToken,
+        });
+
+      if (insertError) {
+        console.error('Error creating pending payment:', insertError);
+        toast.error('Erro ao iniciar pagamento. Tente novamente.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Store CSRF token in sessionStorage (more secure than localStorage, cleared on tab close)
+      sessionStorage.setItem('payment_csrf_token', csrfToken);
 
       // Redirect to InfinitePay static checkout link
       window.location.href = 'https://checkout.infinitepay.io/israel-shaina-wanderley/tBMthxjk5';

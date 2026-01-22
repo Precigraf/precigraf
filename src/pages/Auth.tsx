@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, forwardRef } from 'react';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, Mail, Lock, CheckCircle } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Eye, EyeOff, Loader2, Mail, Lock } from 'lucide-react';
 import LogoIcon from '@/components/LogoIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,6 @@ import { toast } from 'sonner';
 
 const Auth = forwardRef<HTMLDivElement>((_, ref) => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { user, loading: authLoading, signIn } = useAuth();
 
   // Form states
@@ -24,62 +23,46 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  // Handle payment success from InfinitePay redirect
+  // Handle payment success from InfinitePay redirect - SECURE VERSION
   const handlePaymentSuccess = useCallback(async () => {
-    // Check for pending upgrade from localStorage (set before redirect to InfinitePay)
-    const pendingUserId = localStorage.getItem('pending_upgrade_user_id');
+    // Get CSRF token from sessionStorage (set before redirect to InfinitePay)
+    const csrfToken = sessionStorage.getItem('payment_csrf_token');
     
     // Check if user is returning from payment (InfinitePay redirects back)
     const isReturningFromPayment = document.referrer.includes('infinitepay.io') || 
                                     document.referrer.includes('checkout.infinitepay.io');
     
-    if (pendingUserId && isReturningFromPayment) {
+    // Only process if we have a CSRF token AND returning from payment
+    if (csrfToken && isReturningFromPayment) {
       setPaymentProcessing(true);
       
       try {
-        // Get the lifetime plan ID from subscription_plans
-        const { data: lifetimePlan } = await supabase
-          .from('subscription_plans')
-          .select('id')
-          .eq('name', 'lifetime')
-          .single();
+        // Verify payment server-side using the secure database function
+        const { data, error } = await supabase.rpc('verify_and_complete_payment', {
+          p_csrf_token: csrfToken
+        });
 
-        if (lifetimePlan) {
-          // Update user's plan to 'lifetime' in the profiles table
-          const { error } = await supabase
-            .from('profiles')
-            .update({ 
-              plan: 'pro',
-              plan_id: lifetimePlan.id 
-            })
-            .eq('user_id', pendingUserId);
-
-          if (error) {
-            console.error('Error updating plan:', error);
-            toast.error('Erro ao ativar plano. Entre em contato com o suporte.');
-          } else {
+        if (error) {
+          console.error('Error verifying payment:', error);
+          toast.error('Erro ao verificar pagamento. Entre em contato com o suporte.');
+        } else if (data) {
+          // Cast to expected type since RPC returns Json
+          const result = data as { success: boolean; message?: string; error?: string };
+          
+          if (result.success) {
             toast.success('🎉 Pagamento confirmado! Seu plano vitalício foi ativado.', {
               duration: 5000,
             });
-          }
-        } else {
-          // Fallback: update only the plan column
-          const { error } = await supabase
-            .from('profiles')
-            .update({ plan: 'pro' })
-            .eq('user_id', pendingUserId);
-
-          if (error) {
-            console.error('Error updating plan:', error);
-            toast.error('Erro ao ativar plano. Entre em contato com o suporte.');
           } else {
-            toast.success('🎉 Pagamento confirmado! Seu plano vitalício foi ativado.', {
-              duration: 5000,
-            });
+            console.error('Payment verification failed:', result.error);
+            toast.error(result.error || 'Erro ao ativar plano. Entre em contato com o suporte.');
           }
         }
 
-        // Clear pending upgrade
+        // Clear CSRF token from sessionStorage
+        sessionStorage.removeItem('payment_csrf_token');
+        
+        // Also clean up old localStorage key if it exists (migration cleanup)
         localStorage.removeItem('pending_upgrade_user_id');
       } catch (err) {
         console.error('Error processing payment:', err);
