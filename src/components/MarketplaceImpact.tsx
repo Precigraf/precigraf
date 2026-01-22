@@ -114,12 +114,12 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={handleApplyMargin}
-                className="w-full h-11 text-sm rounded-lg border-primary/30 text-primary hover:bg-primary/10 flex items-center justify-center"
+                className={`w-full h-11 text-sm rounded-lg flex items-center justify-center ${applied ? 'border-success/30 text-success hover:bg-success/10' : 'border-primary/30 text-primary hover:bg-primary/10'}`}
                 disabled={applied}
               >
                 {applied ? (
                   <>
-                    <Check className="w-4 h-4 mr-2 flex-shrink-0" />
+                    <Check className="w-4 h-4 mr-2 flex-shrink-0 text-success" />
                     <span>Margem aplicada!</span>
                   </>
                 ) : (

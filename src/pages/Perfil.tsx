@@ -241,8 +241,8 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
                     </p>
                   )}
                   {newPassword.length >= 8 && (
-                    <p className="text-xs text-green-500 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
+                    <p className="text-xs text-success flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3 text-success" />
                       Senha válida
                     </p>
                   )}
@@ -277,8 +277,8 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
                     </p>
                   )}
                   {confirmPassword.length > 0 && newPassword === confirmPassword && newPassword.length >= 8 && (
-                    <p className="text-xs text-green-500 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
+                    <p className="text-xs text-success flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3 text-success" />
                       Senhas conferem
                     </p>
                   )}
