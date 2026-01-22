@@ -275,21 +275,23 @@ const CostCalculator: React.FC = () => {
       <div className={`grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 ${hasReachedLimit ? 'pointer-events-none opacity-60' : ''}`}>
         {/* Banner de bloqueio */}
         {hasReachedLimit && (
-          <div className="lg:col-span-2 bg-destructive/10 border border-destructive/30 rounded-lg p-4 pointer-events-auto">
-            <div className="flex items-center gap-3">
-              <Lock className="w-5 h-5 text-destructive" />
-              <div className="flex-1">
-                <p className="font-medium text-destructive">Sistema bloqueado</p>
-                <p className="text-sm text-muted-foreground">
-                  Você atingiu o limite de {maxCalculations} cálculos do plano gratuito. Faça upgrade para continuar.
-                </p>
+          <div className="lg:col-span-2 w-full bg-destructive/10 border border-destructive/30 rounded-xl p-4 pointer-events-auto relative z-50">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="flex items-start gap-3 flex-1">
+                <Lock className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+                <div className="text-left flex-1">
+                  <p className="text-base font-semibold text-destructive">Sistema bloqueado</p>
+                  <p className="text-sm text-muted-foreground leading-snug">
+                    Você atingiu o limite de {maxCalculations} cálculos do plano gratuito. Faça upgrade para continuar.
+                  </p>
+                </div>
               </div>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowUpgradeModal(true);
                 }}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors pointer-events-auto"
+                className="w-full sm:w-auto px-4 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors pointer-events-auto cursor-pointer z-50 relative"
               >
                 Fazer upgrade
               </button>

@@ -94,12 +94,12 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
 
       {/* Sugestão de margem quando taxas estão altas */}
       {suggestedMargin && (
-        <div className="bg-primary/10 border border-primary/30 rounded-lg p-3 mt-2">
-          <div className="flex items-start gap-2">
-            <Lightbulb className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-            <div className="text-xs flex-1">
-              <p className="font-medium text-primary mb-1">Sugestão de margem</p>
-              <p className="text-muted-foreground mb-2">
+        <div className="w-full bg-primary/10 border border-primary/30 rounded-xl p-4 mt-2">
+          <div className="flex items-start gap-3">
+            <Lightbulb className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+            <div className="flex-1 text-left">
+              <p className="text-base font-semibold text-primary mb-1">Sugestão de margem</p>
+              <p className="text-sm text-muted-foreground leading-snug mb-3">
                 As taxas do marketplace estão reduzindo significativamente seu lucro. 
                 Sugerimos uma margem mínima de <strong className="text-primary">{suggestedMargin}%</strong> para manter lucratividade.
               </p>
@@ -108,18 +108,18 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={handleApplyMargin}
-                  className="w-full text-xs h-8 border-primary/30 text-primary hover:bg-primary/10"
+                  className="w-full py-3 text-sm rounded-lg border-primary/30 text-primary hover:bg-primary/10"
                   disabled={applied}
                 >
                   {applied ? (
                     <>
-                      <Check className="w-3 h-3 mr-1" />
+                      <Check className="w-4 h-4 mr-2" />
                       Margem aplicada!
                     </>
                   ) : (
                     <>
-                      <Lightbulb className="w-3 h-3 mr-1" />
-                      Clique para aplicar margem de {suggestedMargin}%
+                      <Lightbulb className="w-4 h-4 mr-2" />
+                      Aplicar margem de {suggestedMargin}%
                     </>
                   )}
                 </Button>
