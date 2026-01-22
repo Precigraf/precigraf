@@ -120,7 +120,7 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onS
           </>
         ) : justSaved ? (
           <>
-            <Check className="w-4 h-4" />
+            <Check className="w-4 h-4 text-success" />
             Salvo!
           </>
         ) : (
