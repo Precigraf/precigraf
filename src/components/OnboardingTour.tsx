@@ -69,7 +69,7 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ onLoadExample, isFreePl
   return (
     <>
       {/* Botões de ação */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between w-full">
         <Button
           variant="outline"
           size="sm"
