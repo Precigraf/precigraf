@@ -302,7 +302,7 @@ const CostCalculator: React.FC = () => {
         <div className="space-y-6">
         {/* Onboarding e Exemplo */}
         <div className="flex items-center gap-3 mb-2">
-          <OnboardingTour onLoadExample={handleLoadExample} />
+          <OnboardingTour onLoadExample={handleLoadExample} isFreePlan={isFreePlan} />
         </div>
 
         {/* Seção 1: Nome do Produto */}

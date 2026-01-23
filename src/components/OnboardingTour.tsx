@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, X, ChevronRight, Lightbulb } from 'lucide-react';
+import { Play, X, ChevronRight, Lightbulb, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -8,14 +8,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useNavigate } from 'react-router-dom';
 
 interface OnboardingTourProps {
   onLoadExample: () => void;
+  isFreePlan?: boolean;
 }
 
 const ONBOARDING_KEY = 'precigraf_onboarding_seen';
 
-const OnboardingTour: React.FC<OnboardingTourProps> = ({ onLoadExample }) => {
+const OnboardingTour: React.FC<OnboardingTourProps> = ({ onLoadExample, isFreePlan = true }) => {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState(0);
 
@@ -65,16 +68,29 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ onLoadExample }) => {
 
   return (
     <>
-      {/* Botão para reabrir o onboarding */}
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setIsOpen(true)}
-        className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
-      >
-        <Play className="w-4 h-4" />
-        Ver exemplo preenchido
-      </Button>
+      {/* Botões de ação */}
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsOpen(true)}
+          className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
+        >
+          <Play className="w-4 h-4" />
+          Exemplo
+        </Button>
+        
+        {isFreePlan && (
+          <Button
+            size="sm"
+            onClick={() => navigate('/upgrade')}
+            className="gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            Fazer upgrade
+          </Button>
+        )}
+      </div>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-md bg-card border-border [&>button]:hidden">
