@@ -294,6 +294,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         finalSellingPrice={finalSellingPrice}
         unitPrice={unitPrice}
         quantity={safeQuantity}
+        totalCost={productionCost + marketplaceTotalFees}
+        profit={desiredProfit}
         isPro={isPro}
         onShowUpgrade={onShowUpgrade}
       />

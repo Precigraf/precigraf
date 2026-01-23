@@ -1,22 +1,29 @@
-import React, { useState } from 'react';
-import { Ticket, Lock, Sparkles, Tag, ArrowRight, Percent } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Ticket, Lock, Sparkles, Tag, ArrowRight, Percent, AlertTriangle, TrendingDown, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useNavigate } from 'react-router-dom';
 
 interface CouponStrategyProps {
   finalSellingPrice: number;
   unitPrice: number;
   quantity: number;
+  totalCost: number;
+  profit: number;
   isPro: boolean;
   onShowUpgrade?: () => void;
 }
+
+type AlertType = 'none' | 'warning' | 'critical';
 
 const CouponStrategy: React.FC<CouponStrategyProps> = ({
   finalSellingPrice,
   unitPrice,
   quantity,
+  totalCost,
+  profit,
   isPro,
   onShowUpgrade,
 }) => {
@@ -35,10 +42,44 @@ const CouponStrategy: React.FC<CouponStrategyProps> = ({
     });
   };
 
-  // Calcular valores com desconto
-  const discountValue = Math.round((finalSellingPrice * discountPercentage) / 100 * 100) / 100;
-  const priceWithCoupon = Math.round((finalSellingPrice - discountValue) * 100) / 100;
-  const unitPriceWithCoupon = quantity > 0 ? Math.round((priceWithCoupon / quantity) * 100) / 100 : 0;
+  // Cálculos com e sem cupom
+  const calculations = useMemo(() => {
+    const discountValue = Math.round((finalSellingPrice * discountPercentage) / 100 * 100) / 100;
+    const priceWithCoupon = Math.round((finalSellingPrice - discountValue) * 100) / 100;
+    const unitPriceWithCoupon = quantity > 0 ? Math.round((priceWithCoupon / quantity) * 100) / 100 : 0;
+    
+    // Lucro sem cupom (já vem da prop)
+    const profitWithoutCoupon = profit;
+    
+    // Lucro com cupom = Preço com cupom - Custo total
+    const profitWithCoupon = Math.round((priceWithCoupon - totalCost) * 100) / 100;
+    
+    // Diferença no lucro
+    const profitDifference = Math.round((profitWithoutCoupon - profitWithCoupon) * 100) / 100;
+    
+    // Margem ideal (consideramos 30% como mínimo saudável)
+    const idealMinProfitMargin = 0.3;
+    const profitMarginWithCoupon = priceWithCoupon > 0 ? profitWithCoupon / priceWithCoupon : 0;
+    
+    // Tipo de alerta
+    let alertType: AlertType = 'none';
+    if (profitWithCoupon <= 0) {
+      alertType = 'critical';
+    } else if (profitMarginWithCoupon < idealMinProfitMargin) {
+      alertType = 'warning';
+    }
+
+    return {
+      discountValue,
+      priceWithCoupon,
+      unitPriceWithCoupon,
+      profitWithoutCoupon,
+      profitWithCoupon,
+      profitDifference,
+      profitMarginWithCoupon,
+      alertType,
+    };
+  }, [finalSellingPrice, discountPercentage, quantity, profit, totalCost]);
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -95,6 +136,14 @@ const CouponStrategy: React.FC<CouponStrategyProps> = ({
               <span className="font-medium">10%</span>
             </div>
             <div className="h-2 bg-secondary rounded-full" />
+            
+            {/* Preview bloqueado das novas funcionalidades */}
+            <div className="mt-3 p-2 bg-secondary/50 rounded-lg">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Scale className="w-3 h-3" />
+                <span>Comparação e Alertas de Lucro</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -152,47 +201,108 @@ const CouponStrategy: React.FC<CouponStrategyProps> = ({
             </div>
           </div>
 
-          {/* Comparação de preços */}
-          <div className="bg-background/80 rounded-lg p-4 space-y-3">
-            {/* Preço original */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Preço original</span>
-              <span className="text-sm font-medium text-foreground line-through opacity-60">
-                {formatCurrency(finalSellingPrice)}
-              </span>
+          {/* ========================================
+              ALERTA DE DESCONTO QUE ZERA O LUCRO
+              ======================================== */}
+          {calculations.alertType === 'critical' && (
+            <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                <strong>Atenção!</strong> Este desconto está <strong>zerando seu lucro</strong> ou gerando prejuízo. 
+                Considere reduzir o percentual de desconto para manter a saúde financeira da venda.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {calculations.alertType === 'warning' && (
+            <Alert className="border-warning/50 bg-warning/10">
+              <TrendingDown className="h-4 w-4 text-warning" />
+              <AlertDescription className="text-sm text-warning-foreground">
+                <strong>Aviso:</strong> Este desconto reduz sua margem de lucro para abaixo de 30%. 
+                A venda pode ser financeiramente arriscada. Avalie com cuidado antes de aplicar.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* ========================================
+              COMPARAÇÃO: SEM CUPOM vs COM CUPOM
+              ======================================== */}
+          <div className="bg-background/80 rounded-lg overflow-hidden">
+            {/* Título da comparação */}
+            <div className="flex items-center gap-2 p-3 bg-secondary/30 border-b border-border/50">
+              <Scale className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-foreground">Comparação de Cenários</span>
             </div>
 
-            {/* Valor do desconto */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground flex items-center gap-1">
-                <Tag className="w-3.5 h-3.5 text-destructive" />
-                Desconto aplicado
-              </span>
-              <span className="text-sm font-medium text-destructive">
-                -{formatCurrency(discountValue)}
-              </span>
-            </div>
+            <div className="p-4">
+              {/* Grid de comparação lado a lado */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Coluna SEM Cupom */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-1.5 pb-2 border-b border-border/50">
+                    <div className="w-2 h-2 rounded-full bg-muted-foreground" />
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sem Cupom</span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Preço Final</p>
+                      <p className="text-base font-bold text-foreground">{formatCurrency(finalSellingPrice)}</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Lucro</p>
+                      <p className="text-base font-bold text-success">{formatCurrency(calculations.profitWithoutCoupon)}</p>
+                    </div>
+                  </div>
+                </div>
 
-            {/* Separador */}
-            <div className="border-t border-dashed border-border" />
+                {/* Coluna COM Cupom */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-1.5 pb-2 border-b border-primary/30">
+                    <div className="w-2 h-2 rounded-full bg-primary" />
+                    <span className="text-xs font-semibold text-primary uppercase tracking-wide">Com Cupom</span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Preço Final</p>
+                      <p className="text-base font-bold text-primary">{formatCurrency(calculations.priceWithCoupon)}</p>
+                    </div>
+                    
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Lucro</p>
+                      <p className={`text-base font-bold ${calculations.profitWithCoupon <= 0 ? 'text-destructive' : calculations.alertType === 'warning' ? 'text-warning' : 'text-success'}`}>
+                        {formatCurrency(calculations.profitWithCoupon)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-            {/* Preço com cupom */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-foreground flex items-center gap-1">
-                <Ticket className="w-4 h-4 text-success" />
-                Preço com cupom
-              </span>
-              <span className="text-xl font-bold text-success">
-                {formatCurrency(priceWithCoupon)}
-              </span>
-            </div>
+              {/* Resumo do impacto */}
+              <div className="mt-4 pt-3 border-t border-dashed border-border space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Tag className="w-3.5 h-3.5 text-destructive" />
+                    Desconto total aplicado
+                  </span>
+                  <span className="font-semibold text-destructive">-{formatCurrency(calculations.discountValue)}</span>
+                </div>
+                
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <TrendingDown className="w-3.5 h-3.5 text-warning" />
+                    Redução no lucro
+                  </span>
+                  <span className="font-semibold text-warning">-{formatCurrency(calculations.profitDifference)}</span>
+                </div>
 
-            {/* Preço unitário com cupom */}
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Preço unitário com cupom</span>
-              <span className="font-medium text-success">
-                {formatCurrency(unitPriceWithCoupon)}/un
-              </span>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Preço unitário com cupom</span>
+                  <span className="font-medium text-primary">{formatCurrency(calculations.unitPriceWithCoupon)}/un</span>
+                </div>
+              </div>
             </div>
           </div>
 
