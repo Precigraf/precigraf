@@ -511,6 +511,8 @@ const CostCalculator: React.FC = () => {
           onSaved={handleCalculationSaved}
           onApplySuggestedMargin={handleSuggestMargin}
           isBlocked={hasReachedLimit}
+          isPro={!isFreePlan}
+          onShowUpgrade={() => setShowUpgradeModal(true)}
         />
       </div>
 
