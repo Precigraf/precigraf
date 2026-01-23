@@ -6,8 +6,8 @@ import CostChart from './CostChart';
 import SaveCalculationButton from './SaveCalculationButton';
 import PriceBreakdown from './PriceBreakdown';
 import MarketplaceImpact from './MarketplaceImpact';
+import CouponStrategy from './CouponStrategy';
 import { MarketplaceType } from './MarketplaceSection';
-
 interface ResultPanelProps {
   productName: string;
   quantity: number;
@@ -50,6 +50,9 @@ interface ResultPanelProps {
   onApplySuggestedMargin?: (margin: number) => void;
   // Prop para indicar se está bloqueado
   isBlocked?: boolean;
+  // Props para plano do usuário (estratégia de cupom)
+  isPro?: boolean;
+  onShowUpgrade?: () => void;
 }
 
 const ResultPanel: React.FC<ResultPanelProps> = ({
@@ -78,6 +81,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   onSaved,
   onApplySuggestedMargin,
   isBlocked = false,
+  isPro = false,
+  onShowUpgrade,
 }) => {
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) {
@@ -282,6 +287,15 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         marketplaceTotalFees={marketplaceTotalFees}
         quantity={safeQuantity}
         onApplySuggestedMargin={onApplySuggestedMargin}
+      />
+
+      {/* Estratégia de Cupom - PRO Feature */}
+      <CouponStrategy
+        finalSellingPrice={finalSellingPrice}
+        unitPrice={unitPrice}
+        quantity={safeQuantity}
+        isPro={isPro}
+        onShowUpgrade={onShowUpgrade}
       />
 
       {/* Gráfico de Composição */}
