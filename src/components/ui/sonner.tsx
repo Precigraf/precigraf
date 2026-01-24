@@ -1,14 +1,24 @@
+import * as React from "react";
+
 import { useTheme } from "next-themes";
 import { Toaster as Sonner, toast } from "sonner";
 import { CheckCircle } from "lucide-react";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
-function Toaster(props: ToasterProps) {
+/**
+ * forwardRef prevents occasional "Function components cannot be given refs" warnings
+ * when consumers or providers attach refs to the Toaster.
+ */
+const Toaster = React.forwardRef<React.ElementRef<typeof Sonner>, ToasterProps>(function Toaster(
+  props,
+  ref,
+) {
   const { theme = "system" } = useTheme();
 
   return (
     <Sonner
+      ref={ref}
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
@@ -26,6 +36,8 @@ function Toaster(props: ToasterProps) {
       {...props}
     />
   );
-}
+});
+
+Toaster.displayName = "SonnerToaster";
 
 export { Toaster, toast };
