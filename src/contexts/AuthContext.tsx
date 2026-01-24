@@ -46,13 +46,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Then check for existing session
+     // Then check for existing session
     const initializeAuth = async () => {
       try {
         const { data: { session: currentSession }, error } = await supabase.auth.getSession();
         
         if (error) {
           logError('Error getting session:', error);
+
+            // If the refresh token is invalid/missing, clear local auth state
+            // so the app can recover cleanly to the login screen.
+            const msg = (error as AuthError)?.message ?? "";
+            if (msg.toLowerCase().includes("refresh token") || msg.toLowerCase().includes("refresh_token_not_found")) {
+              try {
+                await supabase.auth.signOut();
+              } catch {
+                // ignore
+              }
+            }
         }
         
         if (mounted) {
@@ -122,21 +133,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: new Error('Erro ao criar usuário. Tente novamente.') };
       }
 
-      // Create profile record only if user was created successfully
-      // Use upsert to handle potential race conditions
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        user_id: data.user.id,
-        email: trimmedEmail,
-        plan: 'free',
-      }, {
-        onConflict: 'user_id',
-        ignoreDuplicates: true,
-      });
-
-      if (profileError) {
-        logError('Error creating profile:', profileError);
-        // Don't return error here - user was created successfully
-      }
+      // IMPORTANT: Do not create profiles manually.
+      // Backend trigger handle_new_user() creates public.profiles and related records.
 
       // Session will be updated by onAuthStateChange listener (auto-confirm is enabled)
       return { error: null };
