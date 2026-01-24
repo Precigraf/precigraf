@@ -1,6 +1,6 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Sun, Moon, LogOut, User, Settings } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Sun, Moon, LogOut, Settings, LayoutDashboard, Calculator } from 'lucide-react';
 import LogoIcon from '@/components/LogoIcon';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import PlanBadge from '@/components/PlanBadge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +23,10 @@ const Header: React.FC = () => {
   const { user, signOut } = useAuth();
   const { plan } = useUserPlan();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  const isOnDashboard = location.pathname === '/dashboard';
+  const isOnCalculator = location.pathname === '/';
   
   // Get user name and avatar from Supabase Auth metadata
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
@@ -51,6 +56,36 @@ const Header: React.FC = () => {
           </Link>
 
           <div className="flex items-center gap-3">
+            {/* Navigation Buttons */}
+            {user && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant={isOnCalculator ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => navigate('/')}
+                  className={cn(
+                    "gap-1.5 text-sm",
+                    isOnCalculator ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Calculator className="w-4 h-4" />
+                  <span className="hidden sm:inline">Calculadora</span>
+                </Button>
+                <Button
+                  variant={isOnDashboard ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => navigate('/dashboard')}
+                  className={cn(
+                    "gap-1.5 text-sm",
+                    isOnDashboard ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </Button>
+              </div>
+            )}
+
             {/* Theme Toggle */}
             <Button
               variant="ghost"
