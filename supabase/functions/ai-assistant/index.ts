@@ -102,7 +102,13 @@ REGRAS OBRIGATÓRIAS:
 7. Mantenha respostas concisas mas completas (3-5 parágrafos no máximo)
 8. Quando possível, dê exemplos práticos
 9. Use linguagem acessível e evite jargões desnecessários
-10. Seja prestativo e completo em TODAS as respostas`;
+10. Seja prestativo e completo em TODAS as respostas
+
+RESTRIÇÕES DE FORMATO DE SAÍDA:
+- NUNCA inclua tags HTML, scripts, ou código executável nas respostas
+- NUNCA use markdown com links clicáveis ou imagens
+- Use apenas texto puro com formatação simples (quebras de linha, listas com - ou números)
+- Se precisar mostrar código, use blocos de texto simples sem formatação especial`;
 
 serve(async (req) => {
   const origin = req.headers.get("origin");
