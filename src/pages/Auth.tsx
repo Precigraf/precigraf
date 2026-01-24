@@ -24,16 +24,14 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
   const [loginError, setLoginError] = useState('');
 
   // Handle payment success from InfinitePay redirect - SECURE VERSION
+  // Security: Relies solely on server-side CSRF token validation, not client referrer
   const handlePaymentSuccess = useCallback(async () => {
     // Get CSRF token from sessionStorage (set before redirect to InfinitePay)
     const csrfToken = sessionStorage.getItem('payment_csrf_token');
     
-    // Check if user is returning from payment (InfinitePay redirects back)
-    const isReturningFromPayment = document.referrer.includes('infinitepay.io') || 
-                                    document.referrer.includes('checkout.infinitepay.io');
-    
-    // Only process if we have a CSRF token AND returning from payment
-    if (csrfToken && isReturningFromPayment) {
+    // Only process if we have a CSRF token - server-side validation handles security
+    // The verify_and_complete_payment RPC validates token expiration, status, and user ownership
+    if (csrfToken) {
       setPaymentProcessing(true);
       
       try {
@@ -54,8 +52,11 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
               duration: 5000,
             });
           } else {
-            console.error('Payment verification failed:', result.error);
-            toast.error(result.error || 'Erro ao ativar plano. Entre em contato com o suporte.');
+            // Token invalid/expired is expected for non-payment visits - only log, don't show error
+            if (result.error !== 'Token inválido ou expirado') {
+              console.error('Payment verification failed:', result.error);
+              toast.error(result.error || 'Erro ao ativar plano. Entre em contato com o suporte.');
+            }
           }
         }
 
