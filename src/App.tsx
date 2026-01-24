@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import Cadastro from "./pages/Cadastro";
 import Perfil from "./pages/Perfil";
 import Upgrade from "./pages/Upgrade";
+import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Upgrade />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/dashboard" 
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
                   </ProtectedRoute>
                 } 
               />
