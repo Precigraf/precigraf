@@ -7,6 +7,7 @@ import ResultPanel from './ResultPanel';
 import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import TooltipLabel from './TooltipLabel';
+import RawMaterialInput from './RawMaterialInput';
 import { Input } from '@/components/ui/input';
 import CalculationHistory from './CalculationHistory';
 import SuggestMarginButton from './SuggestMarginButton';
@@ -26,6 +27,21 @@ const roundCurrency = (value: number): number => {
   return Math.round(value * 100) / 100;
 };
 
+// Interface para dados de matéria-prima
+interface RawMaterialData {
+  packageValue: number;
+  packageQuantity: number;
+  quantityUsed: number;
+}
+
+// Função para calcular custo unitário de matéria-prima
+const calculateRawMaterialCost = (data: RawMaterialData): number => {
+  const safePackageQuantity = data.packageQuantity > 0 ? data.packageQuantity : 1;
+  const safeQuantityUsed = data.quantityUsed > 0 ? data.quantityUsed : 1;
+  const unitValue = data.packageValue / safePackageQuantity;
+  return roundCurrency(unitValue * safeQuantityUsed);
+};
+
 const CostCalculator: React.FC = () => {
   const navigate = useNavigate();
   const { plan, calculationsCount, maxCalculations, loading: planLoading } = useUserPlan();
@@ -39,11 +55,12 @@ const CostCalculator: React.FC = () => {
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [productPreset, setProductPreset] = useState<ProductPresetType>('custom');
 
-  // Matéria-prima
-  const [paper, setPaper] = useState(0);
-  const [ink, setInk] = useState(0);
-  const [varnish, setVarnish] = useState(0);
-  const [otherMaterials, setOtherMaterials] = useState(0);
+  // Matéria-prima - Nova estrutura com pacote/quantidade/uso
+  const [paperData, setPaperData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
+  const [handleData, setHandleData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
+  const [inkData, setInkData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
+  const [packagingData, setPackagingData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
+  const [otherMaterialsData, setOtherMaterialsData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
 
   // Custos operacionais
   const [labor, setLabor] = useState(0);
@@ -70,7 +87,7 @@ const CostCalculator: React.FC = () => {
     }
     const parsed = parseInt(value, 10);
     if (!isNaN(parsed) && parsed >= 0) {
-      setLotQuantity(Math.min(parsed, 999999)); // Limite máximo
+      setLotQuantity(Math.min(parsed, 999999));
     }
   };
 
@@ -79,14 +96,14 @@ const CostCalculator: React.FC = () => {
     setProductPreset(preset);
     if (preset !== 'custom') {
       const config = PRODUCT_PRESETS[preset];
-      setPaper(config.paper);
-      setInk(config.ink);
-      setVarnish(config.varnish);
-      setOtherMaterials(config.otherMaterials);
+      // Aplicar valores do preset como custo unitário direto (para compatibilidade)
+      setPaperData({ packageValue: config.paper, packageQuantity: 1, quantityUsed: 1 });
+      setHandleData({ packageValue: config.ink, packageQuantity: 1, quantityUsed: 1 });
+      setInkData({ packageValue: config.varnish, packageQuantity: 1, quantityUsed: 1 });
+      setOtherMaterialsData({ packageValue: config.otherMaterials, packageQuantity: 1, quantityUsed: 1 });
       if (config.defaultQuantity > 0 && lotQuantity === 0) {
         setLotQuantity(config.defaultQuantity);
       }
-      // Definir nome do produto baseado no preset
       if (!productName) {
         setProductName(config.label);
       }
@@ -97,14 +114,14 @@ const CostCalculator: React.FC = () => {
     setHistoryRefreshTrigger(prev => prev + 1);
   }, []);
 
-  // Handler para sugestão de margem (também usado pelo MarketplaceImpact)
+  // Handler para sugestão de margem
   const handleSuggestMargin = useCallback((suggestedMargin: number) => {
     if (hasReachedLimit) {
       setShowUpgradeModal(true);
       return;
     }
     setProfitMargin(suggestedMargin);
-    setFixedProfit(0); // Limpar lucro fixo ao usar margem percentual
+    setFixedProfit(0);
   }, [hasReachedLimit]);
 
   // Handler para bloqueio de campos quando limite atingido
@@ -118,10 +135,16 @@ const CostCalculator: React.FC = () => {
   const handleLoadExample = useCallback(() => {
     setProductName('Sacola de Papel Kraft');
     setLotQuantity(100);
-    setPaper(1.50);
-    setInk(0.30);
-    setVarnish(0);
-    setOtherMaterials(0.20);
+    // Exemplo: Papel - Pacote de R$70 com 200 folhas, usa 2 folhas por produto
+    setPaperData({ packageValue: 70, packageQuantity: 200, quantityUsed: 2 });
+    // Alça - Pacote de R$40 com 100 alças, usa 2 alças por produto
+    setHandleData({ packageValue: 40, packageQuantity: 100, quantityUsed: 2 });
+    // Tinta - Pote de R$30 rende 500 impressões, usa 1 por produto
+    setInkData({ packageValue: 30, packageQuantity: 500, quantityUsed: 1 });
+    // Embalagem - Não usa
+    setPackagingData({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
+    // Outros materiais - Cola/acabamento R$20 para 100 unidades
+    setOtherMaterialsData({ packageValue: 20, packageQuantity: 100, quantityUsed: 1 });
     setLabor(50);
     setEnergy(15);
     setEquipment(10);
@@ -129,29 +152,35 @@ const CostCalculator: React.FC = () => {
     setOtherCosts(10);
     setProfitMargin(35);
     setFixedProfit(0);
-      setMarketplace('none');
-      setCommissionPercentage(0);
-      setFixedFeePerItem(0);
+    setMarketplace('none');
+    setCommissionPercentage(0);
+    setFixedFeePerItem(0);
     setProductPreset('paper_bag');
   }, []);
-
 
   // Verificar se custos operacionais estão preenchidos
   const hasOperationalCosts = labor > 0 || energy > 0 || equipment > 0 || rent > 0 || otherCosts > 0;
 
-  // Cálculos em tempo real - CALCULADO POR UNIDADE e multiplicado pela quantidade
+  // Calcular custos de matéria-prima por unidade
+  const rawMaterialCosts = useMemo(() => {
+    return {
+      paper: calculateRawMaterialCost(paperData),
+      handle: calculateRawMaterialCost(handleData),
+      ink: calculateRawMaterialCost(inkData),
+      packaging: calculateRawMaterialCost(packagingData),
+      other: calculateRawMaterialCost(otherMaterialsData),
+    };
+  }, [paperData, handleData, inkData, packagingData, otherMaterialsData]);
+
+  // Cálculos em tempo real
   const calculations = useMemo(() => {
     const safeLotQuantity = Math.max(0, Math.floor(safeNumber(lotQuantity)));
-    const safePaper = safeNumber(paper);
-    const safeInk = safeNumber(ink);
-    const safeVarnish = safeNumber(varnish);
-    const safeOtherMaterials = safeNumber(otherMaterials);
     const safeLabor = safeNumber(labor);
     const safeEnergy = safeNumber(energy);
     const safeEquipment = safeNumber(equipment);
     const safeRent = safeNumber(rent);
     const safeOtherCosts = safeNumber(otherCosts);
-    const safeProfitMargin = Math.min(safeNumber(profitMargin), 1000); // Limite de 1000%
+    const safeProfitMargin = Math.min(safeNumber(profitMargin), 1000);
     const safeFixedProfit = safeNumber(fixedProfit);
     const safeCommissionPercentage = Math.min(safeNumber(commissionPercentage), 100);
     const safeFixedFeePerItem = safeNumber(fixedFeePerItem);
@@ -179,8 +208,14 @@ const CostCalculator: React.FC = () => {
       };
     }
 
-    // Matéria-prima por unidade (valores informados são por unidade)
-    const unitRawMaterialsCost = roundCurrency(safePaper + safeInk + safeVarnish + safeOtherMaterials);
+    // Matéria-prima por unidade (soma dos custos calculados)
+    const unitRawMaterialsCost = roundCurrency(
+      rawMaterialCosts.paper + 
+      rawMaterialCosts.handle + 
+      rawMaterialCosts.ink + 
+      rawMaterialCosts.packaging + 
+      rawMaterialCosts.other
+    );
     
     // Matéria-prima total = unitário × quantidade
     const rawMaterialsCost = roundCurrency(unitRawMaterialsCost * safeLotQuantity);
@@ -203,7 +238,6 @@ const CostCalculator: React.FC = () => {
 
     // Taxas do marketplace por unidade
     const unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
-    // Taxa fixa é única por venda, não por unidade
     const unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);
     const unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
 
@@ -239,17 +273,13 @@ const CostCalculator: React.FC = () => {
       unitPrice,
       unitRawMaterialsCost,
       netProfit,
-      // Legacy compatibility
       totalCost: productionCost,
       profitValue: desiredProfit,
       sellingPrice: finalSellingPrice,
     };
   }, [
     lotQuantity,
-    paper,
-    ink,
-    varnish,
-    otherMaterials,
+    rawMaterialCosts,
     labor,
     energy,
     equipment,
@@ -261,9 +291,22 @@ const CostCalculator: React.FC = () => {
     fixedFeePerItem,
   ]);
 
+  // Valores para salvar (compatibilidade com banco de dados)
+  const saveDataValues = useMemo(() => ({
+    paper: rawMaterialCosts.paper,
+    ink: rawMaterialCosts.handle,
+    varnish: rawMaterialCosts.ink,
+    otherMaterials: rawMaterialCosts.packaging + rawMaterialCosts.other,
+    labor,
+    energy,
+    equipment,
+    rent,
+    otherCosts,
+  }), [rawMaterialCosts, labor, energy, equipment, rent, otherCosts]);
+
   return (
     <>
-      {/* Overlay de bloqueio quando limite atingido - pointer-events: none para não bloquear cliques */}
+      {/* Overlay de bloqueio quando limite atingido */}
       {hasReachedLimit && (
         <div 
           className="fixed inset-0 z-40 pointer-events-none"
@@ -300,221 +343,236 @@ const CostCalculator: React.FC = () => {
 
         {/* Coluna Esquerda - Formulário */}
         <div className="space-y-6">
-        {/* Onboarding e Exemplo */}
-        <div className="flex items-center gap-3 mb-2">
-          <OnboardingTour onLoadExample={handleLoadExample} isFreePlan={isFreePlan} />
-        </div>
-
-        {/* Seção 1: Nome do Produto */}
-        <FormSection title="Produto" icon={<Tag className="w-5 h-5 text-primary" />}>
-          <div className="col-span-full">
-            <label className="text-sm font-medium text-secondary-foreground mb-2 block">
-              Nome do produto
-            </label>
-            <Input
-              type="text"
-              value={productName}
-              onChange={(e) => setProductName(e.target.value)}
-              placeholder="Ex: Sacola de papel personalizada"
-              className="input-currency"
-              maxLength={100}
-            />
-            <p className="text-xs text-muted-foreground mt-1.5">
-              Dê um nome para identificar este cálculo
-            </p>
+          {/* Onboarding e Exemplo */}
+          <div className="flex items-center gap-3 mb-2">
+            <OnboardingTour onLoadExample={handleLoadExample} isFreePlan={isFreePlan} />
           </div>
-        </FormSection>
 
-        {/* Seção 2: Quantidade */}
-        <FormSection
-          title="Quantidade do Lote"
-          icon={<Package className="w-5 h-5 text-primary" />}
-        >
-          <div className="col-span-full">
-            <Input
-              type="number"
-              value={lotQuantity || ''}
-              onChange={handleQuantityChange}
-              placeholder="Quantas unidades você vai produzir?"
-              className="input-currency"
-              min={0}
-              max={999999}
+          {/* Seção 1: Nome do Produto */}
+          <FormSection title="Produto" icon={<Tag className="w-5 h-5 text-primary" />}>
+            <div className="col-span-full">
+              <label className="text-sm font-medium text-secondary-foreground mb-2 block">
+                Nome do produto
+              </label>
+              <Input
+                type="text"
+                value={productName}
+                onChange={(e) => setProductName(e.target.value)}
+                placeholder="Ex: Sacola de papel personalizada"
+                className="input-currency"
+                maxLength={100}
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Dê um nome para identificar este cálculo
+              </p>
+            </div>
+          </FormSection>
+
+          {/* Seção 2: Quantidade */}
+          <FormSection
+            title="Quantidade do Lote"
+            icon={<Package className="w-5 h-5 text-primary" />}
+          >
+            <div className="col-span-full">
+              <Input
+                type="number"
+                value={lotQuantity || ''}
+                onChange={handleQuantityChange}
+                placeholder="Quantas unidades você vai produzir?"
+                className="input-currency"
+                min={0}
+                max={999999}
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Total de unidades a serem produzidas neste lote
+              </p>
+            </div>
+          </FormSection>
+
+          {/* Seção 3: Matéria-prima (NOVA LÓGICA) */}
+          <FormSection
+            title="Matéria-prima"
+            icon={<Layers className="w-5 h-5 text-primary" />}
+            subtitle="Informe o valor do pacote, quantidade no pacote e quantas unidades usa por produto"
+          >
+            <RawMaterialInput
+              label="Papel"
+              packageValue={paperData.packageValue}
+              packageQuantity={paperData.packageQuantity}
+              quantityUsed={paperData.quantityUsed}
+              onPackageValueChange={(v) => setPaperData(prev => ({ ...prev, packageValue: v }))}
+              onPackageQuantityChange={(v) => setPaperData(prev => ({ ...prev, packageQuantity: v }))}
+              onQuantityUsedChange={(v) => setPaperData(prev => ({ ...prev, quantityUsed: v }))}
+              tooltip="Custo do papel/substrato. Informe o valor do pacote, quantas unidades vêm no pacote, e quantas você usa por produto."
             />
-            <p className="text-xs text-muted-foreground mt-1.5">
-              Total de unidades a serem produzidas neste lote
-            </p>
-          </div>
-        </FormSection>
+            <RawMaterialInput
+              label="Alça"
+              packageValue={handleData.packageValue}
+              packageQuantity={handleData.packageQuantity}
+              quantityUsed={handleData.quantityUsed}
+              onPackageValueChange={(v) => setHandleData(prev => ({ ...prev, packageValue: v }))}
+              onPackageQuantityChange={(v) => setHandleData(prev => ({ ...prev, packageQuantity: v }))}
+              onQuantityUsedChange={(v) => setHandleData(prev => ({ ...prev, quantityUsed: v }))}
+              tooltip="Custo de alças, cordões ou acabamentos. Informe o valor do pacote, quantas unidades vêm, e quantas usa por produto."
+            />
+            <RawMaterialInput
+              label="Tinta"
+              packageValue={inkData.packageValue}
+              packageQuantity={inkData.packageQuantity}
+              quantityUsed={inkData.quantityUsed}
+              onPackageValueChange={(v) => setInkData(prev => ({ ...prev, packageValue: v }))}
+              onPackageQuantityChange={(v) => setInkData(prev => ({ ...prev, packageQuantity: v }))}
+              onQuantityUsedChange={(v) => setInkData(prev => ({ ...prev, quantityUsed: v }))}
+              tooltip="Custo de tinta, verniz ou laminação. Informe o valor do frasco/pote, quantas impressões rende, e quantas usa por produto."
+            />
+            <RawMaterialInput
+              label="Embalagem"
+              packageValue={packagingData.packageValue}
+              packageQuantity={packagingData.packageQuantity}
+              quantityUsed={packagingData.quantityUsed}
+              onPackageValueChange={(v) => setPackagingData(prev => ({ ...prev, packageValue: v }))}
+              onPackageQuantityChange={(v) => setPackagingData(prev => ({ ...prev, packageQuantity: v }))}
+              onQuantityUsedChange={(v) => setPackagingData(prev => ({ ...prev, quantityUsed: v }))}
+              tooltip="Custo de embalagens adicionais para envio ou apresentação do produto."
+            />
+            <RawMaterialInput
+              label="Outros insumos"
+              packageValue={otherMaterialsData.packageValue}
+              packageQuantity={otherMaterialsData.packageQuantity}
+              quantityUsed={otherMaterialsData.quantityUsed}
+              onPackageValueChange={(v) => setOtherMaterialsData(prev => ({ ...prev, packageValue: v }))}
+              onPackageQuantityChange={(v) => setOtherMaterialsData(prev => ({ ...prev, packageQuantity: v }))}
+              onQuantityUsedChange={(v) => setOtherMaterialsData(prev => ({ ...prev, quantityUsed: v }))}
+              tooltip="Outros materiais como cola, fita, acabamentos especiais, etc."
+            />
+          </FormSection>
 
-        {/* Seção 3: Matéria-prima (valor por unidade) */}
-        <FormSection
-          title="Matéria-prima (valor por unidade)"
-          icon={<Layers className="w-5 h-5 text-primary" />}
-          subtitle="Informe o custo de materiais por unidade"
-        >
-          <CurrencyInput 
-            label="Papel" 
-            value={paper} 
-            onChange={setPaper}
-            tooltip="Custo do papel/substrato por unidade produzida."
-          />
-          <CurrencyInput 
-            label="Alça" 
-            value={ink} 
-            onChange={setInk}
-            tooltip="Custo de alças, cordões ou acabamentos por unidade."
-          />
-          <CurrencyInput 
-            label="Tinta" 
-            value={varnish} 
-            onChange={setVarnish}
-            tooltip="Custo de tinta, verniz ou laminação por unidade."
-          />
-          <CurrencyInput 
-            label="Outros" 
-            value={otherMaterials} 
-            onChange={setOtherMaterials}
-            tooltip="Outros materiais como cola, fita, embalagem, etc."
-          />
-        </FormSection>
+          {/* Seção 4: Custos Operacionais */}
+          <FormSection
+            title="Custos Operacionais"
+            icon={<Factory className="w-5 h-5 text-primary" />}
+            subtitle="Informe o custo total de operação para este lote"
+          >
+            <CurrencyInput 
+              label="Mão de obra" 
+              value={labor} 
+              onChange={setLabor}
+              tooltip="Custo de trabalho humano para produzir este lote. Inclua salários, encargos e benefícios proporcionais."
+            />
+            <CurrencyInput 
+              label="Energia" 
+              value={energy} 
+              onChange={setEnergy}
+              tooltip="Custo de energia elétrica consumida na produção deste lote."
+            />
+            <CurrencyInput 
+              label="Equipamentos" 
+              value={equipment} 
+              onChange={setEquipment}
+              tooltip="Depreciação de máquinas, manutenção preventiva e corretiva proporcionais a este lote."
+            />
+            <CurrencyInput 
+              label="Espaço" 
+              value={rent} 
+              onChange={setRent}
+              tooltip="Aluguel, água, internet, IPTU e outros custos fixos do espaço, proporcionais a este lote."
+            />
+            <CurrencyInput
+              label="Outros custos"
+              value={otherCosts}
+              onChange={setOtherCosts}
+              fullWidth
+              tooltip="Taxas, impostos, frete de insumos, embalagem de envio, etc."
+            />
+          </FormSection>
 
-        {/* Seção 4: Custos Operacionais */}
-        <FormSection
-          title="Custos Operacionais"
-          icon={<Factory className="w-5 h-5 text-primary" />}
-          subtitle="Informe o custo total de operação para este lote"
-        >
-          <CurrencyInput 
-            label="Mão de obra" 
-            value={labor} 
-            onChange={setLabor}
-            tooltip="Custo de trabalho humano para produzir este lote. Inclua salários, encargos e benefícios proporcionais."
-          />
-          <CurrencyInput 
-            label="Energia" 
-            value={energy} 
-            onChange={setEnergy}
-            tooltip="Custo de energia elétrica consumida na produção deste lote."
-          />
-          <CurrencyInput 
-            label="Equipamentos" 
-            value={equipment} 
-            onChange={setEquipment}
-            tooltip="Depreciação de máquinas, manutenção preventiva e corretiva proporcionais a este lote."
-          />
-          <CurrencyInput 
-            label="Espaço" 
-            value={rent} 
-            onChange={setRent}
-            tooltip="Aluguel, água, internet, IPTU e outros custos fixos do espaço, proporcionais a este lote."
-          />
-          <CurrencyInput
-            label="Outros custos"
-            value={otherCosts}
-            onChange={setOtherCosts}
-            fullWidth
-            tooltip="Taxas, impostos, frete de insumos, embalagem de envio, etc."
-          />
-        </FormSection>
+          {/* Seção 5: Margem de Lucro */}
+          <FormSection
+            title="Margem de Lucro"
+            icon={<Percent className="w-5 h-5 text-primary" />}
+          >
+            <div className="col-span-full space-y-4">
+              {/* Botão de Sugestão de Margem */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Precisa de ajuda?</span>
+                <SuggestMarginButton
+                  productPreset={productPreset}
+                  quantity={lotQuantity}
+                  onSuggest={handleSuggestMargin}
+                  disabled={fixedProfit > 0}
+                />
+              </div>
 
-        {/* Seção 5: Margem de Lucro */}
-        <FormSection
-          title="Margem de Lucro"
-          icon={<Percent className="w-5 h-5 text-primary" />}
-        >
-          <div className="col-span-full space-y-4">
-            {/* Botão de Sugestão de Margem */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Precisa de ajuda?</span>
-              <SuggestMarginButton
-                productPreset={productPreset}
-                quantity={lotQuantity}
-                onSuggest={handleSuggestMargin}
+              <MarginSlider
+                value={profitMargin}
+                onChange={setProfitMargin}
                 disabled={fixedProfit > 0}
               />
             </div>
 
-            <MarginSlider
-              value={profitMargin}
-              onChange={setProfitMargin}
-              disabled={fixedProfit > 0}
-            />
-          </div>
-
-          <div className="col-span-full flex items-center justify-center py-4">
-            <div className="flex items-center gap-4">
-              <div className="h-px w-16 bg-border" />
-              <span className="text-sm text-muted-foreground font-medium">OU</span>
-              <div className="h-px w-16 bg-border" />
+            <div className="col-span-full flex items-center justify-center py-4">
+              <div className="flex items-center gap-4">
+                <div className="h-px w-16 bg-border" />
+                <span className="text-sm text-muted-foreground font-medium">OU</span>
+                <div className="h-px w-16 bg-border" />
+              </div>
             </div>
-          </div>
 
-          <CurrencyInput
-            label="Valor fixo de lucro (total)"
-            value={fixedProfit}
-            onChange={setFixedProfit}
-            helperText="Lucro total desejado para o lote inteiro"
-            fullWidth
-            tooltip="Defina um valor de lucro fixo em R$ ao invés de percentual. Útil quando você já sabe quanto quer ganhar no lote."
+            <CurrencyInput
+              label="Valor fixo de lucro (total)"
+              value={fixedProfit}
+              onChange={setFixedProfit}
+              helperText="Lucro total desejado para o lote inteiro"
+              fullWidth
+              tooltip="Defina um valor de lucro fixo em R$ ao invés de percentual. Útil quando você já sabe quanto quer ganhar no lote."
+            />
+          </FormSection>
+
+          {/* Seção 6: Marketplace */}
+          <MarketplaceSection
+            marketplace={marketplace}
+            onMarketplaceChange={setMarketplace}
+            commissionPercentage={commissionPercentage}
+            onCommissionChange={setCommissionPercentage}
+            fixedFeePerItem={fixedFeePerItem}
+            onFixedFeeChange={setFixedFeePerItem}
+            profitValue={calculations.desiredProfit}
+            marketplaceTotalFees={calculations.marketplaceTotalFees}
           />
-        </FormSection>
+        </div>
 
-        {/* Seção 6: Marketplace */}
-        <MarketplaceSection
-          marketplace={marketplace}
-          onMarketplaceChange={setMarketplace}
-          commissionPercentage={commissionPercentage}
-          onCommissionChange={setCommissionPercentage}
-          fixedFeePerItem={fixedFeePerItem}
-          onFixedFeeChange={setFixedFeePerItem}
-          profitValue={calculations.desiredProfit}
-          marketplaceTotalFees={calculations.marketplaceTotalFees}
-        />
-
-      </div>
-
-      {/* Coluna Direita - Resultados */}
-      <div className="space-y-6">
-        <ResultPanel
-          productName={productName}
-          quantity={lotQuantity}
-          rawMaterialsCost={calculations.rawMaterialsCost}
-          operationalCost={calculations.operationalCost}
-          productionCost={calculations.productionCost}
-          profitMargin={profitMargin}
-          desiredProfit={calculations.desiredProfit}
-          marketplaceCommission={calculations.marketplaceCommission}
-          marketplaceFixedFees={calculations.marketplaceFixedFees}
-          marketplaceTotalFees={calculations.marketplaceTotalFees}
-          finalSellingPrice={calculations.finalSellingPrice}
-          unitPrice={calculations.unitPrice}
-          isFixedProfit={calculations.isFixedProfit}
-          hasMarketplace={marketplace !== 'none'}
-          unitRawMaterialsCost={calculations.unitRawMaterialsCost}
-          operationalTotal={calculations.operationalTotal}
-          fixedProfit={fixedProfit}
-          commissionPercentage={commissionPercentage}
-          fixedFeePerItem={fixedFeePerItem}
-          marketplace={marketplace}
-          hasOperationalCosts={hasOperationalCosts}
-          saveData={{
-            paper,
-            ink,
-            varnish,
-            otherMaterials,
-            labor,
-            energy,
-            equipment,
-            rent,
-            otherCosts,
-          }}
-          onSaved={handleCalculationSaved}
-          onApplySuggestedMargin={handleSuggestMargin}
-          isBlocked={hasReachedLimit}
-          isPro={!isFreePlan}
-          onShowUpgrade={() => setShowUpgradeModal(true)}
-        />
-      </div>
+        {/* Coluna Direita - Resultados */}
+        <div className="space-y-6">
+          <ResultPanel
+            productName={productName}
+            quantity={lotQuantity}
+            rawMaterialsCost={calculations.rawMaterialsCost}
+            operationalCost={calculations.operationalCost}
+            productionCost={calculations.productionCost}
+            profitMargin={profitMargin}
+            desiredProfit={calculations.desiredProfit}
+            marketplaceCommission={calculations.marketplaceCommission}
+            marketplaceFixedFees={calculations.marketplaceFixedFees}
+            marketplaceTotalFees={calculations.marketplaceTotalFees}
+            finalSellingPrice={calculations.finalSellingPrice}
+            unitPrice={calculations.unitPrice}
+            isFixedProfit={calculations.isFixedProfit}
+            hasMarketplace={marketplace !== 'none'}
+            unitRawMaterialsCost={calculations.unitRawMaterialsCost}
+            operationalTotal={calculations.operationalTotal}
+            fixedProfit={fixedProfit}
+            commissionPercentage={commissionPercentage}
+            fixedFeePerItem={fixedFeePerItem}
+            marketplace={marketplace}
+            hasOperationalCosts={hasOperationalCosts}
+            saveData={saveDataValues}
+            onSaved={handleCalculationSaved}
+            onApplySuggestedMargin={handleSuggestMargin}
+            isBlocked={hasReachedLimit}
+            isPro={!isFreePlan}
+            onShowUpgrade={() => setShowUpgradeModal(true)}
+          />
+        </div>
 
         {/* Histórico de Cálculos - Full Width */}
         <div className="lg:col-span-2">
