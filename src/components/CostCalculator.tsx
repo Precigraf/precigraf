@@ -8,6 +8,7 @@ import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import TooltipLabel from './TooltipLabel';
 import RawMaterialInput from './RawMaterialInput';
+import InkCostInput, { InkCostData } from './InkCostInput';
 import { Input } from '@/components/ui/input';
 import CalculationHistory from './CalculationHistory';
 import SuggestMarginButton from './SuggestMarginButton';
@@ -58,9 +59,17 @@ const CostCalculator: React.FC = () => {
   // Matéria-prima - Nova estrutura com pacote/quantidade/uso
   const [paperData, setPaperData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
   const [handleData, setHandleData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
-  const [inkData, setInkData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
   const [packagingData, setPackagingData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
   const [otherMaterialsData, setOtherMaterialsData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
+  
+  // Tinta - Nova estrutura avançada com cálculo por ML
+  const [inkData, setInkData] = useState<InkCostData>({ 
+    totalValue: 0, 
+    bottleCount: 0, 
+    mlPerBottle: 0, 
+    mlPerPrint: 0, 
+    printQuantity: 0 
+  });
 
   // Custos operacionais
   const [labor, setLabor] = useState(0);
@@ -99,7 +108,8 @@ const CostCalculator: React.FC = () => {
       // Aplicar valores do preset como custo unitário direto (para compatibilidade)
       setPaperData({ packageValue: config.paper, packageQuantity: 1, quantityUsed: 1 });
       setHandleData({ packageValue: config.ink, packageQuantity: 1, quantityUsed: 1 });
-      setInkData({ packageValue: config.varnish, packageQuantity: 1, quantityUsed: 1 });
+      // Para tinta no preset, aplicar como valor simples (1 frasco, 1ml, 1 impressão = custo direto)
+      setInkData({ totalValue: config.varnish, bottleCount: 1, mlPerBottle: 1, mlPerPrint: 1, printQuantity: 1 });
       setOtherMaterialsData({ packageValue: config.otherMaterials, packageQuantity: 1, quantityUsed: 1 });
       if (config.defaultQuantity > 0 && lotQuantity === 0) {
         setLotQuantity(config.defaultQuantity);
@@ -139,8 +149,8 @@ const CostCalculator: React.FC = () => {
     setPaperData({ packageValue: 70, packageQuantity: 200, quantityUsed: 2 });
     // Alça - Pacote de R$40 com 100 alças, usa 2 alças por produto
     setHandleData({ packageValue: 40, packageQuantity: 100, quantityUsed: 2 });
-    // Tinta - Pote de R$30 rende 500 impressões, usa 1 por produto
-    setInkData({ packageValue: 30, packageQuantity: 500, quantityUsed: 1 });
+    // Tinta - R$145 por 4 frascos de 250ml, 0.8ml por impressão, 100 impressões
+    setInkData({ totalValue: 145, bottleCount: 4, mlPerBottle: 250, mlPerPrint: 0.8, printQuantity: 100 });
     // Embalagem - Não usa
     setPackagingData({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
     // Outros materiais - Cola/acabamento R$20 para 100 unidades
@@ -161,16 +171,31 @@ const CostCalculator: React.FC = () => {
   // Verificar se custos operacionais estão preenchidos
   const hasOperationalCosts = labor > 0 || energy > 0 || equipment > 0 || rent > 0 || otherCosts > 0;
 
+  // Calcular custo de tinta (baseado em ML)
+  const inkCost = useMemo(() => {
+    const safeBottleCount = inkData.bottleCount > 0 ? inkData.bottleCount : 1;
+    const safeMlPerBottle = inkData.mlPerBottle > 0 ? inkData.mlPerBottle : 1;
+    const safeMlPerPrint = inkData.mlPerPrint >= 0 ? inkData.mlPerPrint : 0;
+    const safePrintQuantity = inkData.printQuantity >= 0 ? inkData.printQuantity : 0;
+
+    const totalMl = safeBottleCount * safeMlPerBottle;
+    const valuePerMl = inkData.totalValue / totalMl;
+    const totalConsumption = safeMlPerPrint * safePrintQuantity;
+    const finalCost = totalConsumption * valuePerMl;
+
+    return roundCurrency(finalCost);
+  }, [inkData]);
+
   // Calcular custos de matéria-prima por unidade
   const rawMaterialCosts = useMemo(() => {
     return {
       paper: calculateRawMaterialCost(paperData),
       handle: calculateRawMaterialCost(handleData),
-      ink: calculateRawMaterialCost(inkData),
+      ink: inkCost,
       packaging: calculateRawMaterialCost(packagingData),
       other: calculateRawMaterialCost(otherMaterialsData),
     };
-  }, [paperData, handleData, inkData, packagingData, otherMaterialsData]);
+  }, [paperData, handleData, inkCost, packagingData, otherMaterialsData]);
 
   // Cálculos em tempo real
   const calculations = useMemo(() => {
@@ -416,16 +441,6 @@ const CostCalculator: React.FC = () => {
               tooltip="Custo de alças, cordões ou acabamentos. Informe o valor do pacote, quantas unidades vêm, e quantas usa por produto."
             />
             <RawMaterialInput
-              label="Tinta"
-              packageValue={inkData.packageValue}
-              packageQuantity={inkData.packageQuantity}
-              quantityUsed={inkData.quantityUsed}
-              onPackageValueChange={(v) => setInkData(prev => ({ ...prev, packageValue: v }))}
-              onPackageQuantityChange={(v) => setInkData(prev => ({ ...prev, packageQuantity: v }))}
-              onQuantityUsedChange={(v) => setInkData(prev => ({ ...prev, quantityUsed: v }))}
-              tooltip="Custo de tinta, verniz ou laminação. Informe o valor do frasco/pote, quantas impressões rende, e quantas usa por produto."
-            />
-            <RawMaterialInput
               label="Embalagem"
               packageValue={packagingData.packageValue}
               packageQuantity={packagingData.packageQuantity}
@@ -434,6 +449,11 @@ const CostCalculator: React.FC = () => {
               onPackageQuantityChange={(v) => setPackagingData(prev => ({ ...prev, packageQuantity: v }))}
               onQuantityUsedChange={(v) => setPackagingData(prev => ({ ...prev, quantityUsed: v }))}
               tooltip="Custo de embalagens adicionais para envio ou apresentação do produto."
+            />
+            <InkCostInput
+              data={inkData}
+              onDataChange={setInkData}
+              tooltip="Custo de tinta baseado em volume (ml). Informe o valor pago, quantidade de frascos, ml por frasco, e consumo por impressão."
             />
             <RawMaterialInput
               label="Outros insumos"
