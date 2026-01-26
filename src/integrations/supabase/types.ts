@@ -243,7 +243,33 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      pending_payments_safe: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_user_role: {
