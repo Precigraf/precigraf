@@ -1,5 +1,7 @@
 import React from 'react';
-import { Calculator } from 'lucide-react';
+import { Calculator, Lock, Sparkles } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface QuantitySimulatorProps {
   unitRawMaterialsCost: number;
@@ -9,6 +11,8 @@ interface QuantitySimulatorProps {
   commissionPercentage: number;
   fixedFeePerItem: number;
   currentQuantity: number;
+  isPro?: boolean;
+  onShowUpgrade?: () => void;
 }
 
 const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
@@ -19,6 +23,8 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   commissionPercentage,
   fixedFeePerItem,
   currentQuantity,
+  isPro = true,
+  onShowUpgrade,
 }) => {
   const quantities = [15, 20, 40, 50, 80, 100];
 
@@ -79,6 +85,69 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   // Calcular valores atuais para comparação
   const currentCalc = calculateForQuantity(currentQuantity);
 
+  const handleUpgradeClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onShowUpgrade) {
+      onShowUpgrade();
+    }
+  };
+
+  // Versão bloqueada para usuários FREE
+  if (!isPro) {
+    return (
+      <div 
+        className="relative overflow-hidden rounded-xl"
+        onClick={handleUpgradeClick}
+      >
+        {/* Overlay de bloqueio */}
+        <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center gap-2 cursor-pointer">
+          <Lock className="w-5 h-5 text-muted-foreground" />
+          <Badge variant="outline" className="text-xs bg-background/80">
+            <Sparkles className="w-3 h-3 mr-1" />
+            Desbloqueie no Plano Pro
+          </Badge>
+          <Button
+            size="sm"
+            onClick={handleUpgradeClick}
+            className="mt-2 text-xs pointer-events-auto"
+          >
+            Fazer upgrade
+          </Button>
+        </div>
+
+        {/* Conteúdo bloqueado (visível mas desativado) */}
+        <div className="opacity-40 pointer-events-none select-none filter grayscale bg-secondary/30 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Calculator className="w-4 h-4 text-primary" />
+            <span className="text-sm font-medium text-foreground">Simulador de Quantidade</span>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {[15, 20, 40].map((qty) => (
+              <div 
+                key={qty} 
+                className="bg-card rounded-lg p-3 border border-border flex items-center justify-between"
+              >
+                <span className="text-sm font-medium text-muted-foreground min-w-[50px]">
+                  {qty} un
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  R$ ---
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-xs text-muted-foreground text-center mt-3">
+            Simule preços para diferentes quantidades
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Versão completa para usuários PRO
   return (
     <div className="bg-secondary/30 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-4">
@@ -89,11 +158,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
       <div className="flex flex-col gap-2">
         {quantities.map((qty) => {
           const calc = calculateForQuantity(qty);
-          const priceDiff = currentCalc.unitPrice > 0 
-            ? ((calc.unitPrice - currentCalc.unitPrice) / currentCalc.unitPrice) * 100 
-            : 0;
-          const isBetter = priceDiff < 0;
-
           const lotPrice = calc.unitPrice * qty;
           
           return (
