@@ -558,6 +558,8 @@ const CostCalculator: React.FC = () => {
             onFixedFeeChange={setFixedFeePerItem}
             profitValue={calculations.desiredProfit}
             marketplaceTotalFees={calculations.marketplaceTotalFees}
+            isPro={!isFreePlan}
+            onShowUpgrade={() => setShowUpgradeModal(true)}
           />
         </div>
 

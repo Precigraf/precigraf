@@ -317,6 +317,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         commissionPercentage={commissionPercentage}
         fixedFeePerItem={fixedFeePerItem}
         currentQuantity={safeQuantity}
+        isPro={isPro}
+        onShowUpgrade={onShowUpgrade}
       />
 
       {/* Botão Salvar Cálculo */}
