@@ -9,14 +9,22 @@ interface SubscriptionPlan {
   can_export: boolean;
 }
 
+type PlanStatus = 'trial' | 'free' | 'pro';
+
 interface UserPlanData {
   plan: 'free' | 'pro';
+  planStatus: PlanStatus;
   calculationsCount: number;
   canSaveCalculation: boolean;
   canExport: boolean;
   maxCalculations: number;
   loading: boolean;
   refetch: () => Promise<void>;
+  trialEndsAt: Date | null;
+  isTrialActive: boolean;
+  isTrialExpired: boolean;
+  trialRemainingHours: number;
+  canCreateCalculation: boolean;
 }
 
 const FREE_PLAN_LIMIT = 2;
@@ -28,6 +36,7 @@ export const useUserPlan = (): UserPlanData => {
   const [maxCalculations, setMaxCalculations] = useState(FREE_PLAN_LIMIT);
   const [canExport, setCanExport] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [trialEndsAt, setTrialEndsAt] = useState<Date | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!user) {
@@ -36,12 +45,13 @@ export const useUserPlan = (): UserPlanData => {
     }
 
     try {
-      // Fetch user profile with subscription plan details
+      // Fetch user profile with subscription plan details and trial_ends_at
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select(`
           plan,
           plan_id,
+          trial_ends_at,
           subscription_plans:plan_id (
             name,
             max_calculations,
@@ -53,6 +63,13 @@ export const useUserPlan = (): UserPlanData => {
 
       if (profileError && profileError.code !== 'PGRST116') {
         logError('Error fetching profile:', profileError);
+      }
+
+      // Set trial_ends_at
+      if (profileData?.trial_ends_at) {
+        setTrialEndsAt(new Date(profileData.trial_ends_at));
+      } else {
+        setTrialEndsAt(null);
       }
 
       // Determine plan from subscription_plans or fallback to plan column
@@ -94,15 +111,45 @@ export const useUserPlan = (): UserPlanData => {
     fetchData();
   }, [fetchData]);
 
-  const canSaveCalculation = plan === 'pro' || calculationsCount < maxCalculations;
+  // Calculate trial status
+  const now = new Date();
+  const isTrialActive = trialEndsAt !== null && trialEndsAt > now && plan === 'free';
+  const isTrialExpired = trialEndsAt !== null && trialEndsAt <= now && plan === 'free';
+  
+  // Calculate remaining hours
+  const trialRemainingHours = trialEndsAt 
+    ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60)))
+    : 0;
+
+  // Determine plan status
+  let planStatus: PlanStatus = 'free';
+  if (plan === 'pro') {
+    planStatus = 'pro';
+  } else if (isTrialActive) {
+    planStatus = 'trial';
+  } else {
+    planStatus = 'free';
+  }
+
+  // Can save calculation: Pro users always can, trial users within limit, expired trial users cannot
+  const canSaveCalculation = plan === 'pro' || (isTrialActive && calculationsCount < maxCalculations);
+
+  // Can create calculation: Pro users always can, trial users can, expired trial users cannot
+  const canCreateCalculation = plan === 'pro' || isTrialActive;
 
   return {
     plan,
+    planStatus,
     calculationsCount,
     canSaveCalculation,
     canExport,
     maxCalculations,
     loading,
     refetch: fetchData,
+    trialEndsAt,
+    isTrialActive,
+    isTrialExpired,
+    trialRemainingHours,
+    canCreateCalculation,
   };
 };

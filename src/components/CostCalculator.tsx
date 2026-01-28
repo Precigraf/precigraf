@@ -15,6 +15,7 @@ import SuggestMarginButton from './SuggestMarginButton';
 import OnboardingTour from './OnboardingTour';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import UpgradePlanModal from './UpgradePlanModal';
+import TrialBanner from './TrialBanner';
 import { useNavigate } from 'react-router-dom';
 
 // Função auxiliar para garantir números válidos
@@ -45,9 +46,20 @@ const calculateRawMaterialCost = (data: RawMaterialData): number => {
 
 const CostCalculator: React.FC = () => {
   const navigate = useNavigate();
-  const { plan, calculationsCount, maxCalculations, loading: planLoading } = useUserPlan();
-  const isFreePlan = plan === 'free';
-  const hasReachedLimit = isFreePlan && calculationsCount >= maxCalculations;
+  const { 
+    plan, 
+    planStatus,
+    calculationsCount, 
+    maxCalculations, 
+    loading: planLoading,
+    isTrialActive,
+    isTrialExpired,
+    trialRemainingHours,
+    canCreateCalculation,
+    canSaveCalculation,
+  } = useUserPlan();
+  const isPro = plan === 'pro';
+  const isBlocked = !canCreateCalculation || (!isPro && calculationsCount >= maxCalculations);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Estado do formulário
@@ -126,20 +138,20 @@ const CostCalculator: React.FC = () => {
 
   // Handler para sugestão de margem
   const handleSuggestMargin = useCallback((suggestedMargin: number) => {
-    if (hasReachedLimit) {
+    if (isBlocked) {
       setShowUpgradeModal(true);
       return;
     }
     setProfitMargin(suggestedMargin);
     setFixedProfit(0);
-  }, [hasReachedLimit]);
+  }, [isBlocked]);
 
   // Handler para bloqueio de campos quando limite atingido
   const handleBlockedClick = useCallback(() => {
-    if (hasReachedLimit) {
+    if (isBlocked) {
       setShowUpgradeModal(true);
     }
-  }, [hasReachedLimit]);
+  }, [isBlocked]);
 
   // Handler para carregar exemplo
   const handleLoadExample = useCallback(() => {
@@ -331,17 +343,30 @@ const CostCalculator: React.FC = () => {
 
   return (
     <>
-      {/* Overlay de bloqueio quando limite atingido */}
-      {hasReachedLimit && (
+      {/* Overlay de bloqueio quando trial expirado ou limite atingido */}
+      {isBlocked && (
         <div 
           className="fixed inset-0 z-40 pointer-events-none"
           style={{ background: 'transparent' }}
         />
       )}
 
-      <div className={`grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 ${hasReachedLimit ? 'pointer-events-none opacity-60' : ''}`}>
-        {/* Banner de bloqueio */}
-        {hasReachedLimit && (
+      <div className={`grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 ${isBlocked ? 'pointer-events-none opacity-60' : ''}`}>
+        {/* Banner de Trial */}
+        <div className="lg:col-span-2 pointer-events-auto relative z-50">
+          <TrialBanner
+            isTrialActive={isTrialActive}
+            isTrialExpired={isTrialExpired}
+            trialRemainingHours={trialRemainingHours}
+            onUpgrade={() => {
+              setShowUpgradeModal(false);
+              navigate('/upgrade');
+            }}
+          />
+        </div>
+
+        {/* Banner de bloqueio quando limite atingido (durante trial) */}
+        {!canCreateCalculation && !isTrialExpired && (
           <div className="lg:col-span-2 w-full bg-destructive/10 border border-destructive/30 rounded-xl p-4 pointer-events-auto relative z-50">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <div className="flex items-start gap-3 flex-1">
@@ -370,7 +395,7 @@ const CostCalculator: React.FC = () => {
         <div className="space-y-6">
           {/* Onboarding e Exemplo */}
           <div className="flex items-center gap-3 mb-2">
-            <OnboardingTour onLoadExample={handleLoadExample} isFreePlan={isFreePlan} />
+            <OnboardingTour onLoadExample={handleLoadExample} isFreePlan={!isPro} />
           </div>
 
           {/* Seção 1: Nome do Produto */}
@@ -558,7 +583,7 @@ const CostCalculator: React.FC = () => {
             onFixedFeeChange={setFixedFeePerItem}
             profitValue={calculations.desiredProfit}
             marketplaceTotalFees={calculations.marketplaceTotalFees}
-            isPro={!isFreePlan}
+            isPro={isPro}
             onShowUpgrade={() => setShowUpgradeModal(true)}
           />
         </div>
@@ -590,8 +615,8 @@ const CostCalculator: React.FC = () => {
             saveData={saveDataValues}
             onSaved={handleCalculationSaved}
             onApplySuggestedMargin={handleSuggestMargin}
-            isBlocked={hasReachedLimit}
-            isPro={!isFreePlan}
+            isBlocked={isBlocked}
+            isPro={isPro}
             onShowUpgrade={() => setShowUpgradeModal(true)}
           />
         </div>
