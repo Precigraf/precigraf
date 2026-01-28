@@ -130,6 +130,7 @@ export type Database = {
           plan: string
           plan_id: string | null
           profile_image_url: string | null
+          trial_ends_at: string | null
           updated_at: string
           user_id: string
         }
@@ -140,6 +141,7 @@ export type Database = {
           plan?: string
           plan_id?: string | null
           profile_image_url?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -150,6 +152,7 @@ export type Database = {
           plan?: string
           plan_id?: string | null
           profile_image_url?: string | null
+          trial_ends_at?: string | null
           updated_at?: string
           user_id?: string
         }

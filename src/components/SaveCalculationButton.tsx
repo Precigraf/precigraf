@@ -37,16 +37,19 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onS
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const { canSaveCalculation, refetch } = useUserPlan();
+  const { canSaveCalculation, canCreateCalculation, isTrialExpired, refetch } = useUserPlan();
   const navigate = useNavigate();
 
   const isValid = data.productName.trim().length > 0 && data.quantity > 0 && data.finalSellingPrice > 0;
+
+  // Block saving if trial expired or can't save calculation
+  const canSave = canCreateCalculation && canSaveCalculation;
 
   const handleSave = async () => {
     if (!isValid) return;
 
     // Check if user can save more calculations
-    if (!canSaveCalculation) {
+    if (!canSave) {
       setShowUpgradeModal(true);
       return;
     }
