@@ -41,7 +41,7 @@ const UpgradePlanModal: React.FC<UpgradePlanModalProps> = ({
           <div className="flex flex-col gap-3 mt-6 w-full">
             <Button onClick={onUpgrade} className="w-full gap-2">
               <Crown className="w-4 h-4" />
-              Desbloquear acesso vitalício
+              Garantir acesso vitalício
             </Button>
             <Button variant="outline" onClick={onClose} className="w-full">
               Cancelar
