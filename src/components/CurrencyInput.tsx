@@ -9,7 +9,6 @@ interface CurrencyInputProps {
   helperText?: string;
   fullWidth?: boolean;
   tooltip?: string;
-  disabled?: boolean;
 }
 
 const CurrencyInput: React.FC<CurrencyInputProps> = ({
@@ -20,7 +19,6 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
   helperText,
   fullWidth = false,
   tooltip,
-  disabled = false,
 }) => {
   const [displayValue, setDisplayValue] = useState('');
 
@@ -62,7 +60,7 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
   };
 
   return (
-    <div className={`flex flex-col gap-2 ${fullWidth ? 'col-span-full' : ''} ${disabled ? 'opacity-60' : ''}`}>
+    <div className={`flex flex-col gap-2 ${fullWidth ? 'col-span-full' : ''}`}>
       {tooltip ? (
         <TooltipLabel label={label} tooltip={tooltip} />
       ) : (
@@ -80,9 +78,8 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
           value={displayValue}
           onChange={handleChange}
           placeholder={placeholder}
-          className={`input-currency w-full pl-12 ${disabled ? 'cursor-not-allowed bg-muted' : ''}`}
+          className="input-currency w-full pl-12"
           aria-label={label}
-          disabled={disabled}
         />
       </div>
       {helperText && (
