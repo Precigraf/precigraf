@@ -46,7 +46,7 @@ const ProFeatureGate: React.FC<ProFeatureGateProps> = ({
           }}
           className="mt-2 text-xs pointer-events-auto"
         >
-          Garantir acesso vitalício
+          Fazer upgrade
         </Button>
       </div>
 

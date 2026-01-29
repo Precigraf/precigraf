@@ -16,7 +16,6 @@ import OnboardingTour from './OnboardingTour';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import UpgradePlanModal from './UpgradePlanModal';
 import TrialBanner from './TrialBanner';
-import ProFeatureGate from './ProFeatureGate';
 import { useNavigate } from 'react-router-dom';
 
 // Função auxiliar para garantir números válidos
@@ -375,7 +374,7 @@ const CostCalculator: React.FC = () => {
                 <div className="text-left flex-1">
                   <p className="text-base font-semibold text-destructive">Sistema bloqueado</p>
                   <p className="text-sm text-muted-foreground leading-snug">
-                    Seu período de teste terminou. Garanta o acesso vitalício para continuar.
+                    Você atingiu o limite de {maxCalculations} cálculos do plano gratuito. Faça upgrade para continuar.
                   </p>
                 </div>
               </div>
@@ -386,7 +385,7 @@ const CostCalculator: React.FC = () => {
                 }}
                 className="w-full sm:w-auto px-4 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors pointer-events-auto cursor-pointer z-50 relative"
               >
-                Garantir acesso vitalício
+                Fazer upgrade
               </button>
             </div>
           </div>
@@ -476,79 +475,61 @@ const CostCalculator: React.FC = () => {
               onQuantityUsedChange={(v) => setPackagingData(prev => ({ ...prev, quantityUsed: v }))}
               tooltip="Custo de embalagens adicionais para envio ou apresentação do produto."
             />
-            <ProFeatureGate 
-              isPro={isPro} 
-              onUpgrade={() => setShowUpgradeModal(true)}
-              message="Recurso exclusivo do Plano Pro"
-            >
-              <InkCostInput
-                data={inkData}
-                onDataChange={isPro ? setInkData : () => {}}
-                tooltip="Custo de tinta baseado em volume (ml). Informe o valor pago, quantidade de frascos, ml por frasco, e consumo por impressão."
-              />
-            </ProFeatureGate>
-            <ProFeatureGate 
-              isPro={isPro} 
-              onUpgrade={() => setShowUpgradeModal(true)}
-              message="Recurso exclusivo do Plano Pro"
-            >
-              <RawMaterialInput
-                label="Outros insumos"
-                packageValue={otherMaterialsData.packageValue}
-                packageQuantity={otherMaterialsData.packageQuantity}
-                quantityUsed={otherMaterialsData.quantityUsed}
-                onPackageValueChange={isPro ? (v) => setOtherMaterialsData(prev => ({ ...prev, packageValue: v })) : () => {}}
-                onPackageQuantityChange={isPro ? (v) => setOtherMaterialsData(prev => ({ ...prev, packageQuantity: v })) : () => {}}
-                onQuantityUsedChange={isPro ? (v) => setOtherMaterialsData(prev => ({ ...prev, quantityUsed: v })) : () => {}}
-                tooltip="Outros materiais como cola, fita, acabamentos especiais, etc."
-              />
-            </ProFeatureGate>
+            <InkCostInput
+              data={inkData}
+              onDataChange={setInkData}
+              tooltip="Custo de tinta baseado em volume (ml). Informe o valor pago, quantidade de frascos, ml por frasco, e consumo por impressão."
+            />
+            <RawMaterialInput
+              label="Outros insumos"
+              packageValue={otherMaterialsData.packageValue}
+              packageQuantity={otherMaterialsData.packageQuantity}
+              quantityUsed={otherMaterialsData.quantityUsed}
+              onPackageValueChange={(v) => setOtherMaterialsData(prev => ({ ...prev, packageValue: v }))}
+              onPackageQuantityChange={(v) => setOtherMaterialsData(prev => ({ ...prev, packageQuantity: v }))}
+              onQuantityUsedChange={(v) => setOtherMaterialsData(prev => ({ ...prev, quantityUsed: v }))}
+              tooltip="Outros materiais como cola, fita, acabamentos especiais, etc."
+            />
           </FormSection>
 
-          {/* Seção 4: Custos Operacionais - PRO ONLY */}
-          <ProFeatureGate 
-            isPro={isPro} 
-            onUpgrade={() => setShowUpgradeModal(true)}
-            message="Recurso exclusivo do Plano Pro"
+          {/* Seção 4: Custos Operacionais */}
+          <FormSection
+            title="Custos Operacionais"
+            icon={<Factory className="w-5 h-5 text-primary" />}
+            subtitle="Informe o custo total de operação para este lote"
           >
-            <FormSection
-              title="Custos Operacionais"
-              icon={<Factory className="w-5 h-5 text-primary" />}
-              subtitle="Informe o custo total de operação para este lote"
-            >
-              <CurrencyInput 
-                label="Mão de obra" 
-                value={labor} 
-                onChange={isPro ? setLabor : () => {}}
-                tooltip="Custo de trabalho humano para produzir este lote. Inclua salários, encargos e benefícios proporcionais."
-              />
-              <CurrencyInput 
-                label="Energia" 
-                value={energy} 
-                onChange={isPro ? setEnergy : () => {}}
-                tooltip="Custo de energia elétrica consumida na produção deste lote."
-              />
-              <CurrencyInput 
-                label="Equipamentos" 
-                value={equipment} 
-                onChange={isPro ? setEquipment : () => {}}
-                tooltip="Depreciação de máquinas, manutenção preventiva e corretiva proporcionais a este lote."
-              />
-              <CurrencyInput 
-                label="Espaço" 
-                value={rent} 
-                onChange={isPro ? setRent : () => {}}
-                tooltip="Aluguel, água, internet, IPTU e outros custos fixos do espaço, proporcionais a este lote."
-              />
-              <CurrencyInput
-                label="Outros custos"
-                value={otherCosts}
-                onChange={isPro ? setOtherCosts : () => {}}
-                fullWidth
-                tooltip="Taxas, impostos, frete de insumos, embalagem de envio, etc."
-              />
-            </FormSection>
-          </ProFeatureGate>
+            <CurrencyInput 
+              label="Mão de obra" 
+              value={labor} 
+              onChange={setLabor}
+              tooltip="Custo de trabalho humano para produzir este lote. Inclua salários, encargos e benefícios proporcionais."
+            />
+            <CurrencyInput 
+              label="Energia" 
+              value={energy} 
+              onChange={setEnergy}
+              tooltip="Custo de energia elétrica consumida na produção deste lote."
+            />
+            <CurrencyInput 
+              label="Equipamentos" 
+              value={equipment} 
+              onChange={setEquipment}
+              tooltip="Depreciação de máquinas, manutenção preventiva e corretiva proporcionais a este lote."
+            />
+            <CurrencyInput 
+              label="Espaço" 
+              value={rent} 
+              onChange={setRent}
+              tooltip="Aluguel, água, internet, IPTU e outros custos fixos do espaço, proporcionais a este lote."
+            />
+            <CurrencyInput
+              label="Outros custos"
+              value={otherCosts}
+              onChange={setOtherCosts}
+              fullWidth
+              tooltip="Taxas, impostos, frete de insumos, embalagem de envio, etc."
+            />
+          </FormSection>
 
           {/* Seção 5: Margem de Lucro */}
           <FormSection
