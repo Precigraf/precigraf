@@ -7,6 +7,7 @@ interface TrialBannerProps {
   isTrialExpired: boolean;
   trialRemainingHours: number;
   onUpgrade: () => void;
+  isPro?: boolean;
 }
 
 const TrialBanner: React.FC<TrialBannerProps> = ({
@@ -14,9 +15,10 @@ const TrialBanner: React.FC<TrialBannerProps> = ({
   isTrialExpired,
   trialRemainingHours,
   onUpgrade,
+  isPro = false,
 }) => {
-  // Don't show anything if neither active trial nor expired
-  if (!isTrialActive && !isTrialExpired) {
+  // Don't show anything for Pro users or if neither active trial nor expired
+  if (isPro || (!isTrialActive && !isTrialExpired)) {
     return null;
   }
 
@@ -76,15 +78,14 @@ const TrialBanner: React.FC<TrialBannerProps> = ({
           </div>
         </div>
         <Button
-          variant="outline"
           onClick={(e) => {
             e.stopPropagation();
             onUpgrade();
           }}
-          className="w-full sm:w-auto gap-2 border-primary/30 hover:bg-primary/10"
+          className="w-full sm:w-auto gap-2"
         >
           <Sparkles className="w-4 h-4" />
-          Garantir acesso
+          Fazer upgrade
         </Button>
       </div>
     </div>

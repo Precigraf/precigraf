@@ -358,6 +358,7 @@ const CostCalculator: React.FC = () => {
             isTrialActive={isTrialActive}
             isTrialExpired={isTrialExpired}
             trialRemainingHours={trialRemainingHours}
+            isPro={isPro}
             onUpgrade={() => {
               setShowUpgradeModal(false);
               navigate('/upgrade');
@@ -492,44 +493,72 @@ const CostCalculator: React.FC = () => {
             />
           </FormSection>
 
-          {/* Seção 4: Custos Operacionais */}
-          <FormSection
-            title="Custos Operacionais"
-            icon={<Factory className="w-5 h-5 text-primary" />}
-            subtitle="Informe o custo total de operação para este lote"
-          >
-            <CurrencyInput 
-              label="Mão de obra" 
-              value={labor} 
-              onChange={setLabor}
-              tooltip="Custo de trabalho humano para produzir este lote. Inclua salários, encargos e benefícios proporcionais."
-            />
-            <CurrencyInput 
-              label="Energia" 
-              value={energy} 
-              onChange={setEnergy}
-              tooltip="Custo de energia elétrica consumida na produção deste lote."
-            />
-            <CurrencyInput 
-              label="Equipamentos" 
-              value={equipment} 
-              onChange={setEquipment}
-              tooltip="Depreciação de máquinas, manutenção preventiva e corretiva proporcionais a este lote."
-            />
-            <CurrencyInput 
-              label="Espaço" 
-              value={rent} 
-              onChange={setRent}
-              tooltip="Aluguel, água, internet, IPTU e outros custos fixos do espaço, proporcionais a este lote."
-            />
-            <CurrencyInput
-              label="Outros custos"
-              value={otherCosts}
-              onChange={setOtherCosts}
-              fullWidth
-              tooltip="Taxas, impostos, frete de insumos, embalagem de envio, etc."
-            />
-          </FormSection>
+          {/* Seção 4: Custos Operacionais - PRO Feature */}
+          <div className="relative">
+            {!isPro && (
+              <div 
+                className="absolute inset-0 z-10 cursor-not-allowed"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowUpgradeModal(true);
+                }}
+              />
+            )}
+            <div className={!isPro ? 'opacity-60 pointer-events-none' : ''}>
+              <FormSection
+                title={
+                  <span className="flex items-center gap-2">
+                    Custos Operacionais
+                    {!isPro && <Lock className="w-4 h-4 text-muted-foreground" />}
+                  </span>
+                }
+                icon={<Factory className="w-5 h-5 text-primary" />}
+                subtitle={
+                  !isPro 
+                    ? "🔒 Disponível apenas no Plano Pro. Faça upgrade para desbloquear."
+                    : "Informe o custo total de operação para este lote"
+                }
+              >
+                <CurrencyInput 
+                  label="Mão de obra" 
+                  value={isPro ? labor : 0} 
+                  onChange={isPro ? setLabor : () => {}}
+                  tooltip="Custo de trabalho humano para produzir este lote. Inclua salários, encargos e benefícios proporcionais."
+                  disabled={!isPro}
+                />
+                <CurrencyInput 
+                  label="Energia" 
+                  value={isPro ? energy : 0} 
+                  onChange={isPro ? setEnergy : () => {}}
+                  tooltip="Custo de energia elétrica consumida na produção deste lote."
+                  disabled={!isPro}
+                />
+                <CurrencyInput 
+                  label="Equipamentos" 
+                  value={isPro ? equipment : 0} 
+                  onChange={isPro ? setEquipment : () => {}}
+                  tooltip="Depreciação de máquinas, manutenção preventiva e corretiva proporcionais a este lote."
+                  disabled={!isPro}
+                />
+                <CurrencyInput 
+                  label="Espaço" 
+                  value={isPro ? rent : 0} 
+                  onChange={isPro ? setRent : () => {}}
+                  tooltip="Aluguel, água, internet, IPTU e outros custos fixos do espaço, proporcionais a este lote."
+                  disabled={!isPro}
+                />
+                <CurrencyInput
+                  label="Outros custos"
+                  value={isPro ? otherCosts : 0}
+                  onChange={isPro ? setOtherCosts : () => {}}
+                  fullWidth
+                  tooltip="Taxas, impostos, frete de insumos, embalagem de envio, etc."
+                  disabled={!isPro}
+                />
+              </FormSection>
+            </div>
+          </div>
 
           {/* Seção 5: Margem de Lucro */}
           <FormSection
