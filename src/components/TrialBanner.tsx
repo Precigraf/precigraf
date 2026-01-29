@@ -55,7 +55,7 @@ const TrialBanner: React.FC<TrialBannerProps> = ({
             className="w-full sm:w-auto gap-2"
           >
             <Sparkles className="w-4 h-4" />
-            Fazer upgrade
+            Garantir acesso vitalício
           </Button>
         </div>
       </div>
@@ -84,7 +84,7 @@ const TrialBanner: React.FC<TrialBannerProps> = ({
           className="w-full sm:w-auto gap-2 border-primary/30 hover:bg-primary/10"
         >
           <Sparkles className="w-4 h-4" />
-          Garantir acesso
+          Garantir acesso vitalício
         </Button>
       </div>
     </div>
