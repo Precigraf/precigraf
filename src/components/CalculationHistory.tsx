@@ -231,11 +231,11 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger,
     onEditCalculation?.(calc, 'edit');
   };
 
-  const handleDuplicate = (calc: Calculation, newId: string) => {
-    fetchCalculations();
-    refetch();
+  const handleDuplicate = (calc: Calculation) => {
+    // NÃO buscar do banco - apenas passar os dados para o formulário
+    // O INSERT só acontecerá quando o usuário clicar em salvar
     refetchEditLimit();
-    onEditCalculation?.({ ...calc, id: newId, product_name: `${calc.product_name} (cópia)` }, 'duplicate');
+    onEditCalculation?.({ ...calc, product_name: `${calc.product_name} (cópia)` }, 'duplicate');
   };
 
   const formatCurrency = (value: number) => {

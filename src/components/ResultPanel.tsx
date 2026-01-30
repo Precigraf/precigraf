@@ -55,6 +55,7 @@ interface ResultPanelProps {
   onShowUpgrade?: () => void;
   // Props para edição
   editingCalculation?: { id: string; mode: 'edit' | 'duplicate' } | null;
+  duplicatedFrom?: string | null;
 }
 
 const ResultPanel: React.FC<ResultPanelProps> = ({
@@ -86,6 +87,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   isPro = false,
   onShowUpgrade,
   editingCalculation = null,
+  duplicatedFrom = null,
 }) => {
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) {
@@ -348,6 +350,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
           }}
           onSaved={onSaved}
           editingCalculation={editingCalculation}
+          duplicatedFrom={duplicatedFrom}
         />
       )}
     </div>

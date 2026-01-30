@@ -81,6 +81,7 @@ const CostCalculator: React.FC = () => {
 
   // Estado de edição
   const [editingCalculation, setEditingCalculation] = useState<EditingCalculation | null>(null);
+  const [duplicatedFrom, setDuplicatedFrom] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Estado do formulário
@@ -153,8 +154,10 @@ const CostCalculator: React.FC = () => {
     setHistoryRefreshTrigger(prev => prev + 1);
     // Limpar modo de edição após salvar
     if (editingCalculation) {
+      const wasEdit = editingCalculation.mode === 'edit';
       setEditingCalculation(null);
-      toast.success(editingCalculation.mode === 'edit' ? 'Cálculo atualizado!' : 'Cálculo salvo!');
+      setDuplicatedFrom(null);
+      toast.success(wasEdit ? 'Cálculo atualizado!' : 'Cálculo salvo!');
     }
   }, [editingCalculation]);
 
@@ -195,18 +198,26 @@ const CostCalculator: React.FC = () => {
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
     
-    // Definir modo de edição
-    setEditingCalculation({ id: calculation.id, mode });
+    // Para duplicação: armazenar ID original e NÃO definir ID de edição
+    // O cálculo será tratado como NOVO até o momento do save
+    if (mode === 'duplicate') {
+      setDuplicatedFrom(calculation.id);
+      setEditingCalculation({ id: '', mode: 'duplicate' }); // ID vazio = novo registro
+    } else {
+      setDuplicatedFrom(null);
+      setEditingCalculation({ id: calculation.id, mode });
+    }
     
     // Scroll para o topo
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
-    toast.info(mode === 'edit' ? 'Modo edição ativado' : 'Editando cópia do cálculo');
+    toast.info(mode === 'edit' ? 'Modo edição ativado' : 'Editando cópia do cálculo - salve para criar o novo registro');
   }, []);
 
   // Handler para cancelar edição
   const handleCancelEdit = useCallback(() => {
     setEditingCalculation(null);
+    setDuplicatedFrom(null);
     // Limpar formulário
     setProductName('');
     setLotQuantity(0);
@@ -721,6 +732,7 @@ const CostCalculator: React.FC = () => {
             isPro={isPro}
             onShowUpgrade={() => setShowUpgradeModal(true)}
             editingCalculation={editingCalculation}
+            duplicatedFrom={duplicatedFrom}
           />
         </div>
 
