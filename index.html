@@ -1,45 +1,59 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Security Headers via Meta Tags -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    
+    <!-- Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co;
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com;
+      img-src 'self' data: blob: https: http:;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://ai.gateway.lovable.dev https://storage.googleapis.com;
+      frame-ancestors 'none';
+      base-uri 'self';
+      form-action 'self' https://checkout.infinitepay.io;
+    " />
+    
+    <!-- Permissions Policy - Disable unnecessary APIs -->
+    <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()" />
+    
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <title>PreciGraf</title>
-    <meta name="description" content="PreciGraf - Calculadora de Precificação para gráficas. Calcule custos, margens e preços de venda.">
+    
+    <title>PreciGraf - Calculadora de Preços para Gráficas</title>
+    <meta name="description" content="PreciGraf - Calculadora de Precificação para gráficas. Calcule custos, margens e preços de venda de forma profissional." />
     <meta name="author" content="PreciGraf" />
-
+    <meta name="robots" content="index, follow" />
     
-    
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/vZEDz6N916T31LynMtHHMHL3Zsf2/social-images/social-1767975291270-Sem título-1.png">
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/vZEDz6N916T31LynMtHHMHL3Zsf2/social-images/social-1767975291270-Sem título-1.png">
+    <meta property="og:title" content="PreciGraf" />
+    <meta property="og:description" content="Calculadora de Precificação para gráficas. Calcule custos, margens e preços de venda." />
+    <meta property="og:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/vZEDz6N916T31LynMtHHMHL3Zsf2/social-images/social-1767975291270-Sem título-1.png" />
+    <meta property="og:url" content="https://precigraf.lovable.app" />
+    <meta property="og:site_name" content="PreciGraf" />
     
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  <link rel="icon" type="image/png" href="https://storage.googleapis.com/gpt-engineer-file-uploads/vZEDz6N916T31LynMtHHMHL3Zsf2/uploads/1767975266152-Sem título-1.png">
-  
-  
-  
-  
-  <meta property="og:title" content="PreciGraf">
-  <meta name="twitter:title" content="PreciGraf">
-  <meta property="og:description" content="PreciGraf - Calculadora de Precificação para gráficas. Calcule custos, margens e preços de venda.">
-  <meta name="twitter:description" content="PreciGraf - Calculadora de Precificação para gráficas. Calcule custos, margens e preços de venda.">
-</head>
-
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PreciGraf" />
+    <meta name="twitter:description" content="Calculadora de Precificação para gráficas. Calcule custos, margens e preços de venda." />
+    <meta name="twitter:image" content="https://storage.googleapis.com/gpt-engineer-file-uploads/vZEDz6N916T31LynMtHHMHL3Zsf2/social-images/social-1767975291270-Sem título-1.png" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="https://storage.googleapis.com/gpt-engineer-file-uploads/vZEDz6N916T31LynMtHHMHL3Zsf2/uploads/1767975266152-Sem título-1.png" />
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://precigraf.lovable.app" />
+  </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
