@@ -44,7 +44,7 @@ const ProFeatureGate: React.FC<ProFeatureGateProps> = ({
             e.stopPropagation();
             onUpgrade();
           }}
-          className="mt-2 text-xs pointer-events-auto"
+          className="mt-2 text-xs pointer-events-auto opacity-100"
         >
           Fazer upgrade
         </Button>
