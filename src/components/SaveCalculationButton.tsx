@@ -32,12 +32,14 @@ interface SaveCalculationButtonProps {
   data: CalculationData;
   onSaved?: () => void;
   editingCalculation?: { id: string; mode: 'edit' | 'duplicate' } | null;
+  duplicatedFrom?: string | null;
 }
 
 const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ 
   data, 
   onSaved,
   editingCalculation = null,
+  duplicatedFrom = null,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
@@ -101,12 +103,15 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
           .eq('user_id', session.session.user.id); // Segurança adicional
         error = result.error;
       } else {
-        // Criar novo cálculo
-        const result = await supabase.from('calculations').insert({
+        // Criar novo cálculo (incluindo duplicações)
+        const insertData = {
           user_id: session.session.user.id,
           ...calculationData,
           is_favorite: false,
-        });
+          duplicated_from: (editingCalculation?.mode === 'duplicate' && duplicatedFrom) ? duplicatedFrom : null,
+        };
+        
+        const result = await supabase.from('calculations').insert(insertData);
         error = result.error;
       }
 
