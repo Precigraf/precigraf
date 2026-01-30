@@ -315,7 +315,8 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger,
                     : 'bg-secondary/30 border-border hover:bg-secondary/50'
                 }`}
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-3">
+                  {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <button
@@ -355,15 +356,18 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger,
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 shrink-0">
+                  {/* Action buttons - horizontal on mobile */}
+                  <div className="flex items-center justify-start gap-1 pt-2 border-t border-border/50 sm:border-0 sm:pt-0 sm:justify-end">
                     {/* Botão de Editar */}
                     <Button 
                       variant="ghost" 
                       size="sm"
                       onClick={() => handleOpenEditModal(calc)}
                       title="Editar cálculo"
+                      className="flex-1 sm:flex-none"
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit className="w-4 h-4 mr-1 sm:mr-0" />
+                      <span className="sm:hidden text-xs">Editar</span>
                     </Button>
 
                     <DropdownMenu>
@@ -372,14 +376,16 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger,
                           variant="ghost" 
                           size="sm"
                           disabled={exportingId === calc.id}
+                          className="flex-1 sm:flex-none"
                         >
                           {exportingId === calc.id ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : hasReachedLimit ? (
                             <Lock className="w-4 h-4 text-muted-foreground" />
                           ) : (
-                            <FileText className="w-4 h-4" />
+                            <FileText className="w-4 h-4 mr-1 sm:mr-0" />
                           )}
+                          <span className="sm:hidden text-xs">Baixar</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -401,14 +407,15 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger,
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          className="text-destructive hover:text-destructive"
+                          className="text-destructive hover:text-destructive flex-1 sm:flex-none"
                           disabled={deletingId === calc.id}
                         >
                           {deletingId === calc.id ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4 mr-1 sm:mr-0" />
                           )}
+                          <span className="sm:hidden text-xs">Excluir</span>
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
