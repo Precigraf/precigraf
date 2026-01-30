@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Package, Layers, Factory, Percent, Tag, Lock } from 'lucide-react';
+import ProFeatureGate from './ProFeatureGate';
 import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
@@ -492,44 +493,51 @@ const CostCalculator: React.FC = () => {
             />
           </FormSection>
 
-          {/* Seção 4: Custos Operacionais */}
-          <FormSection
-            title="Custos Operacionais"
-            icon={<Factory className="w-5 h-5 text-primary" />}
-            subtitle="Informe o custo total de operação para este lote"
+          {/* Seção 4: Custos Operacionais (PRO) */}
+          <ProFeatureGate
+            isPro={isPro}
+            onUpgrade={() => setShowUpgradeModal(true)}
+            featureName="Custos Operacionais"
+            message="Disponível apenas no Plano Pro"
           >
-            <CurrencyInput 
-              label="Mão de obra" 
-              value={labor} 
-              onChange={setLabor}
-              tooltip="Custo de trabalho humano para produzir este lote. Inclua salários, encargos e benefícios proporcionais."
-            />
-            <CurrencyInput 
-              label="Energia" 
-              value={energy} 
-              onChange={setEnergy}
-              tooltip="Custo de energia elétrica consumida na produção deste lote."
-            />
-            <CurrencyInput 
-              label="Equipamentos" 
-              value={equipment} 
-              onChange={setEquipment}
-              tooltip="Depreciação de máquinas, manutenção preventiva e corretiva proporcionais a este lote."
-            />
-            <CurrencyInput 
-              label="Espaço" 
-              value={rent} 
-              onChange={setRent}
-              tooltip="Aluguel, água, internet, IPTU e outros custos fixos do espaço, proporcionais a este lote."
-            />
-            <CurrencyInput
-              label="Outros custos"
-              value={otherCosts}
-              onChange={setOtherCosts}
-              fullWidth
-              tooltip="Taxas, impostos, frete de insumos, embalagem de envio, etc."
-            />
-          </FormSection>
+            <FormSection
+              title="Custos Operacionais"
+              icon={<Factory className="w-5 h-5 text-primary" />}
+              subtitle="Informe o custo total de operação para este lote"
+            >
+              <CurrencyInput 
+                label="Mão de obra" 
+                value={labor} 
+                onChange={setLabor}
+                tooltip="Custo de trabalho humano para produzir este lote. Inclua salários, encargos e benefícios proporcionais."
+              />
+              <CurrencyInput 
+                label="Energia" 
+                value={energy} 
+                onChange={setEnergy}
+                tooltip="Custo de energia elétrica consumida na produção deste lote."
+              />
+              <CurrencyInput 
+                label="Equipamentos" 
+                value={equipment} 
+                onChange={setEquipment}
+                tooltip="Depreciação de máquinas, manutenção preventiva e corretiva proporcionais a este lote."
+              />
+              <CurrencyInput 
+                label="Espaço" 
+                value={rent} 
+                onChange={setRent}
+                tooltip="Aluguel, água, internet, IPTU e outros custos fixos do espaço, proporcionais a este lote."
+              />
+              <CurrencyInput
+                label="Outros custos"
+                value={otherCosts}
+                onChange={setOtherCosts}
+                fullWidth
+                tooltip="Taxas, impostos, frete de insumos, embalagem de envio, etc."
+              />
+            </FormSection>
+          </ProFeatureGate>
 
           {/* Seção 5: Margem de Lucro */}
           <FormSection
