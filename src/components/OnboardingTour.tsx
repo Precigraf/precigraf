@@ -68,29 +68,16 @@ const OnboardingTour: React.FC<OnboardingTourProps> = ({ onLoadExample, isFreePl
 
   return (
     <>
-      {/* Botões de ação */}
-      <div className="flex items-center justify-between w-full">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsOpen(true)}
-          className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
-        >
-          <Play className="w-4 h-4" />
-          Exemplo
-        </Button>
-        
-        {isFreePlan && (
-          <Button
-            size="sm"
-            onClick={() => navigate('/upgrade')}
-            className="gap-2"
-          >
-            <Sparkles className="w-4 h-4" />
-            Fazer upgrade
-          </Button>
-        )}
-      </div>
+      {/* Botão de exemplo */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setIsOpen(true)}
+        className="gap-2 border-primary/30 text-primary hover:bg-primary/10"
+      >
+        <Play className="w-4 h-4" />
+        Exemplo
+      </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="sm:max-w-md bg-card border-border [&>button]:hidden">
