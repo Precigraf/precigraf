@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Package, Layers, Factory, Percent, Tag, Lock } from 'lucide-react';
+import { Package, Layers, Percent, Tag, Lock } from 'lucide-react';
 import ProFeatureGate from './ProFeatureGate';
 import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
@@ -7,7 +7,6 @@ import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
 import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
-import TooltipLabel from './TooltipLabel';
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
 import { Input } from '@/components/ui/input';
@@ -18,6 +17,12 @@ import { useUserPlan } from '@/hooks/useUserPlan';
 import UpgradePlanModal from './UpgradePlanModal';
 import TrialBanner from './TrialBanner';
 import { useNavigate } from 'react-router-dom';
+import { 
+  AdvancedOperationalCosts, 
+  OperationalCostsData, 
+  DEFAULT_OPERATIONAL_COSTS_DATA,
+  calculateAllOperationalCosts 
+} from './OperationalCosts';
 
 // Função auxiliar para garantir números válidos
 const safeNumber = (value: number): number => {
@@ -84,12 +89,8 @@ const CostCalculator: React.FC = () => {
     printQuantity: 0 
   });
 
-  // Custos operacionais
-  const [labor, setLabor] = useState(0);
-  const [energy, setEnergy] = useState(0);
-  const [equipment, setEquipment] = useState(0);
-  const [rent, setRent] = useState(0);
-  const [otherCosts, setOtherCosts] = useState(0);
+  // Custos operacionais avançados com rateio por tempo
+  const [operationalCostsData, setOperationalCostsData] = useState<OperationalCostsData>(DEFAULT_OPERATIONAL_COSTS_DATA);
 
   // Margem de lucro
   const [profitMargin, setProfitMargin] = useState(0);
@@ -168,11 +169,15 @@ const CostCalculator: React.FC = () => {
     setPackagingData({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
     // Outros materiais - Cola/acabamento R$20 para 100 unidades
     setOtherMaterialsData({ packageValue: 20, packageQuantity: 100, quantityUsed: 1 });
-    setLabor(50);
-    setEnergy(15);
-    setEquipment(10);
-    setRent(25);
-    setOtherCosts(10);
+    // Custos operacionais avançados - Exemplo
+    setOperationalCostsData({
+      productionTimeMinutes: 120, // 2 horas de produção
+      equipment: { equipmentValue: 5000, usefulLifeYears: 5, usagePercentage: 80 },
+      electricity: { monthlyBill: 300, usagePercentage: 50 },
+      internet: { monthlyBill: 100, usagePercentage: 20 },
+      labor: { monthlyWithdrawal: 3000 },
+      otherFixedCosts: [],
+    });
     setProfitMargin(35);
     setFixedProfit(0);
     setMarketplace('none');
@@ -181,8 +186,14 @@ const CostCalculator: React.FC = () => {
     setProductPreset('paper_bag');
   }, []);
 
+  // Calcular custos operacionais avançados
+  const calculatedOperationalCosts = useMemo(() => 
+    calculateAllOperationalCosts(operationalCostsData), 
+    [operationalCostsData]
+  );
+
   // Verificar se custos operacionais estão preenchidos
-  const hasOperationalCosts = labor > 0 || energy > 0 || equipment > 0 || rent > 0 || otherCosts > 0;
+  const hasOperationalCosts = calculatedOperationalCosts.totalAppliedCost > 0;
 
   // Calcular custo de tinta (baseado em ML)
   const inkCost = useMemo(() => {
@@ -213,15 +224,13 @@ const CostCalculator: React.FC = () => {
   // Cálculos em tempo real
   const calculations = useMemo(() => {
     const safeLotQuantity = Math.max(0, Math.floor(safeNumber(lotQuantity)));
-    const safeLabor = safeNumber(labor);
-    const safeEnergy = safeNumber(energy);
-    const safeEquipment = safeNumber(equipment);
-    const safeRent = safeNumber(rent);
-    const safeOtherCosts = safeNumber(otherCosts);
     const safeProfitMargin = Math.min(safeNumber(profitMargin), 1000);
     const safeFixedProfit = safeNumber(fixedProfit);
     const safeCommissionPercentage = Math.min(safeNumber(commissionPercentage), 100);
     const safeFixedFeePerItem = safeNumber(fixedFeePerItem);
+    
+    // Custo operacional total vem do novo sistema avançado
+    const operationalTotal = calculatedOperationalCosts.totalAppliedCost;
 
     // Se quantidade é zero, retorna valores zerados
     if (safeLotQuantity === 0) {
@@ -258,9 +267,8 @@ const CostCalculator: React.FC = () => {
     // Matéria-prima total = unitário × quantidade
     const rawMaterialsCost = roundCurrency(unitRawMaterialsCost * safeLotQuantity);
 
-    // Custos operacionais total (dividido por quantidade para obter por unidade)
-    const operationalTotal = roundCurrency(safeLabor + safeEnergy + safeEquipment + safeRent + safeOtherCosts);
-    const unitOperationalCost = roundCurrency(operationalTotal / safeLotQuantity);
+    // Custos operacionais - usar o total calculado pelo sistema avançado
+    const unitOperationalCost = safeLotQuantity > 0 ? roundCurrency(operationalTotal / safeLotQuantity) : 0;
 
     // Custo de produção por unidade (apenas matéria-prima + operacional por unidade)
     const unitProductionCost = roundCurrency(unitRawMaterialsCost + unitOperationalCost);
@@ -318,11 +326,7 @@ const CostCalculator: React.FC = () => {
   }, [
     lotQuantity,
     rawMaterialCosts,
-    labor,
-    energy,
-    equipment,
-    rent,
-    otherCosts,
+    calculatedOperationalCosts.totalAppliedCost,
     profitMargin,
     fixedProfit,
     commissionPercentage,
@@ -330,17 +334,18 @@ const CostCalculator: React.FC = () => {
   ]);
 
   // Valores para salvar (compatibilidade com banco de dados)
+  // Mapeando os novos custos operacionais para os campos existentes
   const saveDataValues = useMemo(() => ({
     paper: rawMaterialCosts.paper,
     ink: rawMaterialCosts.handle,
     varnish: rawMaterialCosts.ink,
     otherMaterials: rawMaterialCosts.packaging + rawMaterialCosts.other,
-    labor,
-    energy,
-    equipment,
-    rent,
-    otherCosts,
-  }), [rawMaterialCosts, labor, energy, equipment, rent, otherCosts]);
+    labor: calculatedOperationalCosts.labor.appliedCost,
+    energy: calculatedOperationalCosts.electricity.appliedCost,
+    equipment: calculatedOperationalCosts.equipment.appliedCost,
+    rent: calculatedOperationalCosts.internet.appliedCost,
+    otherCosts: calculatedOperationalCosts.otherFixedCosts.reduce((sum, cost) => sum + cost.appliedCost, 0),
+  }), [rawMaterialCosts, calculatedOperationalCosts]);
 
   return (
     <>
@@ -493,50 +498,18 @@ const CostCalculator: React.FC = () => {
             />
           </FormSection>
 
-          {/* Seção 4: Custos Operacionais (PRO) */}
+          {/* Seção 4: Custos Operacionais Avançados (PRO) */}
           <ProFeatureGate
             isPro={isPro}
             onUpgrade={() => setShowUpgradeModal(true)}
             featureName="Custos Operacionais"
             message="Disponível apenas no Plano Pro"
           >
-            <FormSection
-              title="Custos Operacionais"
-              icon={<Factory className="w-5 h-5 text-primary" />}
-              subtitle="Informe o custo total de operação para este lote"
-            >
-              <CurrencyInput 
-                label="Mão de obra" 
-                value={labor} 
-                onChange={setLabor}
-                tooltip="Custo de trabalho humano para produzir este lote. Inclua salários, encargos e benefícios proporcionais."
-              />
-              <CurrencyInput 
-                label="Energia" 
-                value={energy} 
-                onChange={setEnergy}
-                tooltip="Custo de energia elétrica consumida na produção deste lote."
-              />
-              <CurrencyInput 
-                label="Equipamentos" 
-                value={equipment} 
-                onChange={setEquipment}
-                tooltip="Depreciação de máquinas, manutenção preventiva e corretiva proporcionais a este lote."
-              />
-              <CurrencyInput 
-                label="Espaço" 
-                value={rent} 
-                onChange={setRent}
-                tooltip="Aluguel, água, internet, IPTU e outros custos fixos do espaço, proporcionais a este lote."
-              />
-              <CurrencyInput
-                label="Outros custos"
-                value={otherCosts}
-                onChange={setOtherCosts}
-                fullWidth
-                tooltip="Taxas, impostos, frete de insumos, embalagem de envio, etc."
-              />
-            </FormSection>
+            <AdvancedOperationalCosts
+              data={operationalCostsData}
+              onDataChange={setOperationalCostsData}
+              disabled={false}
+            />
           </ProFeatureGate>
 
           {/* Seção 5: Margem de Lucro */}
