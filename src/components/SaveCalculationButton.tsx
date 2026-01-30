@@ -31,9 +31,14 @@ interface CalculationData {
 interface SaveCalculationButtonProps {
   data: CalculationData;
   onSaved?: () => void;
+  editingCalculation?: { id: string; mode: 'edit' | 'duplicate' } | null;
 }
 
-const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onSaved }) => {
+const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ 
+  data, 
+  onSaved,
+  editingCalculation = null,
+}) => {
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -41,9 +46,10 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onS
   const navigate = useNavigate();
 
   const isValid = data.productName.trim().length > 0 && data.quantity > 0 && data.finalSellingPrice > 0;
+  const isEditing = editingCalculation?.mode === 'edit';
 
-  // Block saving if trial expired or can't save calculation
-  const canSave = canCreateCalculation && canSaveCalculation;
+  // Block saving if trial expired or can't save calculation (only for new calculations)
+  const canSave = isEditing || (canCreateCalculation && canSaveCalculation);
 
   const handleSave = async () => {
     if (!isValid) return;
@@ -64,8 +70,7 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onS
         return;
       }
 
-      const { error } = await supabase.from('calculations').insert({
-        user_id: session.session.user.id,
+      const calculationData = {
         product_name: data.productName.trim(),
         lot_quantity: data.quantity,
         paper_cost: data.paper,
@@ -83,8 +88,27 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onS
         profit: data.desiredProfit,
         sale_price: data.finalSellingPrice,
         unit_price: data.unitPrice,
-        is_favorite: false,
-      });
+      };
+
+      let error;
+
+      if (isEditing && editingCalculation) {
+        // Atualizar cálculo existente
+        const result = await supabase
+          .from('calculations')
+          .update(calculationData)
+          .eq('id', editingCalculation.id)
+          .eq('user_id', session.session.user.id); // Segurança adicional
+        error = result.error;
+      } else {
+        // Criar novo cálculo
+        const result = await supabase.from('calculations').insert({
+          user_id: session.session.user.id,
+          ...calculationData,
+          is_favorite: false,
+        });
+        error = result.error;
+      }
 
       if (error) {
         logError('Error saving calculation:', error);
@@ -93,7 +117,7 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onS
       }
 
       setJustSaved(true);
-      toast.success('Cálculo salvo com sucesso!');
+      toast.success(isEditing ? 'Cálculo atualizado com sucesso!' : 'Cálculo salvo com sucesso!');
       onSaved?.();
       await refetch(); // Update calculations count
 
@@ -124,12 +148,12 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ data, onS
         ) : justSaved ? (
           <>
             <Check className="w-4 h-4 text-success" />
-            Salvo!
+            {isEditing ? 'Atualizado!' : 'Salvo!'}
           </>
         ) : (
           <>
             <Save className="w-4 h-4" />
-            Salvar cálculo
+            {isEditing ? 'Atualizar cálculo' : 'Salvar cálculo'}
           </>
         )}
       </Button>

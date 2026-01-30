@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Package, Layers, Percent, Tag, Lock } from 'lucide-react';
+import { Package, Layers, Percent, Tag, Lock, Edit } from 'lucide-react';
 import ProFeatureGate from './ProFeatureGate';
 import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
@@ -10,6 +10,8 @@ import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPre
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import CalculationHistory from './CalculationHistory';
 import SuggestMarginButton from './SuggestMarginButton';
 import OnboardingTour from './OnboardingTour';
@@ -17,12 +19,21 @@ import { useUserPlan } from '@/hooks/useUserPlan';
 import UpgradePlanModal from './UpgradePlanModal';
 import TrialBanner from './TrialBanner';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { logError } from '@/lib/logger';
 import { 
   AdvancedOperationalCosts, 
   OperationalCostsData, 
   DEFAULT_OPERATIONAL_COSTS_DATA,
   calculateAllOperationalCosts 
 } from './OperationalCosts';
+
+// Interface para cálculo em edição
+interface EditingCalculation {
+  id: string;
+  mode: 'edit' | 'duplicate';
+}
 
 // Função auxiliar para garantir números válidos
 const safeNumber = (value: number): number => {
@@ -67,6 +78,10 @@ const CostCalculator: React.FC = () => {
   const isPro = plan === 'pro';
   const isBlocked = !canCreateCalculation || (!isPro && calculationsCount >= maxCalculations);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Estado de edição
+  const [editingCalculation, setEditingCalculation] = useState<EditingCalculation | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Estado do formulário
   const [productName, setProductName] = useState('');
@@ -136,6 +151,78 @@ const CostCalculator: React.FC = () => {
 
   const handleCalculationSaved = useCallback(() => {
     setHistoryRefreshTrigger(prev => prev + 1);
+    // Limpar modo de edição após salvar
+    if (editingCalculation) {
+      setEditingCalculation(null);
+      toast.success(editingCalculation.mode === 'edit' ? 'Cálculo atualizado!' : 'Cálculo salvo!');
+    }
+  }, [editingCalculation]);
+
+  // Handler para edição de cálculo
+  const handleEditCalculation = useCallback((calculation: {
+    id: string;
+    product_name: string;
+    lot_quantity: number;
+    paper_cost: number;
+    ink_cost: number;
+    varnish_cost: number;
+    other_material_cost: number;
+    labor_cost: number;
+    energy_cost: number;
+    equipment_cost: number;
+    rent_cost: number;
+    other_operational_cost: number;
+    margin_percentage: number;
+    fixed_profit: number | null;
+  }, mode: 'edit' | 'duplicate') => {
+    // Carregar dados do cálculo no formulário
+    setProductName(calculation.product_name);
+    setLotQuantity(calculation.lot_quantity);
+    
+    // Carregar custos de matéria-prima (como valores diretos para simplicidade)
+    setPaperData({ packageValue: calculation.paper_cost, packageQuantity: 1, quantityUsed: 1 });
+    setHandleData({ packageValue: calculation.ink_cost, packageQuantity: 1, quantityUsed: 1 });
+    setInkData({ totalValue: calculation.varnish_cost, bottleCount: 1, mlPerBottle: 1, mlPerPrint: 1, printQuantity: 1 });
+    setPackagingData({ packageValue: 0, packageQuantity: 1, quantityUsed: 1 });
+    setOtherMaterialsData({ packageValue: calculation.other_material_cost, packageQuantity: 1, quantityUsed: 1 });
+    
+    // Margem e lucro
+    setProfitMargin(calculation.margin_percentage);
+    setFixedProfit(calculation.fixed_profit || 0);
+    
+    // Limpar marketplace
+    setMarketplace('none');
+    setCommissionPercentage(0);
+    setFixedFeePerItem(0);
+    
+    // Definir modo de edição
+    setEditingCalculation({ id: calculation.id, mode });
+    
+    // Scroll para o topo
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    toast.info(mode === 'edit' ? 'Modo edição ativado' : 'Editando cópia do cálculo');
+  }, []);
+
+  // Handler para cancelar edição
+  const handleCancelEdit = useCallback(() => {
+    setEditingCalculation(null);
+    // Limpar formulário
+    setProductName('');
+    setLotQuantity(0);
+    setPaperData({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
+    setHandleData({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
+    setInkData({ totalValue: 0, bottleCount: 0, mlPerBottle: 0, mlPerPrint: 0, printQuantity: 0 });
+    setPackagingData({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
+    setOtherMaterialsData({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
+    setOperationalCostsData(DEFAULT_OPERATIONAL_COSTS_DATA);
+    setProfitMargin(0);
+    setFixedProfit(0);
+    setMarketplace('none');
+    setCommissionPercentage(0);
+    setFixedFeePerItem(0);
+    setProductPreset('custom');
+    toast.info('Edição cancelada');
   }, []);
 
   // Handler para sugestão de margem
@@ -399,6 +486,40 @@ const CostCalculator: React.FC = () => {
 
         {/* Coluna Esquerda - Formulário */}
         <div className="space-y-6">
+          {/* Banner de Modo Edição */}
+          {editingCalculation && (
+            <div className="p-4 bg-warning/10 border border-warning/30 rounded-xl flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-warning/20 flex items-center justify-center">
+                  <Edit className="w-5 h-5 text-warning" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-warning text-warning-foreground">
+                      Modo edição
+                    </Badge>
+                    {editingCalculation.mode === 'duplicate' && (
+                      <Badge variant="outline" className="text-xs">Cópia</Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {editingCalculation.mode === 'edit' 
+                      ? 'Alterações serão salvas no cálculo original'
+                      : 'Editando cópia do cálculo'}
+                  </p>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleCancelEdit}
+                className="shrink-0"
+              >
+                Cancelar
+              </Button>
+            </div>
+          )}
+
           {/* Onboarding e Exemplo */}
           <div className="flex items-center gap-3 mb-2">
             <OnboardingTour onLoadExample={handleLoadExample} isFreePlan={!isPro} />
@@ -599,12 +720,16 @@ const CostCalculator: React.FC = () => {
             isBlocked={isBlocked}
             isPro={isPro}
             onShowUpgrade={() => setShowUpgradeModal(true)}
+            editingCalculation={editingCalculation}
           />
         </div>
 
         {/* Histórico de Cálculos - Full Width */}
         <div className="lg:col-span-2">
-          <CalculationHistory refreshTrigger={historyRefreshTrigger} />
+          <CalculationHistory 
+            refreshTrigger={historyRefreshTrigger} 
+            onEditCalculation={handleEditCalculation}
+          />
         </div>
       </div>
 
