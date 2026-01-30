@@ -1,8 +1,12 @@
 import React, { forwardRef } from 'react';
 import Header from '@/components/Header';
 import CostCalculator from '@/components/CostCalculator';
+import { useSecurityCheck } from '@/hooks/useSecurityCheck';
 
 const Index = forwardRef<HTMLDivElement>((_, ref) => {
+  // Perform security checks on mount (fingerprint, session logging)
+  useSecurityCheck();
+
   return (
     <div ref={ref} className="min-h-screen bg-background">
       <Header />
