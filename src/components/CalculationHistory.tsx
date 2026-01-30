@@ -252,23 +252,6 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
             </div>
           </div>
           
-          {/* Counter for free plan */}
-          {isFreePlan && (
-            <div className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-              hasReachedLimit 
-                ? 'bg-destructive/10 text-destructive border border-destructive/30' 
-                : 'bg-primary/10 text-primary border border-primary/30'
-            }`}>
-              {hasReachedLimit ? (
-                <span className="flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5" />
-                  Limite atingido
-                </span>
-              ) : (
-                <span>Cálculos restantes: {remainingCalculations}</span>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Search */}
