@@ -53,6 +53,8 @@ interface ResultPanelProps {
   // Props para plano do usuário (estratégia de cupom)
   isPro?: boolean;
   onShowUpgrade?: () => void;
+  // Props para edição
+  editingCalculation?: { id: string; mode: 'edit' | 'duplicate' } | null;
 }
 
 const ResultPanel: React.FC<ResultPanelProps> = ({
@@ -83,6 +85,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   isBlocked = false,
   isPro = false,
   onShowUpgrade,
+  editingCalculation = null,
 }) => {
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) {
@@ -344,6 +347,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
             unitPrice,
           }}
           onSaved={onSaved}
+          editingCalculation={editingCalculation}
         />
       )}
     </div>

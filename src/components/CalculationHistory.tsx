@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { History, Search, Star, FileText, FileSpreadsheet, Trash2, Loader2, Lock } from 'lucide-react';
+import { History, Search, Star, FileText, FileSpreadsheet, Trash2, Loader2, Lock, Edit } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +8,9 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { logError } from '@/lib/logger';
 import { useUserPlan } from '@/hooks/useUserPlan';
+import { useEditLimit } from '@/hooks/useEditLimit';
 import UpgradePlanModal from '@/components/UpgradePlanModal';
+import EditCalculationModal from '@/components/EditCalculationModal';
 import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
@@ -54,19 +56,24 @@ interface Calculation {
 
 interface CalculationHistoryProps {
   refreshTrigger?: number;
+  onEditCalculation?: (calculation: Calculation, mode: 'edit' | 'duplicate') => void;
 }
 
-const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger }) => {
+const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger, onEditCalculation }) => {
   const [calculations, setCalculations] = useState<Calculation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [exportingId, setExportingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedCalculation, setSelectedCalculation] = useState<Calculation | null>(null);
   const { plan, calculationsCount, maxCalculations, refetch } = useUserPlan();
+  const { canEdit, remainingEdits, refetch: refetchEditLimit } = useEditLimit();
   const navigate = useNavigate();
 
   const isFreePlan = plan === 'free';
+  const isPro = plan === 'pro';
   const remainingCalculations = isFreePlan ? Math.max(0, maxCalculations - calculationsCount) : Infinity;
   const hasReachedLimit = isFreePlan && calculationsCount >= maxCalculations;
 
@@ -214,6 +221,23 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
     }
   };
 
+  const handleOpenEditModal = (calc: Calculation) => {
+    setSelectedCalculation(calc);
+    setEditModalOpen(true);
+  };
+
+  const handleEditOriginal = (calc: Calculation) => {
+    refetchEditLimit();
+    onEditCalculation?.(calc, 'edit');
+  };
+
+  const handleDuplicate = (calc: Calculation, newId: string) => {
+    fetchCalculations();
+    refetch();
+    refetchEditLimit();
+    onEditCalculation?.({ ...calc, id: newId, product_name: `${calc.product_name} (cópia)` }, 'duplicate');
+  };
+
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) {
       return 'R$ 0,00';
@@ -332,6 +356,16 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
+                    {/* Botão de Editar */}
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleOpenEditModal(calc)}
+                      title="Editar cálculo"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button 
@@ -410,6 +444,20 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger 
           setShowUpgradeModal(false);
           navigate('/upgrade');
         }}
+      />
+
+      <EditCalculationModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedCalculation(null);
+        }}
+        calculation={selectedCalculation}
+        onEditOriginal={handleEditOriginal}
+        onDuplicate={handleDuplicate}
+        isPro={isPro}
+        canEdit={canEdit}
+        remainingEdits={remainingEdits}
       />
     </>
   );

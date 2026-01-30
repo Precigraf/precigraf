@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           cost_type: string
           created_at: string
+          duplicated_from: string | null
           energy_cost: number
           equipment_cost: number
           fixed_profit: number | null
@@ -43,6 +44,7 @@ export type Database = {
         Insert: {
           cost_type?: string
           created_at?: string
+          duplicated_from?: string | null
           energy_cost?: number
           equipment_cost?: number
           fixed_profit?: number | null
@@ -68,6 +70,7 @@ export type Database = {
         Update: {
           cost_type?: string
           created_at?: string
+          duplicated_from?: string | null
           energy_cost?: number
           equipment_cost?: number
           fixed_profit?: number | null
@@ -154,6 +157,8 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          monthly_edits_count: number
+          monthly_edits_reset_at: string
           plan: string
           plan_id: string | null
           profile_image_url: string | null
@@ -165,6 +170,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          monthly_edits_count?: number
+          monthly_edits_reset_at?: string
           plan?: string
           plan_id?: string | null
           profile_image_url?: string | null
@@ -176,6 +183,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          monthly_edits_count?: number
+          monthly_edits_reset_at?: string
           plan?: string
           plan_id?: string | null
           profile_image_url?: string | null
@@ -374,6 +383,7 @@ export type Database = {
         }
         Returns: Json
       }
+      check_edit_limit: { Args: { p_user_id: string }; Returns: Json }
       check_rate_limit: {
         Args: {
           p_action_type: string
@@ -395,6 +405,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_edit_count: { Args: { p_user_id: string }; Returns: undefined }
       log_security_event: {
         Args: {
           p_description: string
