@@ -117,7 +117,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
         </div>
 
         {/* Conteúdo bloqueado (visível mas desativado) */}
-        <div className="opacity-30 pointer-events-none select-none filter grayscale bg-secondary/30 rounded-xl p-4">
+        <div className="opacity-10 pointer-events-none select-none filter grayscale bg-secondary/30 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-4">
             <Calculator className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium text-foreground">Simulador de Quantidade</span>
