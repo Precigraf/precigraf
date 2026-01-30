@@ -51,7 +51,7 @@ const ProFeatureGate: React.FC<ProFeatureGateProps> = ({
       </div>
 
       {/* Conteúdo bloqueado (visível mas desativado) */}
-      <div className="opacity-40 pointer-events-none select-none filter grayscale">
+      <div className="opacity-30 pointer-events-none select-none filter grayscale">
         {children}
       </div>
     </div>
