@@ -357,7 +357,7 @@ const CalculationHistory: React.FC<CalculationHistoryProps> = ({ refreshTrigger,
                   </div>
 
                   {/* Action buttons - horizontal on mobile */}
-                  <div className="flex items-center justify-start gap-1 pt-2 border-t border-border/50 sm:border-0 sm:pt-0 sm:justify-end">
+                  <div className="flex items-center justify-center gap-1 pt-2 border-t border-border/50 sm:border-0 sm:pt-0 sm:justify-end">
                     {/* Botão de Editar */}
                     <Button 
                       variant="ghost" 
