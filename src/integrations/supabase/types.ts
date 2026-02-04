@@ -129,6 +129,7 @@ export type Database = {
           csrf_token: string
           expires_at: string
           id: string
+          payment_provider_id: string | null
           status: string
           user_id: string
         }
@@ -138,6 +139,7 @@ export type Database = {
           csrf_token: string
           expires_at?: string
           id?: string
+          payment_provider_id?: string | null
           status?: string
           user_id: string
         }
@@ -147,6 +149,7 @@ export type Database = {
           csrf_token?: string
           expires_at?: string
           id?: string
+          payment_provider_id?: string | null
           status?: string
           user_id?: string
         }
@@ -394,6 +397,14 @@ export type Database = {
         Returns: Json
       }
       cleanup_expired_rate_limits: { Args: never; Returns: undefined }
+      confirm_payment_webhook: {
+        Args: {
+          p_amount?: number
+          p_payment_provider_id: string
+          p_user_email?: string
+        }
+        Returns: Json
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
