@@ -324,7 +324,11 @@ const CostCalculator: React.FC = () => {
     };
   }, [paperData, handleData, inkCost, packagingData, otherMaterialsTotalCost]);
 
-  // Cálculos em tempo real
+  // Cálculos em tempo real - ARQUITETURA CORRIGIDA
+  // 1. Custo Total é calculado primeiro
+  // 2. Preço Final = Custo Total × (1 + Margem) - UMA ÚNICA VEZ
+  // 3. Lucro = Preço Final - Custo Total
+  // 4. Demais valores DERIVAM do Preço Final
   const calculations = useMemo(() => {
     const safeLotQuantity = Math.max(0, Math.floor(safeNumber(lotQuantity)));
     const safeProfitMargin = Math.min(safeNumber(profitMargin), 1000);
@@ -358,6 +362,7 @@ const CostCalculator: React.FC = () => {
       };
     }
 
+    // ===== ETAPA 1: CALCULAR CUSTO TOTAL =====
     // Matéria-prima por unidade (soma dos custos calculados)
     const unitRawMaterialsCost = roundCurrency(
       rawMaterialCosts.paper + 
@@ -370,41 +375,39 @@ const CostCalculator: React.FC = () => {
     // Matéria-prima total = unitário × quantidade
     const rawMaterialsCost = roundCurrency(unitRawMaterialsCost * safeLotQuantity);
 
-    // Custos operacionais - usar o total calculado pelo sistema avançado
-    const unitOperationalCost = safeLotQuantity > 0 ? roundCurrency(operationalTotal / safeLotQuantity) : 0;
+    // Custo de produção total (matéria-prima + custos operacionais)
+    const productionCost = roundCurrency(rawMaterialsCost + operationalTotal);
 
-    // Custo de produção por unidade (apenas matéria-prima + operacional por unidade)
-    const unitProductionCost = roundCurrency(unitRawMaterialsCost + unitOperationalCost);
-
-    // Lucro desejado por unidade (valor fixo tem prioridade)
+    // ===== ETAPA 2: CALCULAR PREÇO FINAL (UMA ÚNICA VEZ) =====
+    // Lucro desejado: valor fixo tem prioridade, senão usa margem percentual
     const isFixedProfit = safeFixedProfit > 0;
-    const unitDesiredProfit = isFixedProfit
-      ? roundCurrency(safeFixedProfit / safeLotQuantity)
-      : roundCurrency(unitProductionCost * (safeProfitMargin / 100));
+    
+    // Fórmula correta: Lucro = Custo Total × (Margem / 100)
+    // Preço Base = Custo Total + Lucro = Custo Total × (1 + Margem / 100)
+    const desiredProfit = isFixedProfit
+      ? safeFixedProfit
+      : roundCurrency(productionCost * (safeProfitMargin / 100));
 
-    // Preço base de venda por unidade (sem taxas)
-    const unitBaseSellingPrice = roundCurrency(unitProductionCost + unitDesiredProfit);
+    // Preço base de venda (sem taxas de marketplace)
+    const baseSellingPrice = roundCurrency(productionCost + desiredProfit);
 
-    // Taxas do marketplace por unidade
-    const unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
-    const unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);
-    const unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
+    // ===== ETAPA 3: APLICAR TAXAS DE MARKETPLACE (DERIVADO) =====
+    // Taxas do marketplace sobre o preço base
+    const marketplaceCommission = roundCurrency(baseSellingPrice * (safeCommissionPercentage / 100));
+    const marketplaceFixedFees = roundCurrency(safeFixedFeePerItem);
+    const marketplaceTotalFees = roundCurrency(marketplaceCommission + marketplaceFixedFees);
 
-    // Preço unitário final (com taxas)
-    const unitPrice = roundCurrency(unitBaseSellingPrice + unitMarketplaceTotalFees);
+    // PREÇO FINAL = Preço Base + Taxas de Marketplace
+    const finalSellingPrice = roundCurrency(baseSellingPrice + marketplaceTotalFees);
 
-    // PREÇO FINAL = Preço unitário × Quantidade
-    const finalSellingPrice = roundCurrency(unitPrice * safeLotQuantity);
+    // ===== ETAPA 4: VALORES DERIVADOS (NUNCA ALTERAM O PREÇO FINAL) =====
+    // Preço unitário = Preço Final ÷ Quantidade
+    const unitPrice = roundCurrency(finalSellingPrice / safeLotQuantity);
 
-    // Totais para exibição
+    // Custo operacional por unidade (para exibição)
     const operationalCost = operationalTotal;
-    const productionCost = roundCurrency(unitProductionCost * safeLotQuantity);
-    const desiredProfit = roundCurrency(unitDesiredProfit * safeLotQuantity);
-    const marketplaceCommission = roundCurrency(unitMarketplaceCommission * safeLotQuantity);
-    const marketplaceFixedFees = roundCurrency(unitMarketplaceFixedFees * safeLotQuantity);
-    const marketplaceTotalFees = roundCurrency(unitMarketplaceTotalFees * safeLotQuantity);
 
-    // Lucro líquido (pode ser negativo em caso de prejuízo)
+    // Lucro líquido (Preço Final - Custo Total - Taxas)
     const netProfit = roundCurrency(finalSellingPrice - productionCost - marketplaceTotalFees);
 
     return {
@@ -414,7 +417,7 @@ const CostCalculator: React.FC = () => {
       productionCost,
       isFixedProfit,
       desiredProfit,
-      baseSellingPrice: roundCurrency(unitBaseSellingPrice * safeLotQuantity),
+      baseSellingPrice,
       marketplaceCommission,
       marketplaceFixedFees,
       marketplaceTotalFees,
