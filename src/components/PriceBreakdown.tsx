@@ -33,15 +33,6 @@ const PriceBreakdown: React.FC<PriceBreakdownProps> = ({
   const safeQuantity = Math.max(1, Math.floor(quantity || 1));
   const safeFinalSellingPrice = Math.max(0, finalSellingPrice || 0);
 
-  // Custo total = matéria-prima + custos operacionais
-  const totalCost = rawMaterialsCost + operationalCost;
-
-  // Percentual de lucro baseado no custo total (não no preço final)
-  // Fórmula: (Lucro ÷ Custo Total) × 100
-  const profitPercentage = totalCost > 0 
-    ? Math.round((desiredProfit / totalCost) * 100) 
-    : 0;
-
   if (safeQuantity <= 0 || safeFinalSellingPrice <= 0) {
     return null;
   }

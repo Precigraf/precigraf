@@ -4,7 +4,7 @@ import SmartAlerts from './SmartAlerts';
 import QuantitySimulator from './QuantitySimulator';
 import CostChart from './CostChart';
 import SaveCalculationButton from './SaveCalculationButton';
-
+import PriceBreakdown from './PriceBreakdown';
 import MarketplaceImpact from './MarketplaceImpact';
 import CouponStrategy from './CouponStrategy';
 import { MarketplaceType } from './MarketplaceSection';
@@ -274,6 +274,15 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         </div>
       </div>
 
+      {/* Resumo Detalhado do Preço */}
+      <PriceBreakdown
+        rawMaterialsCost={rawMaterialsCost}
+        operationalCost={operationalCost}
+        desiredProfit={desiredProfit}
+        marketplaceTotalFees={marketplaceTotalFees}
+        finalSellingPrice={finalSellingPrice}
+        quantity={safeQuantity}
+      />
 
       {/* Impacto do Marketplace */}
       <MarketplaceImpact
