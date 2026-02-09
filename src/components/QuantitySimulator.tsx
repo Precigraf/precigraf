@@ -2,6 +2,8 @@ import React from 'react';
 import { Calculator, Lock, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { MarketplaceType } from './MarketplaceSection';
+import { SellerType, calculateShopee2026InversePrice, calculateShopee2026InversePriceFixedProfit } from '@/lib/shopee2026';
 
 interface QuantitySimulatorProps {
   unitRawMaterialsCost: number;
@@ -13,6 +15,8 @@ interface QuantitySimulatorProps {
   currentQuantity: number;
   isPro?: boolean;
   onShowUpgrade?: () => void;
+  marketplace?: MarketplaceType;
+  sellerType?: SellerType;
 }
 
 const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
@@ -25,6 +29,8 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   currentQuantity,
   isPro = true,
   onShowUpgrade,
+  marketplace = 'none',
+  sellerType = 'cpf',
 }) => {
   const quantities = [15, 20, 40, 50, 80, 100];
 
@@ -36,7 +42,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   const calculateForQuantity = (qty: number) => {
     if (qty <= 0) return { unitPrice: 0, lotPrice: 0, margin: 0 };
 
-    // Proteção contra divisão por zero e valores inválidos
     const safeQty = Math.max(1, Math.floor(qty));
     const safeOperationalTotal = Math.max(0, operationalTotal || 0);
     const safeUnitRawMaterialsCost = Math.max(0, unitRawMaterialsCost || 0);
@@ -51,28 +56,50 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     // Custo de produção por unidade
     const unitProductionCost = safeUnitRawMaterialsCost + unitOperationalCost;
 
-    // Lucro desejado por unidade
-    const isFixedProfit = safeFixedProfit > 0;
-    const unitDesiredProfit = isFixedProfit
+    const isShopee2026 = marketplace === 'shopee_2026';
+
+    if (isShopee2026) {
+      // Shopee 2026: usar equação inversa completa com re-avaliação de faixa
+      const isFixed = safeFixedProfit > 0;
+      
+      if (isFixed) {
+        const unitFixedProfit = safeFixedProfit / safeQty;
+        const result = calculateShopee2026InversePriceFixedProfit(
+          unitProductionCost, unitFixedProfit, sellerType
+        );
+        return {
+          unitPrice: Math.round(result.finalPrice * 100) / 100,
+          lotPrice: Math.round(result.finalPrice * safeQty * 100) / 100,
+          margin: result.realMarginPercent,
+        };
+      } else {
+        const result = calculateShopee2026InversePrice(
+          unitProductionCost, safeMarginPercentage, sellerType
+        );
+        return {
+          unitPrice: Math.round(result.finalPrice * 100) / 100,
+          lotPrice: Math.round(result.finalPrice * safeQty * 100) / 100,
+          margin: result.realMarginPercent,
+        };
+      }
+    }
+
+    // Lógica padrão (sem Shopee ou outros marketplaces)
+    const isFixedProfitMode = safeFixedProfit > 0;
+    const unitDesiredProfit = isFixedProfitMode
       ? safeFixedProfit / safeQty
       : unitProductionCost * (safeMarginPercentage / 100);
 
-    // Preço base de venda por unidade
     const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
 
-    // Taxas do marketplace
     const unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
     const unitMarketplaceFixedFees = safeFixedFeePerItem / safeQty;
 
-    // Preço unitário final
     const unitPrice = unitBaseSellingPrice + unitMarketplaceCommission + unitMarketplaceFixedFees;
-
-    // Preço do lote
     const lotPrice = unitPrice * safeQty;
 
-    // Margem real calculada
-    const realMargin = unitProductionCost > 0 
-      ? ((unitDesiredProfit / unitProductionCost) * 100) 
+    const realMargin = unitPrice > 0
+      ? (unitDesiredProfit / unitPrice) * 100
       : safeMarginPercentage;
 
     return { 
@@ -81,9 +108,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
       margin: Math.round(realMargin * 100) / 100 
     };
   };
-
-  // Calcular valores atuais para comparação
-  const currentCalc = calculateForQuantity(currentQuantity);
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -100,7 +124,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
         className="relative overflow-hidden rounded-xl"
         onClick={handleUpgradeClick}
       >
-        {/* Overlay de bloqueio */}
         <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center gap-2 cursor-pointer">
           <Lock className="w-5 h-5 text-muted-foreground" />
           <Badge variant="outline" className="text-xs bg-background/80">
@@ -116,7 +139,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
           </Button>
         </div>
 
-        {/* Conteúdo bloqueado (visível mas desativado) */}
         <div className="opacity-70 pointer-events-none select-none filter grayscale bg-secondary/30 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-4">
             <Calculator className="w-4 h-4 text-primary" />
@@ -158,7 +180,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
       <div className="flex flex-col gap-2">
         {quantities.map((qty) => {
           const calc = calculateForQuantity(qty);
-          const lotPrice = calc.unitPrice * qty;
           
           return (
             <div 
@@ -173,7 +194,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
                   className="font-bold text-foreground"
                   style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}
                 >
-                  {formatCurrency(lotPrice)}
+                  {formatCurrency(calc.lotPrice)}
                 </span>
               </div>
               <span className="text-sm text-muted-foreground/80">
