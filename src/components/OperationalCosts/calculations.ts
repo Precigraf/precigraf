@@ -2,6 +2,7 @@
 
 import {
   EquipmentDepreciationData,
+  EquipmentItem,
   ElectricityCostData,
   InternetCostData,
   LaborCostData,
@@ -27,7 +28,6 @@ const roundCurrency = (value: number): number => {
 
 /**
  * Calcula custo por minuto de depreciação de equipamento
- * Fórmula: (valor ÷ anos) ÷ 12 ÷ 30 ÷ 24 ÷ 60 × (percentual_uso / 100)
  */
 export const calculateEquipmentCostPerMinute = (data: EquipmentDepreciationData): number => {
   if (data.equipmentValue <= 0 || data.usefulLifeYears <= 0) return 0;
@@ -44,8 +44,18 @@ export const calculateEquipmentCostPerMinute = (data: EquipmentDepreciationData)
 };
 
 /**
+ * Calcula custo por minuto de um item de equipamento (com nome)
+ */
+export const calculateEquipmentItemCostPerMinute = (item: EquipmentItem): number => {
+  return calculateEquipmentCostPerMinute({
+    equipmentValue: item.equipmentValue,
+    usefulLifeYears: item.usefulLifeYears,
+    usagePercentage: item.usagePercentage,
+  });
+};
+
+/**
  * Calcula custo por minuto de energia elétrica
- * Fórmula: (valor_mensal ÷ 30 ÷ 24 ÷ 60) × (percentual_uso / 100)
  */
 export const calculateElectricityCostPerMinute = (data: ElectricityCostData): number => {
   if (data.monthlyBill <= 0) return 0;
@@ -58,7 +68,6 @@ export const calculateElectricityCostPerMinute = (data: ElectricityCostData): nu
 
 /**
  * Calcula custo por minuto de internet
- * Mesmo modelo da energia
  */
 export const calculateInternetCostPerMinute = (data: InternetCostData): number => {
   if (data.monthlyBill <= 0) return 0;
@@ -71,7 +80,6 @@ export const calculateInternetCostPerMinute = (data: InternetCostData): number =
 
 /**
  * Calcula custo por minuto de mão de obra
- * Fórmula: mensal ÷ 220 horas ÷ 60 minutos
  */
 export const calculateLaborCostPerMinute = (data: LaborCostData): number => {
   if (data.monthlyWithdrawal <= 0) return 0;
@@ -107,9 +115,16 @@ export const calculateAppliedCost = (costPerMinute: number, productionTimeMinute
 export const calculateAllOperationalCosts = (data: OperationalCostsData): AllCalculatedCosts => {
   const productionTime = Math.max(0, data.productionTimeMinutes);
   
-  // Equipamento
+  // Equipamento legado (single)
   const equipmentCostPerMinute = calculateEquipmentCostPerMinute(data.equipment);
   const equipmentAppliedCost = calculateAppliedCost(equipmentCostPerMinute, productionTime);
+  
+  // Múltiplos equipamentos
+  const equipments = (data.equipments || []).map(item => {
+    const costPerMinute = calculateEquipmentItemCostPerMinute(item);
+    const appliedCost = calculateAppliedCost(costPerMinute, productionTime);
+    return { costPerMinute, appliedCost };
+  });
   
   // Energia
   const electricityCostPerMinute = calculateElectricityCostPerMinute(data.electricity);
@@ -130,9 +145,13 @@ export const calculateAllOperationalCosts = (data: OperationalCostsData): AllCal
     return { costPerMinute, appliedCost };
   });
   
-  // Totais
+  // Totais - incluir equipamentos múltiplos
+  const equipmentsTotalCostPerMinute = equipments.reduce((sum, e) => sum + e.costPerMinute, 0);
+  const equipmentsTotalAppliedCost = equipments.reduce((sum, e) => sum + e.appliedCost, 0);
+  
   const totalCostPerMinute = roundPrecise(
     equipmentCostPerMinute +
+    equipmentsTotalCostPerMinute +
     electricityCostPerMinute +
     internetCostPerMinute +
     laborCostPerMinute +
@@ -141,6 +160,7 @@ export const calculateAllOperationalCosts = (data: OperationalCostsData): AllCal
   
   const totalAppliedCost = roundCurrency(
     equipmentAppliedCost +
+    equipmentsTotalAppliedCost +
     electricityAppliedCost +
     internetAppliedCost +
     laborAppliedCost +
@@ -149,6 +169,7 @@ export const calculateAllOperationalCosts = (data: OperationalCostsData): AllCal
   
   return {
     equipment: { costPerMinute: equipmentCostPerMinute, appliedCost: equipmentAppliedCost },
+    equipments,
     electricity: { costPerMinute: electricityCostPerMinute, appliedCost: electricityAppliedCost },
     internet: { costPerMinute: internetCostPerMinute, appliedCost: internetAppliedCost },
     labor: { costPerMinute: laborCostPerMinute, appliedCost: laborAppliedCost },
