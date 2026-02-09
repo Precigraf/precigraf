@@ -9,7 +9,7 @@ import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
-import OtherMaterialsInput, { OtherMaterialItem } from './OtherMaterialsInput';
+import OtherMaterialsInput, { OtherMaterialItem, calculateOtherMaterialItemCost } from './OtherMaterialsInput';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -140,7 +140,7 @@ const CostCalculator: React.FC = () => {
       setHandleData({ packageValue: config.ink, packageQuantity: 1, quantityUsed: 1 });
       // Para tinta no preset, aplicar como valor simples (1 frasco, 1ml, 1 impressão = custo direto)
       setInkData({ totalValue: config.varnish, bottleCount: 1, mlPerBottle: 1, mlPerPrint: 1, printQuantity: 1 });
-      setOtherMaterialsItems([{ id: 'preset-other', name: 'Outros', value: config.otherMaterials }]);
+      setOtherMaterialsItems([{ id: 'preset-other', name: 'Outros', packageValue: config.otherMaterials, packageQuantity: 1, quantityUsed: 1 }]);
       if (config.defaultQuantity > 0 && lotQuantity === 0) {
         setLotQuantity(config.defaultQuantity);
       }
@@ -187,7 +187,7 @@ const CostCalculator: React.FC = () => {
     setHandleData({ packageValue: calculation.ink_cost, packageQuantity: 1, quantityUsed: 1 });
     setInkData({ totalValue: calculation.varnish_cost, bottleCount: 1, mlPerBottle: 1, mlPerPrint: 1, printQuantity: 1 });
     setPackagingData({ packageValue: 0, packageQuantity: 1, quantityUsed: 1 });
-    setOtherMaterialsItems(calculation.other_material_cost > 0 ? [{ id: 'edit-other', name: 'Outros insumos', value: calculation.other_material_cost }] : []);
+    setOtherMaterialsItems(calculation.other_material_cost > 0 ? [{ id: 'edit-other', name: 'Outros insumos', packageValue: calculation.other_material_cost, packageQuantity: 1, quantityUsed: 1 }] : []);
     
     // Margem e lucro
     setProfitMargin(calculation.margin_percentage);
@@ -266,11 +266,12 @@ const CostCalculator: React.FC = () => {
     // Embalagem - Não usa
     setPackagingData({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
     // Outros materiais - Cola/acabamento R$20 para 100 unidades
-    setOtherMaterialsItems([{ id: 'example-1', name: 'Cola especial', value: 0.15 }, { id: 'example-2', name: 'Acabamento', value: 0.05 }]);
+    setOtherMaterialsItems([{ id: 'example-1', name: 'Cola especial', packageValue: 15, packageQuantity: 100, quantityUsed: 1 }, { id: 'example-2', name: 'Acabamento', packageValue: 5, packageQuantity: 100, quantityUsed: 1 }]);
     // Custos operacionais avançados - Exemplo
     setOperationalCostsData({
-      productionTimeMinutes: 120, // 2 horas de produção
-      equipment: { equipmentValue: 5000, usefulLifeYears: 5, usagePercentage: 80 },
+      productionTimeMinutes: 120,
+      equipment: { equipmentValue: 0, usefulLifeYears: 5, usagePercentage: 100 },
+      equipments: [{ id: 'ex-equip-1', name: 'Impressora Epson L4260', equipmentValue: 5000, usefulLifeYears: 5, usagePercentage: 80 }],
       electricity: { monthlyBill: 300, usagePercentage: 50 },
       internet: { monthlyBill: 100, usagePercentage: 20 },
       labor: { monthlyWithdrawal: 3000 },
@@ -310,7 +311,7 @@ const CostCalculator: React.FC = () => {
 
   // Calcular custo total de outros insumos
   const otherMaterialsTotalCost = useMemo(() => {
-    return otherMaterialsItems.reduce((sum, item) => sum + (item.value || 0), 0);
+    return otherMaterialsItems.reduce((sum, item) => sum + calculateOtherMaterialItemCost(item), 0);
   }, [otherMaterialsItems]);
 
   // Calcular custos de matéria-prima por unidade

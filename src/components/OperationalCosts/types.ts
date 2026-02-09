@@ -6,6 +6,14 @@ export interface EquipmentDepreciationData {
   usagePercentage: number; // 0-100
 }
 
+export interface EquipmentItem {
+  id: string;
+  name: string;
+  equipmentValue: number;
+  usefulLifeYears: number;
+  usagePercentage: number;
+}
+
 export interface ElectricityCostData {
   monthlyBill: number;
   usagePercentage: number; // 0-100
@@ -29,7 +37,8 @@ export interface OtherFixedCostItem {
 
 export interface OperationalCostsData {
   productionTimeMinutes: number;
-  equipment: EquipmentDepreciationData;
+  equipment: EquipmentDepreciationData; // kept for backwards compat
+  equipments: EquipmentItem[];
   electricity: ElectricityCostData;
   internet: InternetCostData;
   labor: LaborCostData;
@@ -43,6 +52,7 @@ export interface CalculatedOperationalCost {
 
 export interface AllCalculatedCosts {
   equipment: CalculatedOperationalCost;
+  equipments: CalculatedOperationalCost[];
   electricity: CalculatedOperationalCost;
   internet: CalculatedOperationalCost;
   labor: CalculatedOperationalCost;
@@ -85,6 +95,7 @@ export const DEFAULT_LABOR_DATA: LaborCostData = {
 export const DEFAULT_OPERATIONAL_COSTS_DATA: OperationalCostsData = {
   productionTimeMinutes: 0,
   equipment: DEFAULT_EQUIPMENT_DATA,
+  equipments: [],
   electricity: DEFAULT_ELECTRICITY_DATA,
   internet: DEFAULT_INTERNET_DATA,
   labor: DEFAULT_LABOR_DATA,

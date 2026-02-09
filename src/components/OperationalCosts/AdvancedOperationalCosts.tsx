@@ -3,7 +3,7 @@ import { Factory, Zap, Wifi } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import FormSection from '@/components/FormSection';
 import ProductionTimeInput from './ProductionTimeInput';
-import EquipmentDepreciationInput from './EquipmentDepreciationInput';
+import MultiEquipmentInput from './MultiEquipmentInput';
 import UtilityCostInput from './UtilityCostInput';
 import LaborCostInput from './LaborCostInput';
 import OtherFixedCostsInput from './OtherFixedCostsInput';
@@ -72,7 +72,7 @@ const AdvancedOperationalCosts: React.FC<AdvancedOperationalCostsProps> = ({
         </div>
       </div>
 
-      {/* Resumo Total - Mostrar apenas quando há tempo de produção */}
+      {/* Resumo Total */}
       {data.productionTimeMinutes > 0 && calculatedCosts.totalAppliedCost > 0 && (
         <div className="col-span-full">
           <div className="p-4 bg-success/10 border border-success/30 rounded-lg">
@@ -93,11 +93,11 @@ const AdvancedOperationalCosts: React.FC<AdvancedOperationalCostsProps> = ({
         </div>
       )}
 
-      {/* 1. Depreciação de Equipamento */}
+      {/* 1. Depreciação de Equipamentos (múltiplos) */}
       <div className="col-span-full">
-        <EquipmentDepreciationInput
-          data={data.equipment}
-          onDataChange={(equipment) => onDataChange({ ...data, equipment })}
+        <MultiEquipmentInput
+          items={data.equipments || []}
+          onItemsChange={(equipments) => onDataChange({ ...data, equipments })}
           productionTimeMinutes={data.productionTimeMinutes}
           disabled={disabled}
         />
