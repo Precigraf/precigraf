@@ -70,7 +70,7 @@ const MultiEquipmentInput: React.FC<MultiEquipmentInputProps> = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Settings className="w-4 h-4 text-primary" />
-          <span className="font-medium text-sm">Depreciação de Equipamentos</span>
+          <span className="font-medium text-sm">Equipamentos</span>
         </div>
         <Button
           type="button"
