@@ -8,7 +8,7 @@ import PriceBreakdown from './PriceBreakdown';
 import MarketplaceImpact from './MarketplaceImpact';
 import CouponStrategy from './CouponStrategy';
 import { MarketplaceType } from './MarketplaceSection';
-import { Shopee2026FeeBreakdown } from '@/lib/shopee2026';
+import { SellerType, Shopee2026FeeBreakdown } from '@/lib/shopee2026';
 interface ResultPanelProps {
   productName: string;
   quantity: number;
@@ -58,6 +58,7 @@ interface ResultPanelProps {
   editingCalculation?: { id: string; mode: 'edit' | 'duplicate' } | null;
   duplicatedFrom?: string | null;
   shopee2026Fees?: Shopee2026FeeBreakdown | null;
+  sellerType?: SellerType;
 }
 
 const ResultPanel: React.FC<ResultPanelProps> = ({
@@ -91,6 +92,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   editingCalculation = null,
   duplicatedFrom = null,
   shopee2026Fees = null,
+  sellerType = 'cpf',
 }) => {
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) {
@@ -113,10 +115,13 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   const netProfit = Math.round((finalSellingPrice - productionCost - marketplaceTotalFees) * 100) / 100;
   const unitNetProfit = safeQuantity > 0 ? Math.round((netProfit / safeQuantity) * 100) / 100 : 0;
 
-  // Margem real calculada (com proteção contra divisão por zero)
-  const realMarginPercentage = productionCost > 0 
-    ? Math.round((desiredProfit / productionCost) * 100) 
-    : profitMargin;
+  // Margem real calculada: (Lucro / Preço Final) × 100 quando Shopee 2026
+  const isShopee2026 = !!shopee2026Fees && shopee2026Fees.totalFees > 0;
+  const realMarginPercentage = isShopee2026 && shopee2026Fees
+    ? shopee2026Fees.realMarginPercent
+    : (productionCost > 0 
+      ? Math.round((desiredProfit / productionCost) * 100) 
+      : profitMargin);
 
   return (
     <div className="glass-card result-gradient p-6 sticky top-6 animate-slide-up space-y-6">
@@ -364,6 +369,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         currentQuantity={safeQuantity}
         isPro={isPro}
         onShowUpgrade={onShowUpgrade}
+        marketplace={marketplace}
+        sellerType={sellerType}
       />
 
       {/* Botão Salvar Cálculo */}
