@@ -8,6 +8,7 @@ import PriceBreakdown from './PriceBreakdown';
 import MarketplaceImpact from './MarketplaceImpact';
 import CouponStrategy from './CouponStrategy';
 import { MarketplaceType } from './MarketplaceSection';
+import { Shopee2026FeeBreakdown } from '@/lib/shopee2026';
 interface ResultPanelProps {
   productName: string;
   quantity: number;
@@ -56,6 +57,7 @@ interface ResultPanelProps {
   // Props para edição
   editingCalculation?: { id: string; mode: 'edit' | 'duplicate' } | null;
   duplicatedFrom?: string | null;
+  shopee2026Fees?: Shopee2026FeeBreakdown | null;
 }
 
 const ResultPanel: React.FC<ResultPanelProps> = ({
@@ -88,6 +90,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   onShowUpgrade,
   editingCalculation = null,
   duplicatedFrom = null,
+  shopee2026Fees = null,
 }) => {
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) {
@@ -140,6 +143,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         hasOperationalCosts={hasOperationalCosts}
         productionCost={productionCost}
         finalSellingPrice={finalSellingPrice}
+        hasShopee2026={!!shopee2026Fees && shopee2026Fees.totalFees > 0}
       />
 
       {/* PREÇO FINAL - DESTAQUE MÁXIMO */}
@@ -231,7 +235,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         </div>
 
         {/* Taxas Marketplace */}
-        {hasMarketplace && (
+        {hasMarketplace && !shopee2026Fees && (
           <div className="bg-warning/10 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
@@ -245,6 +249,42 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
                 <div className="text-xs text-muted-foreground">
                   Comissão + Taxa fixa
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Taxas Shopee 2026 - Breakdown detalhado */}
+        {shopee2026Fees && shopee2026Fees.totalFees > 0 && (
+          <div className="bg-warning/10 rounded-lg p-3 space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Store className="w-4 h-4 text-warning" />
+              <span className="text-sm font-medium text-warning">Taxas Shopee 2026</span>
+            </div>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Comissão ({shopee2026Fees.commissionPercent}%)</span>
+                <span className="text-foreground">-{formatCurrency(shopee2026Fees.commissionValue * safeQuantity)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Taxa fixa</span>
+                <span className="text-foreground">-{formatCurrency(shopee2026Fees.fixedFee * safeQuantity)}</span>
+              </div>
+              {shopee2026Fees.cpfTax > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Taxa vendedor CPF</span>
+                  <span className="text-foreground">-{formatCurrency(shopee2026Fees.cpfTax * safeQuantity)}</span>
+                </div>
+              )}
+              {shopee2026Fees.pixSubsidyPercent > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Subsídio Pix ({shopee2026Fees.pixSubsidyPercent}%)</span>
+                  <span className="text-foreground">-{formatCurrency(shopee2026Fees.pixSubsidyValue * safeQuantity)}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-border pt-1 font-medium">
+                <span className="text-warning">Total Shopee</span>
+                <span className="text-warning font-semibold">-{formatCurrency(marketplaceTotalFees)}</span>
               </div>
             </div>
           </div>
