@@ -51,7 +51,7 @@ export function detectarFaixa(precoFinalVenda: number): ShopeeRangeId {
 }
 
 const SHOPEE_RANGE_TIERS: Record<ShopeeRangeId, Omit<ShopeeRangeTiers, 'id'>> = {
-  'ATE_79':    { commissionPercent: 20, fixedFee: 4,  pixSubsidyPercent: 0, priceRange: 'Até R$ 79,99' },
+  'ATE_79':    { commissionPercent: 14, fixedFee: 16,  pixSubsidyPercent: 0, priceRange: 'Até R$ 79,99' },
   '80_99':     { commissionPercent: 14, fixedFee: 16, pixSubsidyPercent: 5, priceRange: 'R$ 80,00 – R$ 99,99' },
   '100_199':   { commissionPercent: 14, fixedFee: 20, pixSubsidyPercent: 5, priceRange: 'R$ 100,00 – R$ 199,99' },
   '200_499':   { commissionPercent: 14, fixedFee: 26, pixSubsidyPercent: 5, priceRange: 'R$ 200,00 – R$ 499,99' },
