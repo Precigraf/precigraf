@@ -3,7 +3,7 @@ import { Calculator, Lock, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MarketplaceType } from './MarketplaceSection';
-import { SellerType, calculateShopee2026InversePrice, calculateShopee2026InversePriceFixedProfit } from '@/lib/shopee2026';
+import { SellerType, calculateShopee2026Fees } from '@/lib/shopee2026';
 
 interface QuantitySimulatorProps {
   unitRawMaterialsCost: number;
@@ -63,26 +63,21 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
 
     if (isShopee2026) {
       const isFixed = safeFixedProfit > 0;
+      const unitDesiredProfit = isFixed
+        ? safeFixedProfit / safeQty
+        : unitProductionCost * (safeMarginPercentage / 100);
+      const unitBasePrice = unitProductionCost + unitDesiredProfit;
       
-      let result;
-      if (isFixed) {
-        const unitFixedProfit = safeFixedProfit / safeQty;
-        result = calculateShopee2026InversePriceFixedProfit(
-          unitProductionCost, unitFixedProfit, sellerType, safeQty
-        );
-      } else {
-        result = calculateShopee2026InversePrice(
-          unitProductionCost, safeMarginPercentage, sellerType, safeQty
-        );
-      }
-      
-      const lotPrice = Math.round(result.finalPrice * safeQty * 100) / 100;
-      const lotProfit = Math.round(result.profit * safeQty * 100) / 100;
+      // Forward calculation: fees based on base price
+      const result = calculateShopee2026Fees(unitBasePrice, sellerType, safeQty);
+      const realProfitPerUnit = unitBasePrice - unitProductionCost - result.totalFeesPerUnit;
+      const lotPrice = Math.round(unitBasePrice * safeQty * 100) / 100;
+      const lotProfit = Math.round(realProfitPerUnit * safeQty * 100) / 100;
       
       return {
-        unitPrice: Math.round(result.finalPrice * 100) / 100,
+        unitPrice: Math.round(unitBasePrice * 100) / 100,
         lotPrice,
-        margin: result.realMarginPercent,
+        margin: unitBasePrice > 0 ? Math.round((realProfitPerUnit / unitBasePrice) * 100 * 100) / 100 : 0,
         materialAndOps,
         shopeeFees: result.totalFees,
         profit: lotProfit,
