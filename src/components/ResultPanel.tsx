@@ -268,28 +268,28 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
             </div>
             <div className="space-y-1 text-xs">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Comissão ({shopee2026Fees.commissionPercent}%) × {safeQuantity}un</span>
+                <span className="text-muted-foreground">Comissão ({shopee2026Fees.commissionPercent}%)</span>
                 <span className="text-foreground">-{formatCurrency(shopee2026Fees.commissionValue * safeQuantity)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Taxa fixa (por pedido)</span>
-                <span className="text-foreground">-{formatCurrency(shopee2026Fees.fixedFee)}</span>
+                <span className="text-muted-foreground">Taxa fixa</span>
+                <span className="text-foreground">-{formatCurrency(shopee2026Fees.fixedFee * safeQuantity)}</span>
               </div>
               {shopee2026Fees.cpfTax > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Taxa vendedor CPF (por pedido)</span>
-                  <span className="text-foreground">-{formatCurrency(shopee2026Fees.cpfTax)}</span>
+                  <span className="text-muted-foreground">Taxa vendedor CPF</span>
+                  <span className="text-foreground">-{formatCurrency(shopee2026Fees.cpfTax * safeQuantity)}</span>
                 </div>
               )}
               {shopee2026Fees.pixSubsidyPercent > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subsídio Pix ({shopee2026Fees.pixSubsidyPercent}%) × {safeQuantity}un</span>
+                  <span className="text-muted-foreground">Subsídio Pix ({shopee2026Fees.pixSubsidyPercent}%)</span>
                   <span className="text-foreground">-{formatCurrency(shopee2026Fees.pixSubsidyValue * safeQuantity)}</span>
                 </div>
               )}
               <div className="flex justify-between border-t border-border pt-1 font-medium">
-                <span className="text-warning">Total Shopee (pedido)</span>
-                <span className="text-warning font-semibold">-{formatCurrency(shopee2026Fees.totalFees)}</span>
+                <span className="text-warning">Total Shopee</span>
+                <span className="text-warning font-semibold">-{formatCurrency(marketplaceTotalFees)}</span>
               </div>
             </div>
           </div>
