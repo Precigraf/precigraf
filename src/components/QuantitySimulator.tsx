@@ -217,7 +217,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
               {isShopee2026 && calc.lotPrice > 0 && (
                 <div className="mt-2 pt-2 border-t border-border/50 space-y-1 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Material + Operacional</span>
+                    <span className="text-muted-foreground">Custos</span>
                     <span className="text-foreground">{formatCurrency(calc.materialAndOps)}</span>
                   </div>
                   <div className="flex justify-between">
