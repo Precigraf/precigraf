@@ -216,8 +216,8 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                     Faixa detectada
                   </span>
-                  <Badge variant="outline" className="text-xs">
-                    {shopee2026Fees.priceRange}
+                   <Badge variant="outline" className="text-xs">
+                    {shopee2026Fees.priceRange} — Shopee 2026 {sellerType.toUpperCase()}
                   </Badge>
                 </div>
 
@@ -231,7 +231,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Taxa fixa</span>
+                    <span className="text-muted-foreground">Taxa fixa (por pedido)</span>
                     <span className="font-medium text-foreground">
                       {formatBRL(shopee2026Fees.fixedFee)}
                     </span>
@@ -255,9 +255,15 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
                     </div>
                   )}
                   <div className="flex justify-between border-t border-border pt-2">
-                    <span className="font-semibold text-foreground">Total Shopee / unidade</span>
+                    <span className="font-semibold text-foreground">Total Shopee / pedido</span>
                     <span className="font-bold text-warning">
                       {formatBRL(shopee2026Fees.totalFees)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Por unidade</span>
+                    <span className="text-muted-foreground">
+                      {formatBRL(shopee2026Fees.totalFeesPerUnit)}
                     </span>
                   </div>
                 </div>
