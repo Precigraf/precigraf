@@ -327,6 +327,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         marketplaceTotalFees={marketplaceTotalFees}
         finalSellingPrice={finalSellingPrice}
         quantity={safeQuantity}
+        profitMargin={profitMargin}
+        isFixedProfit={isFixedProfit}
       />
 
       {/* Impacto do Marketplace */}
