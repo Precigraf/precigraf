@@ -40,7 +40,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   };
 
   const calculateForQuantity = (qty: number) => {
-    if (qty <= 0) return { unitPrice: 0, lotPrice: 0, margin: 0 };
+    if (qty <= 0) return { unitPrice: 0, lotPrice: 0, margin: 0, materialAndOps: 0, shopeeFees: 0, profit: 0 };
 
     const safeQty = Math.max(1, Math.floor(qty));
     const safeOperationalTotal = Math.max(0, operationalTotal || 0);
@@ -55,33 +55,38 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     
     // Custo de produção por unidade
     const unitProductionCost = safeUnitRawMaterialsCost + unitOperationalCost;
+    
+    // Total material + operacional do lote
+    const materialAndOps = Math.round(unitProductionCost * safeQty * 100) / 100;
 
     const isShopee2026 = marketplace === 'shopee_2026';
 
     if (isShopee2026) {
-      // Shopee 2026: usar equação inversa completa com re-avaliação de faixa
       const isFixed = safeFixedProfit > 0;
       
+      let result;
       if (isFixed) {
         const unitFixedProfit = safeFixedProfit / safeQty;
-        const result = calculateShopee2026InversePriceFixedProfit(
-          unitProductionCost, unitFixedProfit, sellerType
+        result = calculateShopee2026InversePriceFixedProfit(
+          unitProductionCost, unitFixedProfit, sellerType, safeQty
         );
-        return {
-          unitPrice: Math.round(result.finalPrice * 100) / 100,
-          lotPrice: Math.round(result.finalPrice * safeQty * 100) / 100,
-          margin: result.realMarginPercent,
-        };
       } else {
-        const result = calculateShopee2026InversePrice(
-          unitProductionCost, safeMarginPercentage, sellerType
+        result = calculateShopee2026InversePrice(
+          unitProductionCost, safeMarginPercentage, sellerType, safeQty
         );
-        return {
-          unitPrice: Math.round(result.finalPrice * 100) / 100,
-          lotPrice: Math.round(result.finalPrice * safeQty * 100) / 100,
-          margin: result.realMarginPercent,
-        };
       }
+      
+      const lotPrice = Math.round(result.finalPrice * safeQty * 100) / 100;
+      const lotProfit = Math.round(result.profit * safeQty * 100) / 100;
+      
+      return {
+        unitPrice: Math.round(result.finalPrice * 100) / 100,
+        lotPrice,
+        margin: result.realMarginPercent,
+        materialAndOps,
+        shopeeFees: result.totalFees,
+        profit: lotProfit,
+      };
     }
 
     // Lógica padrão (sem Shopee ou outros marketplaces)
@@ -95,17 +100,20 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     const unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
     const unitMarketplaceFixedFees = safeFixedFeePerItem / safeQty;
 
-    const unitPrice = unitBaseSellingPrice + unitMarketplaceCommission + unitMarketplaceFixedFees;
-    const lotPrice = unitPrice * safeQty;
+    const unitPriceCalc = unitBaseSellingPrice + unitMarketplaceCommission + unitMarketplaceFixedFees;
+    const lotPrice = unitPriceCalc * safeQty;
 
-    const realMargin = unitPrice > 0
-      ? (unitDesiredProfit / unitPrice) * 100
+    const realMargin = unitPriceCalc > 0
+      ? (unitDesiredProfit / unitPriceCalc) * 100
       : safeMarginPercentage;
 
     return { 
-      unitPrice: Math.round(unitPrice * 100) / 100, 
+      unitPrice: Math.round(unitPriceCalc * 100) / 100, 
       lotPrice: Math.round(lotPrice * 100) / 100, 
-      margin: Math.round(realMargin * 100) / 100 
+      margin: Math.round(realMargin * 100) / 100,
+      materialAndOps,
+      shopeeFees: 0,
+      profit: Math.round(unitDesiredProfit * safeQty * 100) / 100,
     };
   };
 
@@ -116,6 +124,8 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
       onShowUpgrade();
     }
   };
+
+  const isShopee2026 = marketplace === 'shopee_2026';
 
   // Versão bloqueada para usuários FREE
   if (!isPro) {
@@ -184,29 +194,52 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
           return (
             <div 
               key={qty} 
-              className="bg-card rounded-lg p-3 border border-border hover:border-primary/50 transition-colors flex items-center justify-between"
+              className="bg-card rounded-lg p-3 border border-border hover:border-primary/50 transition-colors"
             >
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-muted-foreground min-w-[50px]">
-                  {qty} un
-                </span>
-                <span 
-                  className="font-bold text-foreground"
-                  style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}
-                >
-                  {formatCurrency(calc.lotPrice)}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-muted-foreground min-w-[50px]">
+                    {qty} un
+                  </span>
+                  <span 
+                    className="font-bold text-foreground"
+                    style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                  >
+                    {formatCurrency(calc.lotPrice)}
+                  </span>
+                </div>
+                <span className="text-sm text-muted-foreground/80">
+                  {formatCurrency(calc.unitPrice)}/un
                 </span>
               </div>
-              <span className="text-sm text-muted-foreground/80">
-                {formatCurrency(calc.unitPrice)}/un
-              </span>
+              
+              {/* Breakdown detalhado para Shopee 2026 */}
+              {isShopee2026 && calc.lotPrice > 0 && (
+                <div className="mt-2 pt-2 border-t border-border/50 space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Material + Operacional</span>
+                    <span className="text-foreground">{formatCurrency(calc.materialAndOps)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-warning">Taxas Shopee</span>
+                    <span className="text-warning">-{formatCurrency(calc.shopeeFees)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-success">Lucro</span>
+                    <span className="text-success">{formatCurrency(calc.profit)}</span>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
       </div>
 
       <p className="text-xs text-muted-foreground text-center mt-3">
-        Quanto maior a quantidade, menor o custo por unidade
+        {isShopee2026 
+          ? 'Taxa fixa Shopee por pedido (não por item) — valores recalculados por quantidade'
+          : 'Quanto maior a quantidade, menor o custo por unidade'
+        }
       </p>
     </div>
   );
