@@ -6,7 +6,6 @@ import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
 import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
-import { SellerType, calculateShopee2026Fees, Shopee2026FeeBreakdown, detectarFaixa } from '@/lib/shopee2026';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
@@ -117,7 +116,6 @@ const CostCalculator: React.FC = () => {
   const [marketplace, setMarketplace] = useState<MarketplaceType>('none');
   const [commissionPercentage, setCommissionPercentage] = useState(0);
   const [fixedFeePerItem, setFixedFeePerItem] = useState(0);
-  const [sellerType, setSellerType] = useState<SellerType>('cpf');
 
   // Handler para quantidade com validação
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -358,7 +356,6 @@ const CostCalculator: React.FC = () => {
         totalCost: 0,
         profitValue: 0,
         sellingPrice: 0,
-        shopee2026Fees: null,
       };
     }
 
@@ -390,39 +387,12 @@ const CostCalculator: React.FC = () => {
     const unitBaseSellingPrice = roundCurrency(unitProductionCost + unitDesiredProfit);
 
     // Taxas do marketplace por unidade
-    const isShopee2026 = marketplace === 'shopee_2026';
-    let unitMarketplaceCommission: number;
-    let unitMarketplaceFixedFees: number;
-    let unitMarketplaceTotalFees: number;
-    let shopee2026FeesResult: Shopee2026FeeBreakdown | null = null;
-    let unitPrice: number;
-    let unitFinalDesiredProfit = unitDesiredProfit;
+    const unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
+    const unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);
+    const unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
 
-    if (isShopee2026) {
-      // Shopee 2026: cálculo DIRETO (forward) — preço base fica fixo, taxas são deduzidas
-      // O preço final de venda é o unitBaseSellingPrice (custo + margem)
-      // A faixa é detectada com base nesse preço final
-      unitPrice = unitBaseSellingPrice;
-      shopee2026FeesResult = calculateShopee2026Fees(unitPrice, sellerType, safeLotQuantity);
-      // Atualizar profit e margin reais (após taxas)
-      const realProfitPerUnit = roundCurrency(unitPrice - unitProductionCost - shopee2026FeesResult.totalFeesPerUnit);
-      const realMargin = unitPrice > 0 ? roundCurrency((realProfitPerUnit / unitPrice) * 100) : 0;
-      shopee2026FeesResult = {
-        ...shopee2026FeesResult,
-        finalPrice: unitPrice,
-        profit: realProfitPerUnit,
-        realMarginPercent: realMargin,
-      };
-      unitFinalDesiredProfit = realProfitPerUnit;
-      unitMarketplaceCommission = shopee2026FeesResult.commissionValue;
-      unitMarketplaceFixedFees = roundCurrency((shopee2026FeesResult.fixedFee + shopee2026FeesResult.cpfTax) / safeLotQuantity);
-      unitMarketplaceTotalFees = shopee2026FeesResult.totalFeesPerUnit;
-    } else {
-      unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
-      unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);
-      unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
-      unitPrice = roundCurrency(unitBaseSellingPrice + unitMarketplaceTotalFees);
-    }
+    // Preço unitário final (com taxas)
+    const unitPrice = roundCurrency(unitBaseSellingPrice + unitMarketplaceTotalFees);
 
     // PREÇO FINAL = Preço unitário × Quantidade
     const finalSellingPrice = roundCurrency(unitPrice * safeLotQuantity);
@@ -430,18 +400,10 @@ const CostCalculator: React.FC = () => {
     // Totais para exibição
     const operationalCost = operationalTotal;
     const productionCost = roundCurrency(unitProductionCost * safeLotQuantity);
-    const desiredProfit = roundCurrency(unitFinalDesiredProfit * safeLotQuantity);
-    
-    // Para Shopee 2026: totalFees já é o total do pedido (taxa fixa não multiplicada)
-    const marketplaceCommission = isShopee2026 && shopee2026FeesResult
-      ? roundCurrency(shopee2026FeesResult.commissionValue * safeLotQuantity)
-      : roundCurrency(unitMarketplaceCommission * safeLotQuantity);
-    const marketplaceFixedFees = isShopee2026 && shopee2026FeesResult
-      ? roundCurrency(shopee2026FeesResult.fixedFee + shopee2026FeesResult.cpfTax)
-      : roundCurrency(unitMarketplaceFixedFees * safeLotQuantity);
-    const marketplaceTotalFees = isShopee2026 && shopee2026FeesResult
-      ? shopee2026FeesResult.totalFees
-      : roundCurrency(unitMarketplaceTotalFees * safeLotQuantity);
+    const desiredProfit = roundCurrency(unitDesiredProfit * safeLotQuantity);
+    const marketplaceCommission = roundCurrency(unitMarketplaceCommission * safeLotQuantity);
+    const marketplaceFixedFees = roundCurrency(unitMarketplaceFixedFees * safeLotQuantity);
+    const marketplaceTotalFees = roundCurrency(unitMarketplaceTotalFees * safeLotQuantity);
 
     // Lucro líquido (pode ser negativo em caso de prejuízo)
     const netProfit = roundCurrency(finalSellingPrice - productionCost - marketplaceTotalFees);
@@ -464,7 +426,6 @@ const CostCalculator: React.FC = () => {
       totalCost: productionCost,
       profitValue: desiredProfit,
       sellingPrice: finalSellingPrice,
-      shopee2026Fees: shopee2026FeesResult,
     };
   }, [
     lotQuantity,
@@ -474,8 +435,6 @@ const CostCalculator: React.FC = () => {
     fixedProfit,
     commissionPercentage,
     fixedFeePerItem,
-    marketplace,
-    sellerType,
   ]);
 
   // Valores para salvar (compatibilidade com banco de dados)
@@ -731,9 +690,6 @@ const CostCalculator: React.FC = () => {
             marketplaceTotalFees={calculations.marketplaceTotalFees}
             isPro={isPro}
             onShowUpgrade={() => setShowUpgradeModal(true)}
-            sellerType={sellerType}
-            onSellerTypeChange={setSellerType}
-            shopee2026Fees={calculations.shopee2026Fees}
           />
         </div>
 
@@ -769,8 +725,6 @@ const CostCalculator: React.FC = () => {
             onShowUpgrade={() => setShowUpgradeModal(true)}
             editingCalculation={editingCalculation}
             duplicatedFrom={duplicatedFrom}
-            shopee2026Fees={calculations.shopee2026Fees}
-            sellerType={sellerType}
           />
         </div>
 

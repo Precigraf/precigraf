@@ -11,7 +11,6 @@ interface SmartAlertsProps {
   hasOperationalCosts?: boolean;
   productionCost?: number;
   finalSellingPrice?: number;
-  hasShopee2026?: boolean;
 }
 
 const SmartAlerts: React.FC<SmartAlertsProps> = ({
@@ -23,7 +22,6 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({
   hasOperationalCosts = true,
   productionCost = 0,
   finalSellingPrice = 0,
-  hasShopee2026 = false,
 }) => {
   const alerts: React.ReactNode[] = [];
 
@@ -59,9 +57,7 @@ const SmartAlerts: React.FC<SmartAlertsProps> = ({
       <Alert key="loss" className="bg-destructive/10 border-destructive/30">
         <XCircle className="w-4 h-4 text-destructive" />
         <AlertDescription className="text-destructive text-sm font-medium">
-          {hasShopee2026
-            ? '⚠️ Atenção: com as taxas da Shopee 2026, este produto gera prejuízo.'
-            : '⚠️ Prejuízo! O preço final está menor que o custo de produção.'}
+          ⚠️ Prejuízo! O preço final está menor que o custo de produção.
         </AlertDescription>
       </Alert>
     );
