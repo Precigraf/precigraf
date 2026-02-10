@@ -1,19 +1,22 @@
 // Motor de cálculo de taxas Shopee 2026 (CPF/CNPJ)
+// Taxa fixa e taxa CPF são POR PEDIDO (não por item)
 
 export type SellerType = 'cpf' | 'cnpj';
 
 export interface Shopee2026FeeBreakdown {
   commissionPercent: number;
-  commissionValue: number;
-  fixedFee: number;
-  cpfTax: number;
+  commissionValue: number;      // por unidade
+  fixedFee: number;             // POR PEDIDO (valor total, não por unidade)
+  cpfTax: number;               // POR PEDIDO (valor total, não por unidade)
   pixSubsidyPercent: number;
-  pixSubsidyValue: number;
-  totalFees: number;
+  pixSubsidyValue: number;      // por unidade
+  totalFees: number;            // total do pedido (todas as taxas)
+  totalFeesPerUnit: number;     // taxas por unidade (para exibição)
   priceRange: string;
-  finalPrice: number;
-  profit: number;
+  finalPrice: number;           // preço final por unidade
+  profit: number;               // lucro por unidade
   realMarginPercent: number;
+  quantity: number;             // quantidade usada no cálculo
 }
 
 const roundCurrency = (value: number): number => {
@@ -46,26 +49,35 @@ function getShopeeRange(unitFinalPrice: number): ShopeeRangeTiers {
 }
 
 /**
- * Calcula as taxas da Shopee 2026 com base no preço final unitário (já calculado).
- * Usado para exibição de breakdown quando o preço final já foi determinado.
+ * Calcula as taxas da Shopee 2026 com base no preço final unitário já calculado.
+ * Usado para exibição de breakdown.
+ * Taxa fixa e CPF são POR PEDIDO.
  */
 export function calculateShopee2026Fees(
   unitFinalPrice: number,
-  sellerType: SellerType
+  sellerType: SellerType,
+  quantity: number = 1
 ): Shopee2026FeeBreakdown {
+  const safeQty = Math.max(1, Math.floor(quantity));
+
   if (unitFinalPrice <= 0) {
     return {
       commissionPercent: 0, commissionValue: 0, fixedFee: 0, cpfTax: 0,
-      pixSubsidyPercent: 0, pixSubsidyValue: 0, totalFees: 0,
-      priceRange: '-', finalPrice: 0, profit: 0, realMarginPercent: 0,
+      pixSubsidyPercent: 0, pixSubsidyValue: 0, totalFees: 0, totalFeesPerUnit: 0,
+      priceRange: '-', finalPrice: 0, profit: 0, realMarginPercent: 0, quantity: safeQty,
     };
   }
 
   const range = getShopeeRange(unitFinalPrice);
-  const cpfTax = sellerType === 'cpf' ? 3 : 0;
-  const commissionValue = roundCurrency(unitFinalPrice * (range.commissionPercent / 100));
-  const pixSubsidyValue = roundCurrency(unitFinalPrice * (range.pixSubsidyPercent / 100));
-  const totalFees = roundCurrency(commissionValue + range.fixedFee + cpfTax + pixSubsidyValue);
+  const cpfTax = sellerType === 'cpf' ? 3 : 0; // por pedido
+  const commissionValue = roundCurrency(unitFinalPrice * (range.commissionPercent / 100)); // por unidade
+  const pixSubsidyValue = roundCurrency(unitFinalPrice * (range.pixSubsidyPercent / 100)); // por unidade
+
+  // Total do pedido: (comissão + pix) * qty + fixedFee + cpfTax
+  const totalFees = roundCurrency(
+    (commissionValue + pixSubsidyValue) * safeQty + range.fixedFee + cpfTax
+  );
+  const totalFeesPerUnit = roundCurrency(totalFees / safeQty);
 
   return {
     commissionPercent: range.commissionPercent,
@@ -75,76 +87,85 @@ export function calculateShopee2026Fees(
     pixSubsidyPercent: range.pixSubsidyPercent,
     pixSubsidyValue,
     totalFees,
+    totalFeesPerUnit,
     priceRange: range.priceRange,
     finalPrice: unitFinalPrice,
     profit: 0,
     realMarginPercent: 0,
+    quantity: safeQty,
   };
 }
 
 /**
- * Calcula o PREÇO FINAL unitário usando equação inversa para resolver a circularidade.
+ * Calcula o PREÇO FINAL unitário usando equação inversa.
  * 
- * Preço Final = (Custo Unitário + Taxas Fixas) / (1 - Comissão% - Subsídio Pix% - Margem%)
+ * Taxa fixa e CPF são POR PEDIDO, então são divididos pela quantidade.
+ * 
+ * Preço Final = (Custo Unitário + (Taxa Fixa + Taxa CPF) / Qty) / (1 - Comissão% - Subsídio Pix% - Margem%)
  * 
  * Resolve iterativamente porque a faixa de taxas depende do preço final.
- * Máximo de 10 iterações para estabilizar.
  */
 export function calculateShopee2026InversePrice(
   unitProductionCost: number,
   marginPercent: number,
-  sellerType: SellerType
+  sellerType: SellerType,
+  quantity: number = 1
 ): Shopee2026FeeBreakdown {
+  const safeQty = Math.max(1, Math.floor(quantity));
+
   if (unitProductionCost <= 0) {
     return {
       commissionPercent: 0, commissionValue: 0, fixedFee: 0, cpfTax: 0,
-      pixSubsidyPercent: 0, pixSubsidyValue: 0, totalFees: 0,
-      priceRange: '-', finalPrice: 0, profit: 0, realMarginPercent: 0,
+      pixSubsidyPercent: 0, pixSubsidyValue: 0, totalFees: 0, totalFeesPerUnit: 0,
+      priceRange: '-', finalPrice: 0, profit: 0, realMarginPercent: 0, quantity: safeQty,
     };
   }
 
-  const cpfTax = sellerType === 'cpf' ? 3 : 0;
+  const cpfTax = sellerType === 'cpf' ? 3 : 0; // por pedido
   const marginDecimal = Math.min(Math.max(0, marginPercent), 999) / 100;
 
-  // Chute inicial: começar com a faixa mais baixa
+  // Taxas fixas por pedido, amortizadas por unidade
+  const fixedCostsPerUnit = (0 + cpfTax) / safeQty; // fixedFee será adicionado pela faixa
+
   let currentRange = getShopeeRange(unitProductionCost);
   let finalPrice = 0;
 
-  // Iteração para estabilizar a faixa
   for (let i = 0; i < 10; i++) {
     const commDecimal = currentRange.commissionPercent / 100;
     const pixDecimal = currentRange.pixSubsidyPercent / 100;
     const denominator = 1 - commDecimal - pixDecimal - marginDecimal;
 
     if (denominator <= 0) {
-      // Margem + taxas >= 100%, cálculo impossível
-      // Retornar o melhor resultado possível com aviso
       finalPrice = roundCurrency(
-        (unitProductionCost + currentRange.fixedFee + cpfTax) / 0.01
+        (unitProductionCost + (currentRange.fixedFee + cpfTax) / safeQty) / 0.01
       );
       break;
     }
 
     finalPrice = roundCurrency(
-      (unitProductionCost + currentRange.fixedFee + cpfTax) / denominator
+      (unitProductionCost + (currentRange.fixedFee + cpfTax) / safeQty) / denominator
     );
 
-    // Verificar se a faixa mudou
     const newRange = getShopeeRange(finalPrice);
     if (
       newRange.commissionPercent === currentRange.commissionPercent &&
       newRange.fixedFee === currentRange.fixedFee &&
       newRange.pixSubsidyPercent === currentRange.pixSubsidyPercent
     ) {
-      break; // Estabilizou
+      break;
     }
     currentRange = newRange;
   }
 
-  // Calcular valores finais com base no preço final determinado
   const commissionValue = roundCurrency(finalPrice * (currentRange.commissionPercent / 100));
   const pixSubsidyValue = roundCurrency(finalPrice * (currentRange.pixSubsidyPercent / 100));
-  const totalFees = roundCurrency(commissionValue + currentRange.fixedFee + cpfTax + pixSubsidyValue);
+  
+  // Total do pedido
+  const totalFees = roundCurrency(
+    (commissionValue + pixSubsidyValue) * safeQty + currentRange.fixedFee + cpfTax
+  );
+  const totalFeesPerUnit = roundCurrency(totalFees / safeQty);
+  
   const profit = roundCurrency(finalPrice * marginDecimal);
   const realMarginPercent = finalPrice > 0 ? roundCurrency((profit / finalPrice) * 100) : 0;
 
@@ -156,28 +177,32 @@ export function calculateShopee2026InversePrice(
     pixSubsidyPercent: currentRange.pixSubsidyPercent,
     pixSubsidyValue,
     totalFees,
+    totalFeesPerUnit,
     priceRange: currentRange.priceRange,
     finalPrice,
     profit,
     realMarginPercent,
+    quantity: safeQty,
   };
 }
 
 /**
  * Versão para lucro fixo (R$) em vez de margem percentual.
- * 
- * Preço Final = (Custo Unitário + Lucro Fixo Unitário + Taxas Fixas) / (1 - Comissão% - Subsídio Pix%)
+ * Taxa fixa e CPF são POR PEDIDO.
  */
 export function calculateShopee2026InversePriceFixedProfit(
   unitProductionCost: number,
   unitFixedProfit: number,
-  sellerType: SellerType
+  sellerType: SellerType,
+  quantity: number = 1
 ): Shopee2026FeeBreakdown {
+  const safeQty = Math.max(1, Math.floor(quantity));
+
   if (unitProductionCost <= 0 && unitFixedProfit <= 0) {
     return {
       commissionPercent: 0, commissionValue: 0, fixedFee: 0, cpfTax: 0,
-      pixSubsidyPercent: 0, pixSubsidyValue: 0, totalFees: 0,
-      priceRange: '-', finalPrice: 0, profit: 0, realMarginPercent: 0,
+      pixSubsidyPercent: 0, pixSubsidyValue: 0, totalFees: 0, totalFeesPerUnit: 0,
+      priceRange: '-', finalPrice: 0, profit: 0, realMarginPercent: 0, quantity: safeQty,
     };
   }
 
@@ -192,13 +217,13 @@ export function calculateShopee2026InversePriceFixedProfit(
 
     if (denominator <= 0) {
       finalPrice = roundCurrency(
-        (unitProductionCost + unitFixedProfit + currentRange.fixedFee + cpfTax) / 0.01
+        (unitProductionCost + unitFixedProfit + (currentRange.fixedFee + cpfTax) / safeQty) / 0.01
       );
       break;
     }
 
     finalPrice = roundCurrency(
-      (unitProductionCost + unitFixedProfit + currentRange.fixedFee + cpfTax) / denominator
+      (unitProductionCost + unitFixedProfit + (currentRange.fixedFee + cpfTax) / safeQty) / denominator
     );
 
     const newRange = getShopeeRange(finalPrice);
@@ -214,7 +239,10 @@ export function calculateShopee2026InversePriceFixedProfit(
 
   const commissionValue = roundCurrency(finalPrice * (currentRange.commissionPercent / 100));
   const pixSubsidyValue = roundCurrency(finalPrice * (currentRange.pixSubsidyPercent / 100));
-  const totalFees = roundCurrency(commissionValue + currentRange.fixedFee + cpfTax + pixSubsidyValue);
+  const totalFees = roundCurrency(
+    (commissionValue + pixSubsidyValue) * safeQty + currentRange.fixedFee + cpfTax
+  );
+  const totalFeesPerUnit = roundCurrency(totalFees / safeQty);
   const realMarginPercent = finalPrice > 0 ? roundCurrency((unitFixedProfit / finalPrice) * 100) : 0;
 
   return {
@@ -225,9 +253,11 @@ export function calculateShopee2026InversePriceFixedProfit(
     pixSubsidyPercent: currentRange.pixSubsidyPercent,
     pixSubsidyValue,
     totalFees,
+    totalFeesPerUnit,
     priceRange: currentRange.priceRange,
     finalPrice,
     profit: unitFixedProfit,
     realMarginPercent,
+    quantity: safeQty,
   };
 }

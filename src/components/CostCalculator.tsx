@@ -400,22 +400,23 @@ const CostCalculator: React.FC = () => {
 
     if (isShopee2026) {
       // Shopee 2026: usar equação inversa para calcular preço final
-      // Preço Final = (Custo + Taxas Fixas) / (1 - Comissão% - Pix% - Margem%)
+      // Taxa fixa e CPF são POR PEDIDO, amortizados pela quantidade
       if (isFixedProfit) {
         shopee2026FeesResult = calculateShopee2026InversePriceFixedProfit(
-          unitProductionCost, unitDesiredProfit, sellerType
+          unitProductionCost, unitDesiredProfit, sellerType, safeLotQuantity
         );
       } else {
         shopee2026FeesResult = calculateShopee2026InversePrice(
-          unitProductionCost, safeProfitMargin, sellerType
+          unitProductionCost, safeProfitMargin, sellerType, safeLotQuantity
         );
         // Atualizar lucro com o valor calculado pela fórmula inversa
         unitFinalDesiredProfit = shopee2026FeesResult.profit;
       }
       unitPrice = shopee2026FeesResult.finalPrice;
       unitMarketplaceCommission = shopee2026FeesResult.commissionValue;
-      unitMarketplaceFixedFees = shopee2026FeesResult.fixedFee + shopee2026FeesResult.cpfTax + shopee2026FeesResult.pixSubsidyValue;
-      unitMarketplaceTotalFees = shopee2026FeesResult.totalFees;
+      // Taxas fixas por pedido (não multiplicar por quantidade)
+      unitMarketplaceFixedFees = shopee2026FeesResult.totalFeesPerUnit - shopee2026FeesResult.commissionValue - shopee2026FeesResult.pixSubsidyValue;
+      unitMarketplaceTotalFees = shopee2026FeesResult.totalFeesPerUnit;
     } else {
       unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
       unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);
@@ -430,9 +431,17 @@ const CostCalculator: React.FC = () => {
     const operationalCost = operationalTotal;
     const productionCost = roundCurrency(unitProductionCost * safeLotQuantity);
     const desiredProfit = roundCurrency(unitFinalDesiredProfit * safeLotQuantity);
-    const marketplaceCommission = roundCurrency(unitMarketplaceCommission * safeLotQuantity);
-    const marketplaceFixedFees = roundCurrency(unitMarketplaceFixedFees * safeLotQuantity);
-    const marketplaceTotalFees = roundCurrency(unitMarketplaceTotalFees * safeLotQuantity);
+    
+    // Para Shopee 2026: totalFees já é o total do pedido (taxa fixa não multiplicada)
+    const marketplaceCommission = isShopee2026 && shopee2026FeesResult
+      ? roundCurrency(shopee2026FeesResult.commissionValue * safeLotQuantity)
+      : roundCurrency(unitMarketplaceCommission * safeLotQuantity);
+    const marketplaceFixedFees = isShopee2026 && shopee2026FeesResult
+      ? roundCurrency(shopee2026FeesResult.fixedFee + shopee2026FeesResult.cpfTax)
+      : roundCurrency(unitMarketplaceFixedFees * safeLotQuantity);
+    const marketplaceTotalFees = isShopee2026 && shopee2026FeesResult
+      ? shopee2026FeesResult.totalFees
+      : roundCurrency(unitMarketplaceTotalFees * safeLotQuantity);
 
     // Lucro líquido (pode ser negativo em caso de prejuízo)
     const netProfit = isShopee2026
