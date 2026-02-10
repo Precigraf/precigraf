@@ -6,7 +6,7 @@ import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
 import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
-import { SellerType, calculateShopee2026Fees, calculateShopee2026InversePrice, calculateShopee2026InversePriceFixedProfit, Shopee2026FeeBreakdown } from '@/lib/shopee2026';
+import { SellerType, calculateShopee2026Fees, Shopee2026FeeBreakdown } from '@/lib/shopee2026';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
@@ -399,23 +399,23 @@ const CostCalculator: React.FC = () => {
     let unitFinalDesiredProfit = unitDesiredProfit;
 
     if (isShopee2026) {
-      // Shopee 2026: usar equação inversa para calcular preço final
-      // Taxa fixa e CPF são POR PEDIDO, amortizados pela quantidade
-      if (isFixedProfit) {
-        shopee2026FeesResult = calculateShopee2026InversePriceFixedProfit(
-          unitProductionCost, unitDesiredProfit, sellerType, safeLotQuantity
-        );
-      } else {
-        shopee2026FeesResult = calculateShopee2026InversePrice(
-          unitProductionCost, safeProfitMargin, sellerType, safeLotQuantity
-        );
-        // Atualizar lucro com o valor calculado pela fórmula inversa
-        unitFinalDesiredProfit = shopee2026FeesResult.profit;
-      }
-      unitPrice = shopee2026FeesResult.finalPrice;
+      // Shopee 2026: cálculo DIRETO (forward) — preço base fica fixo, taxas são deduzidas
+      // O preço final de venda é o unitBaseSellingPrice (custo + margem)
+      // A faixa é detectada com base nesse preço final
+      unitPrice = unitBaseSellingPrice;
+      shopee2026FeesResult = calculateShopee2026Fees(unitPrice, sellerType, safeLotQuantity);
+      // Atualizar profit e margin reais (após taxas)
+      const realProfitPerUnit = roundCurrency(unitPrice - unitProductionCost - shopee2026FeesResult.totalFeesPerUnit);
+      const realMargin = unitPrice > 0 ? roundCurrency((realProfitPerUnit / unitPrice) * 100) : 0;
+      shopee2026FeesResult = {
+        ...shopee2026FeesResult,
+        finalPrice: unitPrice,
+        profit: realProfitPerUnit,
+        realMarginPercent: realMargin,
+      };
+      unitFinalDesiredProfit = realProfitPerUnit;
       unitMarketplaceCommission = shopee2026FeesResult.commissionValue;
-      // Taxas fixas por pedido (não multiplicar por quantidade)
-      unitMarketplaceFixedFees = shopee2026FeesResult.totalFeesPerUnit - shopee2026FeesResult.commissionValue - shopee2026FeesResult.pixSubsidyValue;
+      unitMarketplaceFixedFees = roundCurrency((shopee2026FeesResult.fixedFee + shopee2026FeesResult.cpfTax) / safeLotQuantity);
       unitMarketplaceTotalFees = shopee2026FeesResult.totalFeesPerUnit;
     } else {
       unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
@@ -444,9 +444,7 @@ const CostCalculator: React.FC = () => {
       : roundCurrency(unitMarketplaceTotalFees * safeLotQuantity);
 
     // Lucro líquido (pode ser negativo em caso de prejuízo)
-    const netProfit = isShopee2026
-      ? roundCurrency(desiredProfit) // Na Shopee 2026, o lucro já está embutido no preço final via fórmula inversa
-      : roundCurrency(finalSellingPrice - productionCost - marketplaceTotalFees);
+    const netProfit = roundCurrency(finalSellingPrice - productionCost - marketplaceTotalFees);
 
     return {
       rawMaterialsCost,
