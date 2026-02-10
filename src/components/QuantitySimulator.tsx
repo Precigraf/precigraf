@@ -2,6 +2,7 @@ import React from 'react';
 import { Calculator, Lock, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { MarketplaceType } from './MarketplaceSection';
 
 interface QuantitySimulatorProps {
   unitRawMaterialsCost: number;
@@ -11,6 +12,7 @@ interface QuantitySimulatorProps {
   commissionPercentage: number;
   fixedFeePerItem: number;
   currentQuantity: number;
+  marketplace?: MarketplaceType;
   isPro?: boolean;
   onShowUpgrade?: () => void;
 }
@@ -23,6 +25,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   commissionPercentage,
   fixedFeePerItem,
   currentQuantity,
+  marketplace = 'none',
   isPro = true,
   onShowUpgrade,
 }) => {
@@ -34,9 +37,8 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   };
 
   const calculateForQuantity = (qty: number) => {
-    if (qty <= 0) return { unitPrice: 0, lotPrice: 0, margin: 0 };
+    if (qty <= 0) return { unitPrice: 0, lotPrice: 0, margin: 0, unitCost: 0, unitFees: 0, unitProfit: 0 };
 
-    // Proteção contra divisão por zero e valores inválidos
     const safeQty = Math.max(1, Math.floor(qty));
     const safeOperationalTotal = Math.max(0, operationalTotal || 0);
     const safeUnitRawMaterialsCost = Math.max(0, unitRawMaterialsCost || 0);
@@ -63,9 +65,10 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     // Taxas do marketplace
     const unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
     const unitMarketplaceFixedFees = safeFixedFeePerItem / safeQty;
+    const unitTotalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
 
     // Preço unitário final
-    const unitPrice = unitBaseSellingPrice + unitMarketplaceCommission + unitMarketplaceFixedFees;
+    const unitPrice = unitBaseSellingPrice + unitTotalFees;
 
     // Preço do lote
     const lotPrice = unitPrice * safeQty;
@@ -75,15 +78,22 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
       ? ((unitDesiredProfit / unitProductionCost) * 100) 
       : safeMarginPercentage;
 
+    // Lucro líquido = preço final - custo - taxas
+    const unitNetProfit = unitDesiredProfit;
+
     return { 
       unitPrice: Math.round(unitPrice * 100) / 100, 
       lotPrice: Math.round(lotPrice * 100) / 100, 
-      margin: Math.round(realMargin * 100) / 100 
+      margin: Math.round(realMargin * 100) / 100,
+      unitCost: Math.round(unitProductionCost * 100) / 100,
+      unitFees: Math.round(unitTotalFees * 100) / 100,
+      unitProfit: Math.round(unitNetProfit * 100) / 100,
     };
   };
 
-  // Calcular valores atuais para comparação
-  const currentCalc = calculateForQuantity(currentQuantity);
+  const hasMarketplace = marketplace !== 'none';
+  const isShopee = marketplace === 'shopee_no_shipping' || marketplace === 'shopee_free_shipping';
+  const feesLabel = isShopee ? 'Taxas Shopee' : 'Taxas';
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -100,7 +110,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
         className="relative overflow-hidden rounded-xl"
         onClick={handleUpgradeClick}
       >
-        {/* Overlay de bloqueio */}
         <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center gap-2 cursor-pointer">
           <Lock className="w-5 h-5 text-muted-foreground" />
           <Badge variant="outline" className="text-xs bg-background/80">
@@ -116,7 +125,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
           </Button>
         </div>
 
-        {/* Conteúdo bloqueado (visível mas desativado) */}
         <div className="opacity-70 pointer-events-none select-none filter grayscale bg-secondary/30 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-4">
             <Calculator className="w-4 h-4 text-primary" />
@@ -163,22 +171,39 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
           return (
             <div 
               key={qty} 
-              className="bg-card rounded-lg p-3 border border-border hover:border-primary/50 transition-colors flex items-center justify-between"
+              className="bg-card rounded-lg p-3 border border-border hover:border-primary/50 transition-colors"
             >
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-muted-foreground min-w-[50px]">
-                  {qty} un
-                </span>
-                <span 
-                  className="font-bold text-foreground"
-                  style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}
-                >
-                  {formatCurrency(lotPrice)}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-muted-foreground min-w-[50px]">
+                    {qty} un
+                  </span>
+                  <span 
+                    className="font-bold text-foreground"
+                    style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                  >
+                    {formatCurrency(lotPrice)}
+                  </span>
+                </div>
+                <span className="text-sm text-muted-foreground/80">
+                  {formatCurrency(calc.unitPrice)}/un
                 </span>
               </div>
-              <span className="text-sm text-muted-foreground/80">
-                {formatCurrency(calc.unitPrice)}/un
-              </span>
+
+              {/* Detalhamento: Custo, Taxas, Lucro */}
+              <div className="flex items-center gap-3 mt-2 pt-2 border-t border-border/50 text-xs flex-wrap">
+                <span className="text-muted-foreground">
+                  Custo <strong className="text-foreground">{formatCurrency(calc.unitCost)}</strong>
+                </span>
+                {hasMarketplace && (
+                  <span className="text-muted-foreground">
+                    {feesLabel} <strong className="text-warning">{formatCurrency(calc.unitFees)}</strong>
+                  </span>
+                )}
+                <span className="text-muted-foreground">
+                  Lucro <strong className={calc.unitProfit > 0 ? 'text-success' : 'text-destructive'}>{formatCurrency(calc.unitProfit)}</strong>
+                </span>
+              </div>
             </div>
           );
         })}

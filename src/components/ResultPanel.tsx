@@ -322,6 +322,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         commissionPercentage={commissionPercentage}
         fixedFeePerItem={fixedFeePerItem}
         currentQuantity={safeQuantity}
+        marketplace={marketplace}
         isPro={isPro}
         onShowUpgrade={onShowUpgrade}
       />
