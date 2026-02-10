@@ -4,6 +4,7 @@
 export type SellerType = 'cpf' | 'cnpj';
 
 export interface Shopee2026FeeBreakdown {
+  rangeId: string;              // ID da faixa detectada (derivado, nunca armazenado)
   commissionPercent: number;
   commissionValue: number;      // por unidade
   fixedFee: number;             // POR PEDIDO (valor total, não por unidade)
@@ -24,7 +25,10 @@ const roundCurrency = (value: number): number => {
   return Math.round(value * 100) / 100;
 };
 
+export type ShopeeRangeId = 'ATE_79' | '80_99' | '100_199' | '200_499' | '500_PLUS';
+
 interface ShopeeRangeTiers {
+  id: ShopeeRangeId;
   commissionPercent: number;
   fixedFee: number;
   pixSubsidyPercent: number;
@@ -32,20 +36,35 @@ interface ShopeeRangeTiers {
 }
 
 /**
+ * FUNÇÃO PURA — Detecta a faixa de taxas da Shopee 2026 EXCLUSIVAMENTE
+ * a partir do PREÇO FINAL DE VENDA unitário.
+ * 
+ * NUNCA armazenar o resultado. Sempre chamar novamente quando o preço mudar.
+ * Esta função é DETERMINÍSTICA: mesmo input → mesmo output, sempre.
+ */
+export function detectarFaixa(precoFinalVenda: number): ShopeeRangeId {
+  if (precoFinalVenda <= 79.99) return 'ATE_79';
+  if (precoFinalVenda <= 99.99) return '80_99';
+  if (precoFinalVenda <= 199.99) return '100_199';
+  if (precoFinalVenda <= 499.99) return '200_499';
+  return '500_PLUS';
+}
+
+const SHOPEE_RANGE_TIERS: Record<ShopeeRangeId, Omit<ShopeeRangeTiers, 'id'>> = {
+  'ATE_79':    { commissionPercent: 20, fixedFee: 4,  pixSubsidyPercent: 0, priceRange: 'Até R$ 79,99' },
+  '80_99':     { commissionPercent: 14, fixedFee: 16, pixSubsidyPercent: 5, priceRange: 'R$ 80,00 – R$ 99,99' },
+  '100_199':   { commissionPercent: 14, fixedFee: 20, pixSubsidyPercent: 5, priceRange: 'R$ 100,00 – R$ 199,99' },
+  '200_499':   { commissionPercent: 14, fixedFee: 26, pixSubsidyPercent: 5, priceRange: 'R$ 200,00 – R$ 499,99' },
+  '500_PLUS':  { commissionPercent: 14, fixedFee: 26, pixSubsidyPercent: 8, priceRange: 'Acima de R$ 500,00' },
+};
+
+/**
  * Retorna a faixa de taxas da Shopee 2026 com base no preço final unitário.
+ * Sempre recalcula — NUNCA usa cache.
  */
 function getShopeeRange(unitFinalPrice: number): ShopeeRangeTiers {
-  if (unitFinalPrice <= 79.99) {
-    return { commissionPercent: 20, fixedFee: 4, pixSubsidyPercent: 0, priceRange: 'Até R$ 79,99' };
-  } else if (unitFinalPrice <= 99.99) {
-    return { commissionPercent: 14, fixedFee: 16, pixSubsidyPercent: 5, priceRange: 'R$ 80,00 – R$ 99,99' };
-  } else if (unitFinalPrice <= 199.99) {
-    return { commissionPercent: 14, fixedFee: 20, pixSubsidyPercent: 5, priceRange: 'R$ 100,00 – R$ 199,99' };
-  } else if (unitFinalPrice <= 499.99) {
-    return { commissionPercent: 14, fixedFee: 26, pixSubsidyPercent: 5, priceRange: 'R$ 200,00 – R$ 499,99' };
-  } else {
-    return { commissionPercent: 14, fixedFee: 26, pixSubsidyPercent: 8, priceRange: 'Acima de R$ 500,00' };
-  }
+  const id = detectarFaixa(unitFinalPrice);
+  return { id, ...SHOPEE_RANGE_TIERS[id] };
 }
 
 /**
@@ -62,7 +81,7 @@ export function calculateShopee2026Fees(
 
   if (unitFinalPrice <= 0) {
     return {
-      commissionPercent: 0, commissionValue: 0, fixedFee: 0, cpfTax: 0,
+      rangeId: '-', commissionPercent: 0, commissionValue: 0, fixedFee: 0, cpfTax: 0,
       pixSubsidyPercent: 0, pixSubsidyValue: 0, totalFees: 0, totalFeesPerUnit: 0,
       priceRange: '-', finalPrice: 0, profit: 0, realMarginPercent: 0, quantity: safeQty,
     };
@@ -80,6 +99,7 @@ export function calculateShopee2026Fees(
   const totalFeesPerUnit = roundCurrency(totalFees / safeQty);
 
   return {
+    rangeId: range.id,
     commissionPercent: range.commissionPercent,
     commissionValue,
     fixedFee: range.fixedFee,
@@ -115,7 +135,7 @@ export function calculateShopee2026InversePrice(
 
   if (unitProductionCost <= 0) {
     return {
-      commissionPercent: 0, commissionValue: 0, fixedFee: 0, cpfTax: 0,
+      rangeId: '-', commissionPercent: 0, commissionValue: 0, fixedFee: 0, cpfTax: 0,
       pixSubsidyPercent: 0, pixSubsidyValue: 0, totalFees: 0, totalFeesPerUnit: 0,
       priceRange: '-', finalPrice: 0, profit: 0, realMarginPercent: 0, quantity: safeQty,
     };
@@ -170,6 +190,7 @@ export function calculateShopee2026InversePrice(
   const realMarginPercent = finalPrice > 0 ? roundCurrency((profit / finalPrice) * 100) : 0;
 
   return {
+    rangeId: currentRange.id,
     commissionPercent: currentRange.commissionPercent,
     commissionValue,
     fixedFee: currentRange.fixedFee,
@@ -200,7 +221,7 @@ export function calculateShopee2026InversePriceFixedProfit(
 
   if (unitProductionCost <= 0 && unitFixedProfit <= 0) {
     return {
-      commissionPercent: 0, commissionValue: 0, fixedFee: 0, cpfTax: 0,
+      rangeId: '-', commissionPercent: 0, commissionValue: 0, fixedFee: 0, cpfTax: 0,
       pixSubsidyPercent: 0, pixSubsidyValue: 0, totalFees: 0, totalFeesPerUnit: 0,
       priceRange: '-', finalPrice: 0, profit: 0, realMarginPercent: 0, quantity: safeQty,
     };
@@ -246,6 +267,7 @@ export function calculateShopee2026InversePriceFixedProfit(
   const realMarginPercent = finalPrice > 0 ? roundCurrency((unitFixedProfit / finalPrice) * 100) : 0;
 
   return {
+    rangeId: currentRange.id,
     commissionPercent: currentRange.commissionPercent,
     commissionValue,
     fixedFee: currentRange.fixedFee,

@@ -6,7 +6,7 @@ import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
 import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
-import { SellerType, calculateShopee2026Fees, Shopee2026FeeBreakdown } from '@/lib/shopee2026';
+import { SellerType, calculateShopee2026Fees, Shopee2026FeeBreakdown, detectarFaixa } from '@/lib/shopee2026';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
