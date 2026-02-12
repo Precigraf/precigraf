@@ -54,7 +54,7 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
       sessionStorage.setItem('payment_csrf_token', csrfToken);
 
       // Redirect to InfinitePay static checkout link
-      window.location.href = 'https://checkout.infinitepay.io/israel-shaina-wanderley/7GZOXwDYWr';
+      window.location.href = 'https://checkout.infinitepay.io/israel-shaina-wanderley/tBMthxjk5';
     } catch (error) {
       console.error('Error starting checkout:', error);
       toast.error('Erro inesperado. Tente novamente.');
