@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import Cadastro from "./pages/Cadastro";
 import Perfil from "./pages/Perfil";
 import Upgrade from "./pages/Upgrade";
+import AdminExport from "./pages/AdminExport";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Upgrade />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/admin/export" 
+                element={
+                  <ProtectedRoute>
+                    <AdminExport />
                   </ProtectedRoute>
                 } 
               />
