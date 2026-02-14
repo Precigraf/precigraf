@@ -163,7 +163,7 @@ export type Database = {
           monthly_edits_count: number
           monthly_edits_reset_at: string
           plan: string
-          plan_id: string | null
+          plan_id: string
           profile_image_url: string | null
           trial_ends_at: string | null
           updated_at: string
@@ -176,7 +176,7 @@ export type Database = {
           monthly_edits_count?: number
           monthly_edits_reset_at?: string
           plan?: string
-          plan_id?: string | null
+          plan_id?: string
           profile_image_url?: string | null
           trial_ends_at?: string | null
           updated_at?: string
@@ -189,7 +189,7 @@ export type Database = {
           monthly_edits_count?: number
           monthly_edits_reset_at?: string
           plan?: string
-          plan_id?: string | null
+          plan_id?: string
           profile_image_url?: string | null
           trial_ends_at?: string | null
           updated_at?: string
@@ -405,6 +405,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_free_plan_id: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
