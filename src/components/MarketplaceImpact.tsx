@@ -13,6 +13,7 @@ interface MarketplaceImpactProps {
   marketplace: MarketplaceType;
   unitPrice: number;
   unitProfit: number;
+  unitNetProfit: number;
   marketplaceTotalFees: number;
   quantity: number;
   onApplySuggestedMargin?: (margin: number) => void;
@@ -22,6 +23,7 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
   marketplace,
   unitPrice,
   unitProfit,
+  unitNetProfit,
   marketplaceTotalFees,
   quantity,
   onApplySuggestedMargin,
@@ -42,7 +44,8 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
 
   const label = MARKETPLACE_LABELS[marketplace];
   const unitFees = Math.round((safeMarketplaceTotalFees / safeQuantity) * 100) / 100;
-  const netUnitProfit = Math.round((safeUnitProfit - unitFees) * 100) / 100;
+  // Usar o lucro líquido real vindo do painel principal (já sincronizado)
+  const netUnitProfit = Math.round((unitNetProfit) * 100) / 100;
   const profitImpactPercentage = safeUnitProfit > 0
     ? Math.round((unitFees / safeUnitProfit) * 1000) / 10
     : 0;
