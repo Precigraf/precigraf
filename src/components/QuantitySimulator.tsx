@@ -65,12 +65,16 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
 
     // Taxas do marketplace
-    const unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
-    // Taxa fixa (R$20) + taxa CPF (R$3) são por pedido, divididas pela quantidade
-    const unitMarketplaceFixedFees = (safeFixedFeePerItem + safeCpfTax) / safeQty;
+    const unitFixedFees = (safeFixedFeePerItem + safeCpfTax) / safeQty;
 
-    // Preço unitário final
-    const unitPrice = unitBaseSellingPrice + unitMarketplaceCommission + unitMarketplaceFixedFees;
+    // Preço unitário final: embute comissão no preço
+    const commissionFraction = safeCommissionPercentage / 100;
+    const unitPrice = commissionFraction < 1
+      ? (unitBaseSellingPrice + unitFixedFees) / (1 - commissionFraction)
+      : unitBaseSellingPrice + unitFixedFees;
+
+    const unitMarketplaceCommission = unitPrice * commissionFraction;
+    const unitMarketplaceFixedFees = unitFixedFees;
 
     // Totais do lote
     const lotPrice = Math.round(unitPrice * safeQty * 100) / 100;
