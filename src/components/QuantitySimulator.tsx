@@ -10,7 +10,9 @@ interface QuantitySimulatorProps {
   fixedProfit: number;
   commissionPercentage: number;
   fixedFeePerItem: number;
+  cpfTax: number;
   currentQuantity: number;
+  hasMarketplace: boolean;
   isPro?: boolean;
   onShowUpgrade?: () => void;
 }
@@ -22,7 +24,9 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   fixedProfit,
   commissionPercentage,
   fixedFeePerItem,
+  cpfTax,
   currentQuantity,
+  hasMarketplace,
   isPro = true,
   onShowUpgrade,
 }) => {
@@ -34,9 +38,8 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   };
 
   const calculateForQuantity = (qty: number) => {
-    if (qty <= 0) return { unitPrice: 0, lotPrice: 0, margin: 0 };
+    if (qty <= 0) return { unitPrice: 0, lotPrice: 0, margin: 0, totalCost: 0, totalFees: 0, totalProfit: 0 };
 
-    // Proteção contra divisão por zero e valores inválidos
     const safeQty = Math.max(1, Math.floor(qty));
     const safeOperationalTotal = Math.max(0, operationalTotal || 0);
     const safeUnitRawMaterialsCost = Math.max(0, unitRawMaterialsCost || 0);
@@ -44,6 +47,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     const safeFixedProfit = Math.max(0, fixedProfit || 0);
     const safeCommissionPercentage = Math.min(Math.max(0, commissionPercentage || 0), 100);
     const safeFixedFeePerItem = Math.max(0, fixedFeePerItem || 0);
+    const safeCpfTax = Math.max(0, cpfTax || 0);
 
     // Custo operacional por unidade
     const unitOperationalCost = safeOperationalTotal / safeQty;
@@ -62,28 +66,27 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
 
     // Taxas do marketplace
     const unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
-    const unitMarketplaceFixedFees = safeFixedFeePerItem / safeQty;
+    // Taxa fixa (R$20) + taxa CPF (R$3) são por pedido, divididas pela quantidade
+    const unitMarketplaceFixedFees = (safeFixedFeePerItem + safeCpfTax) / safeQty;
 
     // Preço unitário final
     const unitPrice = unitBaseSellingPrice + unitMarketplaceCommission + unitMarketplaceFixedFees;
 
-    // Preço do lote
-    const lotPrice = unitPrice * safeQty;
-
-    // Margem real calculada
-    const realMargin = unitProductionCost > 0 
-      ? ((unitDesiredProfit / unitProductionCost) * 100) 
-      : safeMarginPercentage;
+    // Totais do lote
+    const lotPrice = Math.round(unitPrice * safeQty * 100) / 100;
+    const totalCost = Math.round(unitProductionCost * safeQty * 100) / 100;
+    const totalFees = Math.round((unitMarketplaceCommission + unitMarketplaceFixedFees) * safeQty * 100) / 100;
+    const totalProfit = Math.round(unitDesiredProfit * safeQty * 100) / 100;
 
     return { 
       unitPrice: Math.round(unitPrice * 100) / 100, 
-      lotPrice: Math.round(lotPrice * 100) / 100, 
-      margin: Math.round(realMargin * 100) / 100 
+      lotPrice, 
+      margin: 0,
+      totalCost,
+      totalFees,
+      totalProfit,
     };
   };
-
-  // Calcular valores atuais para comparação
-  const currentCalc = calculateForQuantity(currentQuantity);
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -100,7 +103,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
         className="relative overflow-hidden rounded-xl"
         onClick={handleUpgradeClick}
       >
-        {/* Overlay de bloqueio */}
         <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center gap-2 cursor-pointer">
           <Lock className="w-5 h-5 text-muted-foreground" />
           <Badge variant="outline" className="text-xs bg-background/80">
@@ -116,7 +118,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
           </Button>
         </div>
 
-        {/* Conteúdo bloqueado (visível mas desativado) */}
         <div className="opacity-70 pointer-events-none select-none filter grayscale bg-secondary/30 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-4">
             <Calculator className="w-4 h-4 text-primary" />
@@ -158,27 +159,47 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
       <div className="flex flex-col gap-2">
         {quantities.map((qty) => {
           const calc = calculateForQuantity(qty);
-          const lotPrice = calc.unitPrice * qty;
           
           return (
             <div 
               key={qty} 
-              className="bg-card rounded-lg p-3 border border-border hover:border-primary/50 transition-colors flex items-center justify-between"
+              className="bg-card rounded-lg p-3 border border-border hover:border-primary/50 transition-colors"
             >
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-muted-foreground min-w-[50px]">
-                  {qty} un
-                </span>
-                <span 
-                  className="font-bold text-foreground"
-                  style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}
-                >
-                  {formatCurrency(lotPrice)}
+              {/* Linha principal */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-muted-foreground min-w-[50px]">
+                    {qty} un
+                  </span>
+                  <span 
+                    className="font-bold text-foreground"
+                    style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                  >
+                    {formatCurrency(calc.lotPrice)}
+                  </span>
+                </div>
+                <span className="text-sm text-muted-foreground/80">
+                  {formatCurrency(calc.unitPrice)}/un
                 </span>
               </div>
-              <span className="text-sm text-muted-foreground/80">
-                {formatCurrency(calc.unitPrice)}/un
-              </span>
+
+              {/* Detalhamento */}
+              <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 pt-2 border-t border-border/50 text-xs">
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">Custos:</span>
+                  <span className="font-medium text-foreground">{formatCurrency(calc.totalCost)}</span>
+                </div>
+                {hasMarketplace && (
+                  <div className="flex items-center gap-1">
+                    <span className="text-warning">Taxas Shopee:</span>
+                    <span className="font-medium text-warning">{formatCurrency(calc.totalFees)}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1">
+                  <span className="text-success">Lucro:</span>
+                  <span className="font-medium text-success">{formatCurrency(calc.totalProfit)}</span>
+                </div>
+              </div>
             </div>
           );
         })}
