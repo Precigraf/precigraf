@@ -12,6 +12,7 @@ import Cadastro from "./pages/Cadastro";
 import Perfil from "./pages/Perfil";
 import Upgrade from "./pages/Upgrade";
 import AdminExport from "./pages/AdminExport";
+import PagamentoConfirmado from "./pages/PagamentoConfirmado";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +57,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <AdminExport />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/pagamento-confirmado" 
+                element={
+                  <ProtectedRoute>
+                    <PagamentoConfirmado />
                   </ProtectedRoute>
                 } 
               />
