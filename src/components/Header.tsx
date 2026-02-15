@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sun, Moon, LogOut, Settings, Database } from 'lucide-react';
+import { Sun, Moon, LogOut, Settings } from 'lucide-react';
 import LogoIcon from '@/components/LogoIcon';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/hooks/useTheme';
@@ -99,13 +99,6 @@ const Header: React.FC = () => {
                   >
                     <Settings className="w-4 h-4 mr-2" />
                     Meu Perfil
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => navigate('/admin/export')}
-                    className="cursor-pointer"
-                  >
-                    <Database className="w-4 h-4 mr-2" />
-                    Exportar Dados
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={handleLogout}
