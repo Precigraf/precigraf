@@ -29,6 +29,7 @@ interface ResultPanelProps {
   fixedProfit: number;
   commissionPercentage: number;
   fixedFeePerItem: number;
+  cpfTax: number;
   // Marketplace info
   marketplace?: MarketplaceType;
   // Custos operacionais preenchidos
@@ -78,6 +79,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   fixedProfit,
   commissionPercentage,
   fixedFeePerItem,
+  cpfTax,
   marketplace = 'none',
   hasOperationalCosts = true,
   saveData,
@@ -321,7 +323,9 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         fixedProfit={fixedProfit}
         commissionPercentage={commissionPercentage}
         fixedFeePerItem={fixedFeePerItem}
+        cpfTax={cpfTax}
         currentQuantity={safeQuantity}
+        hasMarketplace={hasMarketplace}
         isPro={isPro}
         onShowUpgrade={onShowUpgrade}
       />

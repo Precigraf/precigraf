@@ -730,6 +730,7 @@ const CostCalculator: React.FC = () => {
             fixedProfit={fixedProfit}
             commissionPercentage={commissionPercentage}
             fixedFeePerItem={fixedFeePerItem}
+            cpfTax={cpfTax}
             marketplace={marketplace}
             hasOperationalCosts={hasOperationalCosts}
             saveData={saveDataValues}
