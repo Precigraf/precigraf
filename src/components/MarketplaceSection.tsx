@@ -1,7 +1,6 @@
 import React from 'react';
 import { Store, AlertTriangle, Info, Lock, Sparkles } from 'lucide-react';
 import FormSection from './FormSection';
-import CurrencyInput from './CurrencyInput';
 import TooltipLabel from './TooltipLabel';
 import {
   Select,
@@ -15,126 +14,77 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-export type MarketplaceType =
-  | 'none'
-  | 'shopee_no_shipping'
-  | 'shopee_free_shipping'
-  | 'custom';
-
-interface MarketplaceConfig {
-  label: string;
-  commissionPercentage: number;
-  fixedFeePerItem: number;
-  isEditable: boolean;
-  description?: string;
-}
-
-export const MARKETPLACE_CONFIG: Record<MarketplaceType, MarketplaceConfig> = {
-  none: {
-    label: 'Selecione...',
-    commissionPercentage: 0,
-    fixedFeePerItem: 0,
-    isEditable: false,
-  },
-  shopee_no_shipping: {
-    label: 'Shopee (sem frete grátis)',
-    commissionPercentage: 14,
-    fixedFeePerItem: 4,
-    isEditable: false,
-    description: 'Taxa padrão da Shopee para vendas sem programa de frete grátis.',
-  },
-  shopee_free_shipping: {
-    label: 'Shopee (com frete grátis)',
-    commissionPercentage: 20,
-    fixedFeePerItem: 4,
-    isEditable: false,
-    description: 'Inclui taxa adicional do programa de frete grátis.',
-  },
-  custom: {
-    label: 'Outro (personalizar)',
-    commissionPercentage: 0,
-    fixedFeePerItem: 0,
-    isEditable: true,
-    description: 'Configure manualmente as taxas do seu canal de vendas.',
-  },
-};
+export type MarketplaceType = 'none' | 'shopee' | 'custom';
+export type SellerType = 'cpf' | 'cnpj';
 
 interface MarketplaceSectionProps {
   marketplace: MarketplaceType;
   onMarketplaceChange: (value: MarketplaceType) => void;
+  sellerType: SellerType;
+  onSellerTypeChange: (value: SellerType) => void;
   commissionPercentage: number;
   onCommissionChange: (value: number) => void;
   fixedFeePerItem: number;
   onFixedFeeChange: (value: number) => void;
+  cpfTax: number;
+  onCpfTaxChange: (value: number) => void;
   profitValue: number;
   marketplaceTotalFees: number;
   isPro?: boolean;
   onShowUpgrade?: () => void;
 }
 
+const SHOPEE_COMMISSION = 14;
+const SHOPEE_FIXED_FEE = 20;
+const SHOPEE_CPF_TAX = 3;
+
 const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   marketplace,
   onMarketplaceChange,
+  sellerType,
+  onSellerTypeChange,
   commissionPercentage,
   onCommissionChange,
   fixedFeePerItem,
   onFixedFeeChange,
+  cpfTax,
+  onCpfTaxChange,
   profitValue,
   marketplaceTotalFees,
   isPro = true,
   onShowUpgrade,
 }) => {
-  const config = MARKETPLACE_CONFIG[marketplace];
   const showTaxFields = marketplace !== 'none';
-  
-  // Verificar se as taxas excedem o lucro (apenas quando há valores válidos)
-  const feesExceedProfit = showTaxFields && 
-    marketplaceTotalFees > 0 && 
-    profitValue > 0 && 
+
+  const feesExceedProfit = showTaxFields &&
+    marketplaceTotalFees > 0 &&
+    profitValue > 0 &&
     marketplaceTotalFees > profitValue;
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (onShowUpgrade) {
-      onShowUpgrade();
-    }
+    if (onShowUpgrade) onShowUpgrade();
   };
 
   // Versão bloqueada para usuários FREE
   if (!isPro) {
     return (
-      <div 
-        className="relative overflow-hidden"
-        onClick={handleUpgradeClick}
-      >
-        {/* Overlay de bloqueio */}
+      <div className="relative overflow-hidden" onClick={handleUpgradeClick}>
         <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center gap-2 cursor-pointer rounded-xl">
           <Lock className="w-5 h-5 text-muted-foreground" />
           <Badge variant="outline" className="text-xs bg-background/80">
             <Sparkles className="w-3 h-3 mr-1" />
             Recurso exclusivo do Plano Pro
           </Badge>
-          <Button
-            size="sm"
-            onClick={handleUpgradeClick}
-            className="mt-2 text-xs pointer-events-auto"
-          >
+          <Button size="sm" onClick={handleUpgradeClick} className="mt-2 text-xs pointer-events-auto">
             Fazer upgrade
           </Button>
         </div>
-
-        {/* Conteúdo bloqueado (visível mas desativado) */}
         <div className="opacity-40 pointer-events-none select-none filter grayscale">
-          <FormSection
-            title="Marketplace"
-            icon={<Store className="w-5 h-5 text-primary" />}
-          >
+          <FormSection title="Marketplace" icon={<Store className="w-5 h-5 text-primary" />}>
             <div className="col-span-full">
-              <TooltipLabel 
-                label="Onde você vai vender?"
-                tooltip="Cada marketplace cobra taxas diferentes. Escolha o canal para calcular o lucro líquido real após as taxas."
-              />
+              <TooltipLabel label="Onde você vai vender?" tooltip="Cada marketplace cobra taxas diferentes." />
               <Select value="none" disabled>
                 <SelectTrigger className="input-currency mt-2">
                   <SelectValue placeholder="Selecione o marketplace" />
@@ -155,31 +105,42 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
 
   const handleMarketplaceChange = (value: MarketplaceType) => {
     onMarketplaceChange(value);
-    const newConfig = MARKETPLACE_CONFIG[value];
-    onCommissionChange(newConfig.commissionPercentage);
-    onFixedFeeChange(newConfig.fixedFeePerItem);
+    if (value === 'shopee') {
+      onCommissionChange(SHOPEE_COMMISSION);
+      onFixedFeeChange(SHOPEE_FIXED_FEE);
+      onCpfTaxChange(sellerType === 'cpf' ? SHOPEE_CPF_TAX : 0);
+    } else if (value === 'custom') {
+      onCommissionChange(0);
+      onFixedFeeChange(0);
+      onCpfTaxChange(0);
+    } else {
+      onCommissionChange(0);
+      onFixedFeeChange(0);
+      onCpfTaxChange(0);
+    }
+  };
+
+  const handleSellerTypeChange = (value: SellerType) => {
+    onSellerTypeChange(value);
+    if (marketplace === 'shopee') {
+      onCpfTaxChange(value === 'cpf' ? SHOPEE_CPF_TAX : 0);
+    }
   };
 
   const handleCommissionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (value === '') {
-      onCommissionChange(0);
-      return;
-    }
+    if (value === '') { onCommissionChange(0); return; }
     const parsed = parseFloat(value);
-    if (!isNaN(parsed)) {
-      // Limitar entre 0 e 100
-      onCommissionChange(Math.min(Math.max(0, parsed), 100));
-    }
+    if (!isNaN(parsed)) onCommissionChange(Math.min(Math.max(0, parsed), 100));
   };
 
+  const isShopee = marketplace === 'shopee';
+  const isCustom = marketplace === 'custom';
+
   return (
-    <FormSection
-      title="Marketplace"
-      icon={<Store className="w-5 h-5 text-primary" />}
-    >
+    <FormSection title="Marketplace" icon={<Store className="w-5 h-5 text-primary" />}>
       <div className="col-span-full">
-        <TooltipLabel 
+        <TooltipLabel
           label="Onde você vai vender?"
           tooltip="Cada marketplace cobra taxas diferentes. Escolha o canal para calcular o lucro líquido real após as taxas."
         />
@@ -188,20 +149,11 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
             <SelectValue placeholder="Selecione o marketplace" />
           </SelectTrigger>
           <SelectContent className="bg-card border-border z-50">
-            {Object.entries(MARKETPLACE_CONFIG).map(([key, cfg]) => (
-              <SelectItem key={key} value={key}>
-                <span className="flex items-center gap-2">
-                  {cfg.label}
-                </span>
-              </SelectItem>
-            ))}
+            <SelectItem value="none">Selecione...</SelectItem>
+            <SelectItem value="shopee">Shopee</SelectItem>
+            <SelectItem value="custom">Outro (personalizar)</SelectItem>
           </SelectContent>
         </Select>
-        {config.description && marketplace !== 'none' && (
-          <p className="text-xs text-muted-foreground mt-2">
-            {config.description}
-          </p>
-        )}
       </div>
 
       {marketplace === 'none' && (
@@ -213,24 +165,80 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
         </div>
       )}
 
-      {showTaxFields && (
+      {isShopee && (
         <>
-          {!config.isEditable && (
-            <div className="col-span-full">
-              <Alert className="bg-warning/10 border-warning/30">
-                <Info className="w-4 h-4 text-warning" />
-                <AlertDescription className="text-warning text-sm">
-                  Taxas padrão do marketplace aplicadas automaticamente
-                </AlertDescription>
-              </Alert>
+          {/* Seletor CPF / CNPJ */}
+          <div className="col-span-full">
+            <TooltipLabel
+              label="Tipo de vendedor"
+              tooltip="Vendedores CPF pagam uma taxa adicional de R$ 3,00 por pedido."
+            />
+            <Select value={sellerType} onValueChange={handleSellerTypeChange}>
+              <SelectTrigger className="input-currency mt-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-card border-border z-50">
+                <SelectItem value="cpf">CPF (Pessoa Física)</SelectItem>
+                <SelectItem value="cnpj">CNPJ (Pessoa Jurídica)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="col-span-full">
+            <Alert className="bg-warning/10 border-warning/30">
+              <Info className="w-4 h-4 text-warning" />
+              <AlertDescription className="text-warning text-sm">
+                Taxas padrão da Shopee aplicadas automaticamente
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          {/* Comissão */}
+          <div className="flex flex-col gap-2">
+            <TooltipLabel label="Comissão (%)" tooltip="Percentual cobrado pela Shopee sobre cada venda." />
+            <Input
+              type="text"
+              value={`${commissionPercentage}%`}
+              className="input-currency bg-muted/50"
+              disabled
+              readOnly
+            />
+          </div>
+
+          {/* Taxa fixa por venda */}
+          <div className="flex flex-col gap-2">
+            <TooltipLabel label="Taxa fixa por venda" tooltip="Valor fixo cobrado por pedido, não multiplicado pela quantidade." />
+            <Input
+              type="text"
+              value={`R$ ${fixedFeePerItem.toFixed(2).replace('.', ',')}`}
+              className="input-currency bg-muted/50"
+              disabled
+              readOnly
+            />
+            <p className="text-xs text-muted-foreground">Taxa única por pedido (não multiplicada)</p>
+          </div>
+
+          {/* Taxa CPF (apenas para CPF) */}
+          {sellerType === 'cpf' && (
+            <div className="flex flex-col gap-2">
+              <TooltipLabel label="Taxa Vendedor CPF" tooltip="Taxa adicional cobrada de vendedores pessoa física (CPF)." />
+              <Input
+                type="text"
+                value={`R$ ${cpfTax.toFixed(2).replace('.', ',')}`}
+                className="input-currency bg-muted/50"
+                disabled
+                readOnly
+              />
+              <p className="text-xs text-muted-foreground">Taxa única por pedido para vendedores CPF</p>
             </div>
           )}
+        </>
+      )}
 
+      {isCustom && (
+        <>
           <div className="flex flex-col gap-2">
-            <TooltipLabel 
-              label="Comissão (%)"
-              tooltip="Percentual cobrado pelo marketplace sobre cada venda. Varia de 0% a 20% dependendo do plano."
-            />
+            <TooltipLabel label="Comissão (%)" tooltip="Percentual cobrado pelo marketplace sobre cada venda." />
             <Input
               type="number"
               value={commissionPercentage}
@@ -239,15 +247,11 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
               min={0}
               max={100}
               step={0.1}
-              disabled={!config.isEditable && marketplace !== 'custom'}
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <TooltipLabel 
-              label="Taxa fixa por venda"
-              tooltip="Valor fixo cobrado por transação, independente do valor da venda. Este valor é definido pelo marketplace e não pode ser alterado."
-            />
+            <TooltipLabel label="Taxa fixa por venda" tooltip="Valor fixo cobrado por transação." />
             <Input
               type="text"
               value={`R$ ${fixedFeePerItem.toFixed(2).replace('.', ',')}`}
@@ -255,22 +259,20 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
               disabled
               readOnly
             />
-            <p className="text-xs text-muted-foreground">
-              Taxa única por pedido (não pode ser alterada)
-            </p>
+            <p className="text-xs text-muted-foreground">Taxa única por pedido (não pode ser alterada)</p>
           </div>
-
-          {feesExceedProfit && (
-            <div className="col-span-full">
-              <Alert className="bg-destructive/10 border-destructive/30">
-                <AlertTriangle className="w-4 h-4 text-destructive" />
-                <AlertDescription className="text-destructive text-sm font-medium">
-                  ⚠️ Atenção: as taxas estão consumindo seu lucro!
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
         </>
+      )}
+
+      {showTaxFields && feesExceedProfit && (
+        <div className="col-span-full">
+          <Alert className="bg-destructive/10 border-destructive/30">
+            <AlertTriangle className="w-4 h-4 text-destructive" />
+            <AlertDescription className="text-destructive text-sm font-medium">
+              ⚠️ Atenção: as taxas estão consumindo seu lucro!
+            </AlertDescription>
+          </Alert>
+        </div>
       )}
     </FormSection>
   );
