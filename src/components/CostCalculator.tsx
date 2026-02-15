@@ -391,18 +391,25 @@ const CostCalculator: React.FC = () => {
       ? roundCurrency(safeFixedProfit / safeLotQuantity)
       : roundCurrency(unitProductionCost * (safeProfitMargin / 100));
 
-    // Preço base de venda por unidade (sem taxas)
+    // Preço base de venda por unidade (sem taxas marketplace)
     const unitBaseSellingPrice = roundCurrency(unitProductionCost + unitDesiredProfit);
 
-    // Taxas do marketplace por unidade
+    // Taxas do marketplace
     const safeCpfTax = safeNumber(cpfTax);
-    const unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
     // Taxa fixa e taxa CPF são por pedido (não multiplicadas), então divididas pela quantidade
-    const unitMarketplaceFixedFees = roundCurrency((safeFixedFeePerItem + safeCpfTax) / safeLotQuantity);
-    const unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
+    const unitFixedFees = roundCurrency((safeFixedFeePerItem + safeCpfTax) / safeLotQuantity);
 
-    // Preço unitário final (com taxas)
-    const unitPrice = roundCurrency(unitBaseSellingPrice + unitMarketplaceTotalFees);
+    // Preço unitário final: embute comissão no preço para que, ao Shopee descontar, o vendedor receba o valor desejado
+    // Fórmula: (custo + lucro + taxas fixas) / (1 - comissão%)
+    const commissionFraction = safeCommissionPercentage / 100;
+    const unitPrice = commissionFraction < 1
+      ? roundCurrency((unitBaseSellingPrice + unitFixedFees) / (1 - commissionFraction))
+      : roundCurrency(unitBaseSellingPrice + unitFixedFees);
+
+    // Calcular taxas reais para exibição
+    const unitMarketplaceCommission = roundCurrency(unitPrice * commissionFraction);
+    const unitMarketplaceFixedFees = unitFixedFees;
+    const unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
 
     // PREÇO FINAL = Preço unitário × Quantidade
     const finalSellingPrice = roundCurrency(unitPrice * safeLotQuantity);
