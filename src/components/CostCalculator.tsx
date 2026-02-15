@@ -5,7 +5,7 @@ import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
-import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
+import MarketplaceSection, { MarketplaceType, SellerType } from './MarketplaceSection';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
@@ -114,8 +114,10 @@ const CostCalculator: React.FC = () => {
 
   // Marketplace
   const [marketplace, setMarketplace] = useState<MarketplaceType>('none');
+  const [sellerType, setSellerType] = useState<SellerType>('cpf');
   const [commissionPercentage, setCommissionPercentage] = useState(0);
   const [fixedFeePerItem, setFixedFeePerItem] = useState(0);
+  const [cpfTax, setCpfTax] = useState(0);
 
   // Handler para quantidade com validação
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,8 +197,10 @@ const CostCalculator: React.FC = () => {
     
     // Limpar marketplace
     setMarketplace('none');
+    setSellerType('cpf');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
+    setCpfTax(0);
     
     // Para duplicação: armazenar ID original e NÃO definir ID de edição
     // O cálculo será tratado como NOVO até o momento do save
@@ -230,8 +234,10 @@ const CostCalculator: React.FC = () => {
     setProfitMargin(0);
     setFixedProfit(0);
     setMarketplace('none');
+    setSellerType('cpf');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
+    setCpfTax(0);
     setProductPreset('custom');
     toast.info('Edição cancelada');
   }, []);
@@ -280,8 +286,10 @@ const CostCalculator: React.FC = () => {
     setProfitMargin(35);
     setFixedProfit(0);
     setMarketplace('none');
+    setSellerType('cpf');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
+    setCpfTax(0);
     setProductPreset('paper_bag');
   }, []);
 
@@ -387,8 +395,10 @@ const CostCalculator: React.FC = () => {
     const unitBaseSellingPrice = roundCurrency(unitProductionCost + unitDesiredProfit);
 
     // Taxas do marketplace por unidade
+    const safeCpfTax = safeNumber(cpfTax);
     const unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
-    const unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);
+    // Taxa fixa e taxa CPF são por pedido (não multiplicadas), então divididas pela quantidade
+    const unitMarketplaceFixedFees = roundCurrency((safeFixedFeePerItem + safeCpfTax) / safeLotQuantity);
     const unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
 
     // Preço unitário final (com taxas)
@@ -435,6 +445,7 @@ const CostCalculator: React.FC = () => {
     fixedProfit,
     commissionPercentage,
     fixedFeePerItem,
+    cpfTax,
   ]);
 
   // Valores para salvar (compatibilidade com banco de dados)
@@ -682,10 +693,14 @@ const CostCalculator: React.FC = () => {
           <MarketplaceSection
             marketplace={marketplace}
             onMarketplaceChange={setMarketplace}
+            sellerType={sellerType}
+            onSellerTypeChange={setSellerType}
             commissionPercentage={commissionPercentage}
             onCommissionChange={setCommissionPercentage}
             fixedFeePerItem={fixedFeePerItem}
             onFixedFeeChange={setFixedFeePerItem}
+            cpfTax={cpfTax}
+            onCpfTaxChange={setCpfTax}
             profitValue={calculations.desiredProfit}
             marketplaceTotalFees={calculations.marketplaceTotalFees}
             isPro={isPro}
