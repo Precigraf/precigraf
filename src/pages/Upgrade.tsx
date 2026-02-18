@@ -54,7 +54,7 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
       sessionStorage.setItem('payment_csrf_token', csrfToken);
 
       // Open InfinitePay checkout in new tab, redirect current page to confirmation
-      window.open('https://checkout.infinitepay.io/israel-shaina-wanderley/tBMthxjk5', '_blank');
+      window.open('https://checkout.infinitepay.io/israel-shaina-wanderley/7IjWa2wTYf', '_blank');
       navigate('/pagamento-confirmado');
     } catch (error) {
       console.error('Error starting checkout:', error);
@@ -116,7 +116,7 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
                 <p className="text-sm font-medium text-primary">Pagamento único</p>
               </div>
               <p className="text-4xl font-bold text-foreground">
-                R$ 19,90
+                R$ 29,90
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 Sem mensalidade, sem recorrência
