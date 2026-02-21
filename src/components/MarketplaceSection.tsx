@@ -1,5 +1,5 @@
 import React from 'react';
-import { Store, AlertTriangle, Info, Lock, Sparkles } from 'lucide-react';
+import { Store, AlertTriangle, Info, Lock, Sparkles, Truck } from 'lucide-react';
 import FormSection from './FormSection';
 import TooltipLabel from './TooltipLabel';
 import {
@@ -13,6 +13,11 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import {
+  SHOPEE_TIERS_2026, getCommissionTier, calculateFreightSubsidy,
+  getPixSubsidyRate, CPF_ADDITIONAL_FEE,
+} from '@/lib/shopeeUtils';
 
 export type MarketplaceType = 'none' | 'shopee' | 'custom';
 export type SellerType = 'cpf' | 'cnpj';
@@ -28,15 +33,14 @@ interface MarketplaceSectionProps {
   onFixedFeeChange: (value: number) => void;
   cpfTax: number;
   onCpfTaxChange: (value: number) => void;
+  usePixSubsidy: boolean;
+  onPixSubsidyChange: (value: boolean) => void;
+  currentUnitPrice: number;
   profitValue: number;
   marketplaceTotalFees: number;
   isPro?: boolean;
   onShowUpgrade?: () => void;
 }
-
-const SHOPEE_COMMISSION = 14;
-const SHOPEE_FIXED_FEE = 20;
-const SHOPEE_CPF_TAX = 3;
 
 const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   marketplace,
@@ -49,6 +53,9 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   onFixedFeeChange,
   cpfTax,
   onCpfTaxChange,
+  usePixSubsidy,
+  onPixSubsidyChange,
+  currentUnitPrice,
   profitValue,
   marketplaceTotalFees,
   isPro = true,
@@ -57,9 +64,33 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   const showTaxFields = marketplace !== 'none';
 
   const feesExceedProfit = showTaxFields &&
-    marketplaceTotalFees > 0 &&
-    profitValue > 0 &&
-    marketplaceTotalFees > profitValue;
+    marketplaceTotalFees > 0 && profitValue > 0 && marketplaceTotalFees > profitValue;
+
+  const isShopee = marketplace === 'shopee';
+  const isCustom = marketplace === 'custom';
+
+  // Compute current tier info for Shopee display (must be before any early returns)
+  const currentTierInfo = React.useMemo(() => {
+    if (!isShopee || currentUnitPrice <= 0) return null;
+    const pixRate = usePixSubsidy ? getPixSubsidyRate(currentUnitPrice) : 0;
+    const effectiveValue = currentUnitPrice * (1 - pixRate);
+    const tier = getCommissionTier(effectiveValue);
+    const pixAmount = currentUnitPrice * pixRate;
+    const commissionAmount = effectiveValue * tier.commissionRate;
+    const cpfFee = sellerType === 'cpf' ? CPF_ADDITIONAL_FEE : 0;
+    const freightSubsidy = calculateFreightSubsidy(currentUnitPrice);
+    return {
+      tier,
+      pixAmount: Math.round(pixAmount * 100) / 100,
+      commissionAmount: Math.round(commissionAmount * 100) / 100,
+      cpfFee,
+      freightSubsidy,
+      totalFees: Math.round((commissionAmount + tier.fixedFee + cpfFee) * 100) / 100,
+    };
+  }, [isShopee, currentUnitPrice, usePixSubsidy, sellerType]);
+
+  const formatCurrency = (v: number) =>
+    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -105,26 +136,12 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
 
   const handleMarketplaceChange = (value: MarketplaceType) => {
     onMarketplaceChange(value);
-    if (value === 'shopee') {
-      onCommissionChange(SHOPEE_COMMISSION);
-      onFixedFeeChange(SHOPEE_FIXED_FEE);
-      onCpfTaxChange(sellerType === 'cpf' ? SHOPEE_CPF_TAX : 0);
-    } else if (value === 'custom') {
-      onCommissionChange(0);
-      onFixedFeeChange(0);
-      onCpfTaxChange(0);
-    } else {
-      onCommissionChange(0);
-      onFixedFeeChange(0);
-      onCpfTaxChange(0);
+    if (value !== 'shopee') {
+      onPixSubsidyChange(false);
     }
-  };
-
-  const handleSellerTypeChange = (value: SellerType) => {
-    onSellerTypeChange(value);
-    if (marketplace === 'shopee') {
-      onCpfTaxChange(value === 'cpf' ? SHOPEE_CPF_TAX : 0);
-    }
+    onCommissionChange(0);
+    onFixedFeeChange(0);
+    onCpfTaxChange(0);
   };
 
   const handleCommissionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,9 +150,6 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
     const parsed = parseFloat(value);
     if (!isNaN(parsed)) onCommissionChange(Math.min(Math.max(0, parsed), 100));
   };
-
-  const isShopee = marketplace === 'shopee';
-  const isCustom = marketplace === 'custom';
 
   return (
     <FormSection title="Marketplace" icon={<Store className="w-5 h-5 text-primary" />}>
@@ -150,7 +164,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
           </SelectTrigger>
           <SelectContent className="bg-card border-border z-50">
             <SelectItem value="none">Selecione...</SelectItem>
-            <SelectItem value="shopee">Shopee</SelectItem>
+            <SelectItem value="shopee">Shopee (2026)</SelectItem>
             <SelectItem value="custom">Outro (personalizar)</SelectItem>
           </SelectContent>
         </Select>
@@ -167,13 +181,13 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
 
       {isShopee && (
         <>
-          {/* Seletor CPF / CNPJ */}
+          {/* Tipo de Vendedor */}
           <div className="col-span-full">
             <TooltipLabel
               label="Tipo de vendedor"
-              tooltip="Vendedores CPF pagam uma taxa adicional de R$ 3,00 por pedido."
+              tooltip="Vendedores CPF pagam uma taxa adicional de R$ 3,00 por item vendido."
             />
-            <Select value={sellerType} onValueChange={handleSellerTypeChange}>
+            <Select value={sellerType} onValueChange={(v) => onSellerTypeChange(v as SellerType)}>
               <SelectTrigger className="input-currency mt-2">
                 <SelectValue />
               </SelectTrigger>
@@ -184,54 +198,97 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
             </Select>
           </div>
 
+          {/* Toggle Subsídio Pix */}
           <div className="col-span-full">
-            <Alert className="bg-warning/10 border-warning/30">
-              <Info className="w-4 h-4 text-warning" />
-              <AlertDescription className="text-warning text-sm">
-                Taxas padrão da Shopee aplicadas automaticamente
-              </AlertDescription>
-            </Alert>
+            <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+              <div className="flex-1">
+                <label className="text-sm font-medium text-foreground">Subsídio Pix</label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Reduz a base de cálculo da comissão em 5% a 8%
+                </p>
+              </div>
+              <Switch checked={usePixSubsidy} onCheckedChange={onPixSubsidyChange} />
+            </div>
           </div>
 
-          {/* Comissão */}
-          <div className="flex flex-col gap-2">
-            <TooltipLabel label="Comissão (%)" tooltip="Percentual cobrado pela Shopee sobre cada venda." />
-            <Input
-              type="text"
-              value={`${commissionPercentage}%`}
-              className="input-currency bg-muted/50"
-              disabled
-              readOnly
-            />
-          </div>
+          {/* Info da Faixa Atual */}
+          {currentTierInfo && (
+            <div className="col-span-full space-y-2">
+              <Alert className="bg-warning/10 border-warning/30">
+                <Info className="w-4 h-4 text-warning" />
+                <AlertDescription className="text-sm space-y-1">
+                  <p className="font-medium text-warning">
+                    Faixa atual: {currentTierInfo.tier.label}
+                  </p>
+                  <div className="text-muted-foreground text-xs space-y-0.5">
+                    <p>Comissão: {(currentTierInfo.tier.commissionRate * 100).toFixed(0)}% ({formatCurrency(currentTierInfo.commissionAmount)})</p>
+                    <p>Taxa fixa: {formatCurrency(currentTierInfo.tier.fixedFee)}</p>
+                    {sellerType === 'cpf' && (
+                      <p>Taxa CPF: +{formatCurrency(CPF_ADDITIONAL_FEE)}</p>
+                    )}
+                    {currentTierInfo.pixAmount > 0 && (
+                      <p className="text-success">Subsídio Pix: -{formatCurrency(currentTierInfo.pixAmount)}</p>
+                    )}
+                    <p className="font-medium text-warning pt-1 border-t border-warning/20 mt-1">
+                      Total de taxas/item: {formatCurrency(currentTierInfo.totalFees)}
+                    </p>
+                  </div>
+                </AlertDescription>
+              </Alert>
 
-          {/* Taxa fixa por venda */}
-          <div className="flex flex-col gap-2">
-            <TooltipLabel label="Taxa fixa por venda" tooltip="Valor fixo cobrado por pedido, não multiplicado pela quantidade." />
-            <Input
-              type="text"
-              value={`R$ ${fixedFeePerItem.toFixed(2).replace('.', ',')}`}
-              className="input-currency bg-muted/50"
-              disabled
-              readOnly
-            />
-            <p className="text-xs text-muted-foreground">Taxa única por pedido (não multiplicada)</p>
-          </div>
-
-          {/* Taxa CPF (apenas para CPF) */}
-          {sellerType === 'cpf' && (
-            <div className="flex flex-col gap-2">
-              <TooltipLabel label="Taxa Vendedor CPF" tooltip="Taxa adicional cobrada de vendedores pessoa física (CPF)." />
-              <Input
-                type="text"
-                value={`R$ ${cpfTax.toFixed(2).replace('.', ',')}`}
-                className="input-currency bg-muted/50"
-                disabled
-                readOnly
-              />
-              <p className="text-xs text-muted-foreground">Taxa única por pedido para vendedores CPF</p>
+              {/* Subsídio de Frete */}
+              <div className="flex items-center gap-2 p-2 bg-success/10 rounded-lg">
+                <Truck className="w-4 h-4 text-success flex-shrink-0" />
+                <span className="text-xs text-success">
+                  Subsídio de frete Shopee: até {formatCurrency(currentTierInfo.freightSubsidy)}
+                </span>
+              </div>
             </div>
           )}
+
+          {/* Tabela de Faixas */}
+          <div className="col-span-full">
+            <details className="group">
+              <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground transition-colors flex items-center gap-1">
+                <Info className="w-3 h-3" />
+                Ver tabela de taxas Shopee 2026
+              </summary>
+              <div className="mt-2 overflow-x-auto">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-1.5 px-2 text-muted-foreground font-medium">Faixa de Preço</th>
+                      <th className="text-center py-1.5 px-2 text-muted-foreground font-medium">Comissão</th>
+                      <th className="text-center py-1.5 px-2 text-muted-foreground font-medium">Taxa Fixa</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {SHOPEE_TIERS_2026.map((tier, i) => {
+                      const isCurrentTier = currentTierInfo && tier.label === currentTierInfo.tier.label;
+                      return (
+                        <tr
+                          key={i}
+                          className={`border-b border-border/50 ${isCurrentTier ? 'bg-primary/10 font-medium' : ''}`}
+                        >
+                          <td className="py-1.5 px-2 text-foreground">
+                            {isCurrentTier && <span className="text-primary mr-1">●</span>}
+                            {tier.label}
+                          </td>
+                          <td className="py-1.5 px-2 text-center text-foreground">{(tier.commissionRate * 100).toFixed(0)}%</td>
+                          <td className="py-1.5 px-2 text-center text-foreground">{formatCurrency(tier.fixedFee)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {sellerType === 'cpf' && (
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    + R$ 3,00 por item para vendedores CPF
+                  </p>
+                )}
+              </div>
+            </details>
+          </div>
         </>
       )}
 
@@ -249,7 +306,6 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
               step={0.1}
             />
           </div>
-
           <div className="flex flex-col gap-2">
             <TooltipLabel label="Taxa fixa por venda" tooltip="Valor fixo cobrado por transação." />
             <Input
