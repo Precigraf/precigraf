@@ -7,7 +7,7 @@ import SaveCalculationButton from './SaveCalculationButton';
 import PriceBreakdown from './PriceBreakdown';
 import MarketplaceImpact from './MarketplaceImpact';
 import CouponStrategy from './CouponStrategy';
-import { MarketplaceType } from './MarketplaceSection';
+import { MarketplaceType, SellerType } from './MarketplaceSection';
 interface ResultPanelProps {
   productName: string;
   quantity: number;
@@ -32,6 +32,8 @@ interface ResultPanelProps {
   cpfTax: number;
   // Marketplace info
   marketplace?: MarketplaceType;
+  sellerType?: SellerType;
+  usePixSubsidy?: boolean;
   // Custos operacionais preenchidos
   hasOperationalCosts?: boolean;
   // Props para salvar
@@ -81,6 +83,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   fixedFeePerItem,
   cpfTax,
   marketplace = 'none',
+  sellerType = 'cpf',
+  usePixSubsidy = false,
   hasOperationalCosts = true,
   saveData,
   onSaved,
@@ -329,6 +333,9 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         hasMarketplace={hasMarketplace}
         isPro={isPro}
         onShowUpgrade={onShowUpgrade}
+        marketplace={marketplace}
+        sellerType={sellerType}
+        usePixSubsidy={usePixSubsidy}
       />
 
       {/* Botão Salvar Cálculo */}
