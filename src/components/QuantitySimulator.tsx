@@ -70,7 +70,9 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     if (marketplace === 'shopee') {
       const shopee = calculateShopeeUnitPrice(unitBaseSellingPrice, sellerType === 'cpf', usePixSubsidy);
       unitPrice = shopee.unitPrice;
-      totalFees = Math.round(shopee.totalFeesPerUnit * safeQty * 100) / 100;
+      // Comissão × quantidade + taxa fixa por pedido (NÃO multiplicada)
+      const totalCommission = Math.round(shopee.commissionPerUnit * safeQty * 100) / 100;
+      totalFees = Math.round((totalCommission + shopee.totalFixedFeesPerOrder) * 100) / 100;
     } else if (hasMarketplace) {
       // Custom marketplace - existing logic
       const safeCommissionPercentage = Math.min(Math.max(0, commissionPercentage || 0), 100);

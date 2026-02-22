@@ -1,5 +1,5 @@
 // Shopee 2026 Fee Calculation Utilities
-// Aligned with the reference Python implementation
+// Taxa fixa é POR PEDIDO (não por item). Comissão % é POR UNIDADE.
 
 const roundCurrency = (v: number): number => Math.round(v * 100) / 100;
 
@@ -7,119 +7,87 @@ export interface ShopeeCommissionTier {
   minPrice: number;
   maxPrice: number;
   commissionRate: number; // decimal (0.20 = 20%)
-  fixedFee: number; // R$ per item
+  fixedFee: number; // R$ por PEDIDO (não por item)
+  pixRate: number; // 0, 0.05, or 0.08
   label: string;
 }
 
 export const SHOPEE_TIERS_2026: ShopeeCommissionTier[] = [
-  { minPrice: 0, maxPrice: 79.99, commissionRate: 0.20, fixedFee: 4.00, label: 'Até R$ 79,99' },
-  { minPrice: 80, maxPrice: 99.99, commissionRate: 0.14, fixedFee: 16.00, label: 'R$ 80 – R$ 99,99' },
-  { minPrice: 100, maxPrice: 199.99, commissionRate: 0.14, fixedFee: 20.00, label: 'R$ 100 – R$ 199,99' },
-  { minPrice: 200, maxPrice: 499.99, commissionRate: 0.14, fixedFee: 26.00, label: 'R$ 200 – R$ 499,99' },
-  { minPrice: 500, maxPrice: Infinity, commissionRate: 0.14, fixedFee: 26.00, label: 'R$ 500+' },
+  { minPrice: 0, maxPrice: 79.99, commissionRate: 0.20, fixedFee: 4.00, pixRate: 0, label: 'Até R$ 79,99' },
+  { minPrice: 80, maxPrice: 99.99, commissionRate: 0.14, fixedFee: 16.00, pixRate: 0.05, label: 'R$ 80 – R$ 99,99' },
+  { minPrice: 100, maxPrice: 199.99, commissionRate: 0.14, fixedFee: 20.00, pixRate: 0.05, label: 'R$ 100 – R$ 199,99' },
+  { minPrice: 200, maxPrice: 499.99, commissionRate: 0.14, fixedFee: 26.00, pixRate: 0.05, label: 'R$ 200 – R$ 499,99' },
+  { minPrice: 500, maxPrice: Infinity, commissionRate: 0.14, fixedFee: 26.00, pixRate: 0.08, label: 'R$ 500+' },
 ];
 
+/** Taxa adicional fixa para vendedores CPF — aplicada em TODAS as faixas, por pedido */
 export const CPF_ADDITIONAL_FEE = 3.00;
 
 /**
- * Returns commission details: { commissionRate, fixedFee, cpfAdditionalFee }
- * For CPF sellers with items < R$12, returns a flat regressive fee as fixedFee with 0% rate.
+ * Retorna a faixa de comissão com base no preço unitário final.
  */
-export function getCommissionDetails(
-  itemValue: number,
-  isCpf: boolean,
-): { commissionRate: number; fixedFee: number; cpfAdditionalFee: number; tierLabel: string } {
-  // CPF regressive for items < R$12
-  if (isCpf && itemValue < 12) {
-    let flatFee = 3.00;
-    if (itemValue >= 10) flatFee = 6.50;
-    else if (itemValue >= 8) flatFee = 6.00;
-    return { commissionRate: 0, fixedFee: flatFee, cpfAdditionalFee: 0, tierLabel: 'CPF < R$ 12' };
-  }
-
-  // Standard tiers for CNPJ and CPF (items >= R$12)
-  const tier = getCommissionTier(itemValue);
-  const cpfAdditionalFee = (isCpf && itemValue >= 12) ? CPF_ADDITIONAL_FEE : 0;
-
-  return {
-    commissionRate: tier.commissionRate,
-    fixedFee: tier.fixedFee,
-    cpfAdditionalFee,
-    tierLabel: tier.label,
-  };
-}
-
-export function getCommissionTier(itemValue: number): ShopeeCommissionTier {
+export function getCommissionTier(unitPrice: number): ShopeeCommissionTier {
   for (const tier of SHOPEE_TIERS_2026) {
-    if (itemValue <= tier.maxPrice) return tier;
+    if (unitPrice <= tier.maxPrice) return tier;
   }
   return SHOPEE_TIERS_2026[SHOPEE_TIERS_2026.length - 1];
 }
 
 /**
- * Calculates the total Shopee commission in R$ for a given item value.
- * When Pix subsidy is used, the commission is calculated on (itemValue - pixSubsidy).
+ * Retorna a taxa de subsídio Pix com base no preço unitário.
  */
-export function calculateShopeeCommission(
-  itemValue: number,
-  isCpf: boolean,
-  usePixSubsidy: boolean,
-): number {
-  let effectiveValue = itemValue;
-  if (usePixSubsidy) {
-    effectiveValue = itemValue - calculatePixSubsidyAmount(itemValue);
-  }
-
-  const { commissionRate, fixedFee, cpfAdditionalFee } = getCommissionDetails(effectiveValue, isCpf);
-
-  if (commissionRate === 0) {
-    // Flat regressive fee (CPF < R$12) — fixedFee already contains the total
-    return fixedFee;
-  }
-
-  return roundCurrency(effectiveValue * commissionRate + fixedFee + cpfAdditionalFee);
+export function getPixSubsidyRate(unitPrice: number): number {
+  const tier = getCommissionTier(unitPrice);
+  return tier.pixRate;
 }
 
-export function getPixSubsidyRate(itemValue: number): number {
-  if (itemValue >= 500) return 0.08;
-  if (itemValue >= 80) return 0.05;
-  return 0;
+export function calculatePixSubsidyAmount(unitPrice: number): number {
+  return roundCurrency(unitPrice * getPixSubsidyRate(unitPrice));
 }
 
-export function calculatePixSubsidyAmount(itemValue: number): number {
-  return roundCurrency(itemValue * getPixSubsidyRate(itemValue));
-}
-
-export function calculateFreightSubsidy(itemValue: number): number {
-  if (itemValue >= 200) return 40;
-  if (itemValue >= 80) return 30;
+export function calculateFreightSubsidy(unitPrice: number): number {
+  if (unitPrice >= 200) return 40;
+  if (unitPrice >= 80) return 30;
   return 20;
 }
 
 export interface ShopeeFeesResult {
+  /** Preço unitário final de venda (com comissão % embutida, SEM taxa fixa) */
   unitPrice: number;
+  /** Faixa de comissão identificada */
+  tier: ShopeeCommissionTier;
+  /** Taxa de comissão % aplicada */
   commissionRate: number;
-  commissionAmount: number;
-  fixedFee: number;
-  cpfAdditionalFee: number;
-  pixSubsidyAmount: number;
+  /** Valor da comissão por unidade em R$ */
+  commissionPerUnit: number;
+  /** Taxa fixa por PEDIDO (R$ 4/16/20/26) */
+  fixedFeePerOrder: number;
+  /** Taxa CPF por PEDIDO (R$ 3 ou R$ 0) */
+  cpfFeePerOrder: number;
+  /** Total de taxas fixas por pedido (fixedFee + cpfFee) */
+  totalFixedFeesPerOrder: number;
+  /** Valor do subsídio Pix por unidade */
+  pixSubsidyPerUnit: number;
+  /** Subsídio de frete */
   freightSubsidy: number;
-  totalFeesPerUnit: number;
+  /** Label da faixa */
   tierLabel: string;
 }
 
 /**
- * Calculate the final unit price that embeds Shopee 2026 fees.
- * Uses the iterative algebraic solver from the reference Python implementation:
- *
- * For percentage-based tiers:
- *   PV = (unitBaseSellingPrice + fixedFee + cpfFee) / (1 - effectiveCommissionRate)
- *   where effectiveCommissionRate = commissionRate * (1 - pixSubsidyRate) when using Pix
- *
- * For CPF flat-fee tiers (< R$12):
- *   PV = unitBaseSellingPrice + flatFee
- *
- * After Shopee deducts its fees, the seller receives unitBaseSellingPrice.
+ * Calcula o preço unitário final que embute a comissão Shopee 2026.
+ * 
+ * REGRAS:
+ * - Comissão (%) incide sobre o preço final unitário → embutida no preço
+ * - Pix (%) reduz a base de cálculo da comissão
+ * - Taxa fixa (R$ 4/16/20/26) é POR PEDIDO → NÃO embutida no preço unitário
+ * - Taxa CPF (R$ 3) é POR PEDIDO → NÃO embutida no preço unitário
+ * 
+ * Fórmula (com Pix):
+ *   unitPrice = unitBasePrice / (1 - commRate * (1 - pixRate))
+ * 
+ * Fórmula (sem Pix):
+ *   unitPrice = unitBasePrice / (1 - commRate)
  */
 export function calculateShopeeUnitPrice(
   unitBaseSellingPrice: number,
@@ -127,38 +95,31 @@ export function calculateShopeeUnitPrice(
   usePixSubsidy: boolean,
 ): ShopeeFeesResult {
   const empty: ShopeeFeesResult = {
-    unitPrice: 0, commissionRate: 0, commissionAmount: 0,
-    fixedFee: 0, cpfAdditionalFee: 0, pixSubsidyAmount: 0,
-    freightSubsidy: 0, totalFeesPerUnit: 0, tierLabel: '',
+    unitPrice: 0, tier: SHOPEE_TIERS_2026[0], commissionRate: 0,
+    commissionPerUnit: 0, fixedFeePerOrder: 0, cpfFeePerOrder: 0,
+    totalFixedFeesPerOrder: 0, pixSubsidyPerUnit: 0,
+    freightSubsidy: 0, tierLabel: '',
   };
 
   if (unitBaseSellingPrice <= 0) return empty;
 
-  // Initial guess
+  // Iterative solver: find unitPrice where seller receives unitBaseSellingPrice after commission %
   let estimate = unitBaseSellingPrice * 1.3;
 
   for (let i = 0; i < 20; i++) {
-    const pixRate = usePixSubsidy ? getPixSubsidyRate(estimate) : 0;
-    const pixAmount = estimate * pixRate;
-    const effectiveValue = estimate - pixAmount;
+    const tier = getCommissionTier(estimate);
+    const pixRate = usePixSubsidy ? tier.pixRate : 0;
 
-    const details = getCommissionDetails(effectiveValue, isCpf);
+    // Commission is calculated on (unitPrice * (1 - pixRate)) when using Pix subsidy
+    // seller_receives = unitPrice - unitPrice * (1 - pixRate) * commRate
+    // seller_receives = unitPrice * (1 - commRate * (1 - pixRate))
+    // unitPrice = seller_receives / (1 - commRate * (1 - pixRate))
+    const effectiveCommRate = tier.commissionRate * (1 - pixRate);
+    const denominator = 1 - effectiveCommRate;
 
-    let requiredPrice: number;
-
-    if (details.commissionRate === 0) {
-      // CPF flat-fee regressive (< R$12): PV = base + flatFee
-      requiredPrice = unitBaseSellingPrice + details.fixedFee;
-    } else {
-      // Algebraic: PV = (base + fixedFee + cpfFee) / (1 - commRate * (1 - pixRate))
-      const effectiveCommRate = details.commissionRate * (1 - pixRate);
-      const denominator = 1 - effectiveCommRate;
-      if (denominator <= 0.01) {
-        requiredPrice = unitBaseSellingPrice + details.fixedFee + details.cpfAdditionalFee;
-      } else {
-        requiredPrice = (unitBaseSellingPrice + details.fixedFee + details.cpfAdditionalFee) / denominator;
-      }
-    }
+    const requiredPrice = denominator > 0.01
+      ? unitBaseSellingPrice / denominator
+      : unitBaseSellingPrice;
 
     if (Math.abs(requiredPrice - estimate) < 0.01) {
       estimate = requiredPrice;
@@ -170,31 +131,39 @@ export function calculateShopeeUnitPrice(
   estimate = roundCurrency(estimate);
 
   // Final breakdown
-  const pixRate = usePixSubsidy ? getPixSubsidyRate(estimate) : 0;
+  const tier = getCommissionTier(estimate);
+  const pixRate = usePixSubsidy ? tier.pixRate : 0;
   const pixAmount = roundCurrency(estimate * pixRate);
-  const effectiveValue = estimate - pixAmount;
-  const details = getCommissionDetails(effectiveValue, isCpf);
-
-  let commAmount: number;
-  if (details.commissionRate === 0) {
-    commAmount = details.fixedFee; // flat regressive
-  } else {
-    commAmount = roundCurrency(effectiveValue * details.commissionRate);
-  }
-
-  const totalFees = details.commissionRate === 0
-    ? details.fixedFee
-    : roundCurrency(commAmount + details.fixedFee + details.cpfAdditionalFee);
+  const commissionBase = estimate - pixAmount; // base after Pix subsidy
+  const commissionPerUnit = roundCurrency(commissionBase * tier.commissionRate);
+  const cpfFee = isCpf ? CPF_ADDITIONAL_FEE : 0;
 
   return {
     unitPrice: estimate,
-    commissionRate: details.commissionRate * 100,
-    commissionAmount: commAmount,
-    fixedFee: details.fixedFee,
-    cpfAdditionalFee: details.cpfAdditionalFee,
-    pixSubsidyAmount: pixAmount,
+    tier,
+    commissionRate: tier.commissionRate * 100,
+    commissionPerUnit,
+    fixedFeePerOrder: tier.fixedFee,
+    cpfFeePerOrder: cpfFee,
+    totalFixedFeesPerOrder: roundCurrency(tier.fixedFee + cpfFee),
+    pixSubsidyPerUnit: pixAmount,
     freightSubsidy: calculateFreightSubsidy(estimate),
-    totalFeesPerUnit: totalFees,
-    tierLabel: details.tierLabel,
+    tierLabel: tier.label,
   };
+}
+
+/**
+ * Calcula o total de taxas Shopee para um pedido com N unidades.
+ * 
+ * Total = (comissão_por_unidade × quantidade) + taxa_fixa_pedido + taxa_cpf_pedido
+ */
+export function calculateShopeeOrderFees(
+  shopeeResult: ShopeeFeesResult,
+  quantity: number,
+): { totalCommission: number; totalFixedFees: number; totalFees: number } {
+  const safeQty = Math.max(1, Math.floor(quantity));
+  const totalCommission = roundCurrency(shopeeResult.commissionPerUnit * safeQty);
+  const totalFixedFees = shopeeResult.totalFixedFeesPerOrder; // NOT multiplied by quantity
+  const totalFees = roundCurrency(totalCommission + totalFixedFees);
+  return { totalCommission, totalFixedFees, totalFees };
 }
