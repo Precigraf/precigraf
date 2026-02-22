@@ -1,4 +1,5 @@
 // Shopee 2026 Fee Calculation Utilities
+// Aligned with the reference Python implementation
 
 const roundCurrency = (v: number): number => Math.round(v * 100) / 100;
 
@@ -20,6 +21,34 @@ export const SHOPEE_TIERS_2026: ShopeeCommissionTier[] = [
 
 export const CPF_ADDITIONAL_FEE = 3.00;
 
+/**
+ * Returns commission details: { commissionRate, fixedFee, cpfAdditionalFee }
+ * For CPF sellers with items < R$12, returns a flat regressive fee as fixedFee with 0% rate.
+ */
+export function getCommissionDetails(
+  itemValue: number,
+  isCpf: boolean,
+): { commissionRate: number; fixedFee: number; cpfAdditionalFee: number; tierLabel: string } {
+  // CPF regressive for items < R$12
+  if (isCpf && itemValue < 12) {
+    let flatFee = 3.00;
+    if (itemValue >= 10) flatFee = 6.50;
+    else if (itemValue >= 8) flatFee = 6.00;
+    return { commissionRate: 0, fixedFee: flatFee, cpfAdditionalFee: 0, tierLabel: 'CPF < R$ 12' };
+  }
+
+  // Standard tiers for CNPJ and CPF (items >= R$12)
+  const tier = getCommissionTier(itemValue);
+  const cpfAdditionalFee = (isCpf && itemValue >= 12) ? CPF_ADDITIONAL_FEE : 0;
+
+  return {
+    commissionRate: tier.commissionRate,
+    fixedFee: tier.fixedFee,
+    cpfAdditionalFee,
+    tierLabel: tier.label,
+  };
+}
+
 export function getCommissionTier(itemValue: number): ShopeeCommissionTier {
   for (const tier of SHOPEE_TIERS_2026) {
     if (itemValue <= tier.maxPrice) return tier;
@@ -27,10 +56,38 @@ export function getCommissionTier(itemValue: number): ShopeeCommissionTier {
   return SHOPEE_TIERS_2026[SHOPEE_TIERS_2026.length - 1];
 }
 
+/**
+ * Calculates the total Shopee commission in R$ for a given item value.
+ * When Pix subsidy is used, the commission is calculated on (itemValue - pixSubsidy).
+ */
+export function calculateShopeeCommission(
+  itemValue: number,
+  isCpf: boolean,
+  usePixSubsidy: boolean,
+): number {
+  let effectiveValue = itemValue;
+  if (usePixSubsidy) {
+    effectiveValue = itemValue - calculatePixSubsidyAmount(itemValue);
+  }
+
+  const { commissionRate, fixedFee, cpfAdditionalFee } = getCommissionDetails(effectiveValue, isCpf);
+
+  if (commissionRate === 0) {
+    // Flat regressive fee (CPF < R$12) — fixedFee already contains the total
+    return fixedFee;
+  }
+
+  return roundCurrency(effectiveValue * commissionRate + fixedFee + cpfAdditionalFee);
+}
+
 export function getPixSubsidyRate(itemValue: number): number {
   if (itemValue >= 500) return 0.08;
   if (itemValue >= 80) return 0.05;
   return 0;
+}
+
+export function calculatePixSubsidyAmount(itemValue: number): number {
+  return roundCurrency(itemValue * getPixSubsidyRate(itemValue));
 }
 
 export function calculateFreightSubsidy(itemValue: number): number {
@@ -53,7 +110,15 @@ export interface ShopeeFeesResult {
 
 /**
  * Calculate the final unit price that embeds Shopee 2026 fees.
- * Uses iterative solving since tier/rates depend on the final price.
+ * Uses the iterative algebraic solver from the reference Python implementation:
+ *
+ * For percentage-based tiers:
+ *   PV = (unitBaseSellingPrice + fixedFee + cpfFee) / (1 - effectiveCommissionRate)
+ *   where effectiveCommissionRate = commissionRate * (1 - pixSubsidyRate) when using Pix
+ *
+ * For CPF flat-fee tiers (< R$12):
+ *   PV = unitBaseSellingPrice + flatFee
+ *
  * After Shopee deducts its fees, the seller receives unitBaseSellingPrice.
  */
 export function calculateShopeeUnitPrice(
@@ -69,61 +134,67 @@ export function calculateShopeeUnitPrice(
 
   if (unitBaseSellingPrice <= 0) return empty;
 
-  const cpfFee = isCpf ? CPF_ADDITIONAL_FEE : 0;
+  // Initial guess
   let estimate = unitBaseSellingPrice * 1.3;
 
-  for (let i = 0; i < 15; i++) {
+  for (let i = 0; i < 20; i++) {
     const pixRate = usePixSubsidy ? getPixSubsidyRate(estimate) : 0;
-    const effectiveValue = estimate * (1 - pixRate);
+    const pixAmount = estimate * pixRate;
+    const effectiveValue = estimate - pixAmount;
 
-    // CPF regressive for very cheap items (< R$12)
-    if (isCpf && effectiveValue < 12) {
-      let fixedCommission = 3.00;
-      if (effectiveValue >= 10) fixedCommission = 6.50;
-      else if (effectiveValue >= 8) fixedCommission = 6.00;
+    const details = getCommissionDetails(effectiveValue, isCpf);
 
-      const up = roundCurrency(unitBaseSellingPrice + fixedCommission);
-      return {
-        unitPrice: up, commissionRate: 0, commissionAmount: fixedCommission,
-        fixedFee: 0, cpfAdditionalFee: 0, pixSubsidyAmount: 0,
-        freightSubsidy: calculateFreightSubsidy(up),
-        totalFeesPerUnit: fixedCommission, tierLabel: 'CPF < R$ 12',
-      };
+    let requiredPrice: number;
+
+    if (details.commissionRate === 0) {
+      // CPF flat-fee regressive (< R$12): PV = base + flatFee
+      requiredPrice = unitBaseSellingPrice + details.fixedFee;
+    } else {
+      // Algebraic: PV = (base + fixedFee + cpfFee) / (1 - commRate * (1 - pixRate))
+      const effectiveCommRate = details.commissionRate * (1 - pixRate);
+      const denominator = 1 - effectiveCommRate;
+      if (denominator <= 0.01) {
+        requiredPrice = unitBaseSellingPrice + details.fixedFee + details.cpfAdditionalFee;
+      } else {
+        requiredPrice = (unitBaseSellingPrice + details.fixedFee + details.cpfAdditionalFee) / denominator;
+      }
     }
 
-    const tier = getCommissionTier(effectiveValue);
-    // seller_receives = unitPrice - (unitPrice*(1-pixRate)) * commRate - fixedFee - cpfFee
-    // unitPrice * (1 - (1-pixRate)*commRate) = unitBaseSellingPrice + fixedFee + cpfFee
-    const denominator = 1 - (1 - pixRate) * tier.commissionRate;
-    if (denominator <= 0.01) {
-      estimate = unitBaseSellingPrice + tier.fixedFee + cpfFee;
+    if (Math.abs(requiredPrice - estimate) < 0.01) {
+      estimate = requiredPrice;
       break;
     }
-
-    const newEstimate = (unitBaseSellingPrice + tier.fixedFee + cpfFee) / denominator;
-    if (Math.abs(newEstimate - estimate) < 0.01) {
-      estimate = newEstimate;
-      break;
-    }
-    estimate = Math.max(0, newEstimate);
+    estimate = Math.max(0, requiredPrice);
   }
 
   estimate = roundCurrency(estimate);
+
+  // Final breakdown
   const pixRate = usePixSubsidy ? getPixSubsidyRate(estimate) : 0;
   const pixAmount = roundCurrency(estimate * pixRate);
   const effectiveValue = estimate - pixAmount;
-  const tier = getCommissionTier(effectiveValue);
-  const commAmount = roundCurrency(effectiveValue * tier.commissionRate);
+  const details = getCommissionDetails(effectiveValue, isCpf);
+
+  let commAmount: number;
+  if (details.commissionRate === 0) {
+    commAmount = details.fixedFee; // flat regressive
+  } else {
+    commAmount = roundCurrency(effectiveValue * details.commissionRate);
+  }
+
+  const totalFees = details.commissionRate === 0
+    ? details.fixedFee
+    : roundCurrency(commAmount + details.fixedFee + details.cpfAdditionalFee);
 
   return {
     unitPrice: estimate,
-    commissionRate: tier.commissionRate * 100,
+    commissionRate: details.commissionRate * 100,
     commissionAmount: commAmount,
-    fixedFee: tier.fixedFee,
-    cpfAdditionalFee: cpfFee,
+    fixedFee: details.fixedFee,
+    cpfAdditionalFee: details.cpfAdditionalFee,
     pixSubsidyAmount: pixAmount,
     freightSubsidy: calculateFreightSubsidy(estimate),
-    totalFeesPerUnit: roundCurrency(commAmount + tier.fixedFee + cpfFee),
-    tierLabel: tier.label,
+    totalFeesPerUnit: totalFees,
+    tierLabel: details.tierLabel,
   };
 }
