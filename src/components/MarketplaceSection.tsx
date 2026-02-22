@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
   SHOPEE_TIERS_2026, getCommissionTier, calculateFreightSubsidy,
-  getPixSubsidyRate, CPF_ADDITIONAL_FEE,
+  CPF_ADDITIONAL_FEE,
 } from '@/lib/shopeeUtils';
 
 export type MarketplaceType = 'none' | 'shopee' | 'custom';
@@ -72,11 +72,11 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   // Compute current tier info for Shopee display (must be before any early returns)
   const currentTierInfo = React.useMemo(() => {
     if (!isShopee || currentUnitPrice <= 0) return null;
-    const pixRate = usePixSubsidy ? getPixSubsidyRate(currentUnitPrice) : 0;
-    const effectiveValue = currentUnitPrice * (1 - pixRate);
-    const tier = getCommissionTier(effectiveValue);
+    const tier = getCommissionTier(currentUnitPrice);
+    const pixRate = usePixSubsidy ? tier.pixRate : 0;
     const pixAmount = currentUnitPrice * pixRate;
-    const commissionAmount = effectiveValue * tier.commissionRate;
+    const commissionBase = currentUnitPrice - pixAmount;
+    const commissionAmount = commissionBase * tier.commissionRate;
     const cpfFee = sellerType === 'cpf' ? CPF_ADDITIONAL_FEE : 0;
     const freightSubsidy = calculateFreightSubsidy(currentUnitPrice);
     return {
@@ -85,7 +85,10 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
       commissionAmount: Math.round(commissionAmount * 100) / 100,
       cpfFee,
       freightSubsidy,
-      totalFees: Math.round((commissionAmount + tier.fixedFee + cpfFee) * 100) / 100,
+      // Taxa fixa + CPF são por PEDIDO
+      fixedFeesPerOrder: Math.round((tier.fixedFee + cpfFee) * 100) / 100,
+      // Comissão é por unidade
+      totalFeesPerUnit: Math.round(commissionAmount * 100) / 100,
     };
   }, [isShopee, currentUnitPrice, usePixSubsidy, sellerType]);
 
@@ -221,16 +224,16 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
                     Faixa atual: {currentTierInfo.tier.label}
                   </p>
                   <div className="text-muted-foreground text-xs space-y-0.5">
-                    <p>Comissão: {(currentTierInfo.tier.commissionRate * 100).toFixed(0)}% ({formatCurrency(currentTierInfo.commissionAmount)})</p>
-                    <p>Taxa fixa: {formatCurrency(currentTierInfo.tier.fixedFee)}</p>
+                    <p>Comissão: {(currentTierInfo.tier.commissionRate * 100).toFixed(0)}% ({formatCurrency(currentTierInfo.commissionAmount)}/un)</p>
+                    <p>Taxa fixa (por pedido): {formatCurrency(currentTierInfo.tier.fixedFee)}</p>
                     {sellerType === 'cpf' && (
-                      <p>Taxa CPF: +{formatCurrency(CPF_ADDITIONAL_FEE)}</p>
+                      <p>Taxa CPF (por pedido): +{formatCurrency(CPF_ADDITIONAL_FEE)}</p>
                     )}
                     {currentTierInfo.pixAmount > 0 && (
-                      <p className="text-success">Subsídio Pix: -{formatCurrency(currentTierInfo.pixAmount)}</p>
+                      <p className="text-success">Subsídio Pix: -{formatCurrency(currentTierInfo.pixAmount)}/un</p>
                     )}
                     <p className="font-medium text-warning pt-1 border-t border-warning/20 mt-1">
-                      Total de taxas/item: {formatCurrency(currentTierInfo.totalFees)}
+                      Comissão/un: {formatCurrency(currentTierInfo.totalFeesPerUnit)} | Fixo/pedido: {formatCurrency(currentTierInfo.fixedFeesPerOrder)}
                     </p>
                   </div>
                 </AlertDescription>
@@ -260,6 +263,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
                       <th className="text-left py-1.5 px-2 text-muted-foreground font-medium">Faixa de Preço</th>
                       <th className="text-center py-1.5 px-2 text-muted-foreground font-medium">Comissão</th>
                       <th className="text-center py-1.5 px-2 text-muted-foreground font-medium">Taxa Fixa</th>
+                      <th className="text-center py-1.5 px-2 text-muted-foreground font-medium">Pix</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -275,17 +279,22 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
                             {tier.label}
                           </td>
                           <td className="py-1.5 px-2 text-center text-foreground">{(tier.commissionRate * 100).toFixed(0)}%</td>
-                          <td className="py-1.5 px-2 text-center text-foreground">{formatCurrency(tier.fixedFee)}</td>
+                          <td className="py-1.5 px-2 text-center text-foreground">
+                            {formatCurrency(tier.fixedFee)}
+                            {sellerType === 'cpf' && <span className="text-warning"> +R$ 3</span>}
+                          </td>
+                          <td className="py-1.5 px-2 text-center text-foreground">
+                            {tier.pixRate > 0 ? `${(tier.pixRate * 100).toFixed(0)}%` : '—'}
+                          </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
-                {sellerType === 'cpf' && (
-                  <p className="text-xs text-muted-foreground mt-1.5">
-                    + R$ 3,00 por item para vendedores CPF
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Taxa fixa é cobrada por <strong>pedido</strong> (não por item)
+                  {sellerType === 'cpf' && '. CPF: + R$ 3,00 por pedido em todas as faixas'}
+                </p>
               </div>
             </details>
           </div>

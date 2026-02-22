@@ -411,9 +411,12 @@ const CostCalculator: React.FC = () => {
         usePixSubsidy,
       );
       unitPrice = shopeeResult.unitPrice;
-      unitMarketplaceCommission = shopeeResult.commissionAmount;
-      unitMarketplaceFixedFees = roundCurrency(shopeeResult.fixedFee + shopeeResult.cpfAdditionalFee);
-      unitMarketplaceTotalFees = shopeeResult.totalFeesPerUnit;
+      unitMarketplaceCommission = shopeeResult.commissionPerUnit;
+      // Taxa fixa é POR PEDIDO — dividida pela quantidade para exibição unitária
+      unitMarketplaceFixedFees = safeLotQuantity > 0 
+        ? roundCurrency(shopeeResult.totalFixedFeesPerOrder / safeLotQuantity) 
+        : shopeeResult.totalFixedFeesPerOrder;
+      unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
     } else if (marketplace === 'custom') {
       const safeCpfTax = safeNumber(cpfTax);
       const unitFixedFees = roundCurrency((safeFixedFeePerItem + safeCpfTax) / safeLotQuantity);
@@ -439,8 +442,11 @@ const CostCalculator: React.FC = () => {
     const productionCost = roundCurrency(unitProductionCost * safeLotQuantity);
     const desiredProfit = roundCurrency(unitDesiredProfit * safeLotQuantity);
     const marketplaceCommission = roundCurrency(unitMarketplaceCommission * safeLotQuantity);
-    const marketplaceFixedFees = roundCurrency(unitMarketplaceFixedFees * safeLotQuantity);
-    const marketplaceTotalFees = roundCurrency(unitMarketplaceTotalFees * safeLotQuantity);
+    // Para Shopee: taxa fixa é por pedido (não multiplicar por quantidade)
+    const marketplaceFixedFees = marketplace === 'shopee' 
+      ? roundCurrency(unitMarketplaceFixedFees * safeLotQuantity) // unitMarketplaceFixedFees já foi dividida pela qty
+      : roundCurrency(unitMarketplaceFixedFees * safeLotQuantity);
+    const marketplaceTotalFees = roundCurrency(marketplaceCommission + marketplaceFixedFees);
 
     // Lucro líquido (pode ser negativo em caso de prejuízo)
     const netProfit = roundCurrency(finalSellingPrice - productionCost - marketplaceTotalFees);
