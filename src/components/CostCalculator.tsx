@@ -22,7 +22,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { logError } from '@/lib/logger';
-import { calculateShopeeUnitPrice } from '@/lib/shopeeUtils';
 import { 
   AdvancedOperationalCosts, 
   OperationalCostsData, 
@@ -119,7 +118,6 @@ const CostCalculator: React.FC = () => {
   const [commissionPercentage, setCommissionPercentage] = useState(0);
   const [fixedFeePerItem, setFixedFeePerItem] = useState(0);
   const [cpfTax, setCpfTax] = useState(0);
-  const [usePixSubsidy, setUsePixSubsidy] = useState(false);
 
   // Handler para quantidade com validação
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -240,7 +238,6 @@ const CostCalculator: React.FC = () => {
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
     setCpfTax(0);
-    setUsePixSubsidy(false);
     setProductPreset('custom');
     toast.info('Edição cancelada');
   }, []);
@@ -293,7 +290,6 @@ const CostCalculator: React.FC = () => {
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
     setCpfTax(0);
-    setUsePixSubsidy(false);
     setProductPreset('paper_bag');
   }, []);
 
@@ -398,41 +394,22 @@ const CostCalculator: React.FC = () => {
     // Preço base de venda por unidade (sem taxas marketplace)
     const unitBaseSellingPrice = roundCurrency(unitProductionCost + unitDesiredProfit);
 
-    // Marketplace fee calculation
-    let unitPrice: number;
-    let unitMarketplaceCommission: number;
-    let unitMarketplaceFixedFees: number;
-    let unitMarketplaceTotalFees: number;
+    // Taxas do marketplace
+    const safeCpfTax = safeNumber(cpfTax);
+    // Taxa fixa e taxa CPF são por pedido (não multiplicadas), então divididas pela quantidade
+    const unitFixedFees = roundCurrency((safeFixedFeePerItem + safeCpfTax) / safeLotQuantity);
 
-    if (marketplace === 'shopee') {
-      const shopeeResult = calculateShopeeUnitPrice(
-        unitBaseSellingPrice,
-        sellerType === 'cpf',
-        usePixSubsidy,
-      );
-      unitPrice = shopeeResult.unitPrice;
-      unitMarketplaceCommission = shopeeResult.commissionPerUnit;
-      // Taxa fixa é POR PEDIDO — dividida pela quantidade para exibição unitária
-      unitMarketplaceFixedFees = safeLotQuantity > 0 
-        ? roundCurrency(shopeeResult.totalFixedFeesPerOrder / safeLotQuantity) 
-        : shopeeResult.totalFixedFeesPerOrder;
-      unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
-    } else if (marketplace === 'custom') {
-      const safeCpfTax = safeNumber(cpfTax);
-      const unitFixedFees = roundCurrency((safeFixedFeePerItem + safeCpfTax) / safeLotQuantity);
-      const commissionFraction = safeCommissionPercentage / 100;
-      unitPrice = commissionFraction < 1
-        ? roundCurrency((unitBaseSellingPrice + unitFixedFees) / (1 - commissionFraction))
-        : roundCurrency(unitBaseSellingPrice + unitFixedFees);
-      unitMarketplaceCommission = roundCurrency(unitPrice * commissionFraction);
-      unitMarketplaceFixedFees = unitFixedFees;
-      unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
-    } else {
-      unitPrice = unitBaseSellingPrice;
-      unitMarketplaceCommission = 0;
-      unitMarketplaceFixedFees = 0;
-      unitMarketplaceTotalFees = 0;
-    }
+    // Preço unitário final: embute comissão no preço para que, ao Shopee descontar, o vendedor receba o valor desejado
+    // Fórmula: (custo + lucro + taxas fixas) / (1 - comissão%)
+    const commissionFraction = safeCommissionPercentage / 100;
+    const unitPrice = commissionFraction < 1
+      ? roundCurrency((unitBaseSellingPrice + unitFixedFees) / (1 - commissionFraction))
+      : roundCurrency(unitBaseSellingPrice + unitFixedFees);
+
+    // Calcular taxas reais para exibição
+    const unitMarketplaceCommission = roundCurrency(unitPrice * commissionFraction);
+    const unitMarketplaceFixedFees = unitFixedFees;
+    const unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
 
     // PREÇO FINAL = Preço unitário × Quantidade
     const finalSellingPrice = roundCurrency(unitPrice * safeLotQuantity);
@@ -442,11 +419,8 @@ const CostCalculator: React.FC = () => {
     const productionCost = roundCurrency(unitProductionCost * safeLotQuantity);
     const desiredProfit = roundCurrency(unitDesiredProfit * safeLotQuantity);
     const marketplaceCommission = roundCurrency(unitMarketplaceCommission * safeLotQuantity);
-    // Para Shopee: taxa fixa é por pedido (não multiplicar por quantidade)
-    const marketplaceFixedFees = marketplace === 'shopee' 
-      ? roundCurrency(unitMarketplaceFixedFees * safeLotQuantity) // unitMarketplaceFixedFees já foi dividida pela qty
-      : roundCurrency(unitMarketplaceFixedFees * safeLotQuantity);
-    const marketplaceTotalFees = roundCurrency(marketplaceCommission + marketplaceFixedFees);
+    const marketplaceFixedFees = roundCurrency(unitMarketplaceFixedFees * safeLotQuantity);
+    const marketplaceTotalFees = roundCurrency(unitMarketplaceTotalFees * safeLotQuantity);
 
     // Lucro líquido (pode ser negativo em caso de prejuízo)
     const netProfit = roundCurrency(finalSellingPrice - productionCost - marketplaceTotalFees);
@@ -479,9 +453,6 @@ const CostCalculator: React.FC = () => {
     commissionPercentage,
     fixedFeePerItem,
     cpfTax,
-    marketplace,
-    sellerType,
-    usePixSubsidy,
   ]);
 
   // Valores para salvar (compatibilidade com banco de dados)
@@ -737,9 +708,6 @@ const CostCalculator: React.FC = () => {
             onFixedFeeChange={setFixedFeePerItem}
             cpfTax={cpfTax}
             onCpfTaxChange={setCpfTax}
-            usePixSubsidy={usePixSubsidy}
-            onPixSubsidyChange={setUsePixSubsidy}
-            currentUnitPrice={calculations.unitPrice}
             profitValue={calculations.desiredProfit}
             marketplaceTotalFees={calculations.marketplaceTotalFees}
             isPro={isPro}
@@ -771,8 +739,6 @@ const CostCalculator: React.FC = () => {
             fixedFeePerItem={fixedFeePerItem}
             cpfTax={cpfTax}
             marketplace={marketplace}
-            sellerType={sellerType}
-            usePixSubsidy={usePixSubsidy}
             hasOperationalCosts={hasOperationalCosts}
             saveData={saveDataValues}
             onSaved={handleCalculationSaved}
