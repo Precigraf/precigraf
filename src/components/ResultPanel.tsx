@@ -7,7 +7,7 @@ import SaveCalculationButton from './SaveCalculationButton';
 import PriceBreakdown from './PriceBreakdown';
 import MarketplaceImpact from './MarketplaceImpact';
 import CouponStrategy from './CouponStrategy';
-import { MarketplaceType } from './MarketplaceSection';
+import { MarketplaceType, SellerType } from './MarketplaceSection';
 interface ResultPanelProps {
   productName: string;
   quantity: number;
@@ -32,6 +32,8 @@ interface ResultPanelProps {
   cpfTax: number;
   // Marketplace info
   marketplace?: MarketplaceType;
+  sellerType?: SellerType;
+  activeTierLabel?: string;
   // Custos operacionais preenchidos
   hasOperationalCosts?: boolean;
   // Props para salvar
@@ -81,6 +83,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   fixedFeePerItem,
   cpfTax,
   marketplace = 'none',
+  sellerType = 'cpf',
+  activeTierLabel = '',
   hasOperationalCosts = true,
   saveData,
   onSaved,
@@ -249,6 +253,11 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
                 </div>
               </div>
             </div>
+            {activeTierLabel && (
+              <div className="mt-2 text-xs text-warning/80 bg-warning/5 rounded px-2 py-1">
+                {activeTierLabel}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -327,6 +336,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         cpfTax={cpfTax}
         currentQuantity={safeQuantity}
         hasMarketplace={hasMarketplace}
+        marketplace={marketplace}
+        sellerType={sellerType}
         isPro={isPro}
         onShowUpgrade={onShowUpgrade}
       />

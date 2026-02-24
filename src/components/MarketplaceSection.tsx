@@ -30,6 +30,7 @@ interface MarketplaceSectionProps {
   onCpfTaxChange: (value: number) => void;
   profitValue: number;
   marketplaceTotalFees: number;
+  activeTierLabel?: string;
   isPro?: boolean;
   onShowUpgrade?: () => void;
 }
@@ -51,6 +52,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   onCpfTaxChange,
   profitValue,
   marketplaceTotalFees,
+  activeTierLabel = '',
   isPro = true,
   onShowUpgrade,
 }) => {
@@ -188,50 +190,23 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
             <Alert className="bg-warning/10 border-warning/30">
               <Info className="w-4 h-4 text-warning" />
               <AlertDescription className="text-warning text-sm">
-                Taxas padrão da Shopee aplicadas automaticamente
+                {activeTierLabel || 'Taxas padrão da Shopee aplicadas automaticamente'}
               </AlertDescription>
             </Alert>
           </div>
 
-          {/* Comissão */}
-          <div className="flex flex-col gap-2">
-            <TooltipLabel label="Comissão (%)" tooltip="Percentual cobrado pela Shopee sobre cada venda." />
-            <Input
-              type="text"
-              value={`${commissionPercentage}%`}
-              className="input-currency bg-muted/50"
-              disabled
-              readOnly
-            />
+          {/* Info sobre taxas dinâmicas */}
+          <div className="col-span-full text-xs text-muted-foreground space-y-1">
+            <p className="font-medium">Taxas calculadas automaticamente por faixa de preço:</p>
+            <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+              <li>Até R$ 79,99 → 20% + R$ 4,00</li>
+              <li>R$ 80–99,99 → 14% + R$ 16,00 (Pix 5%)</li>
+              <li>R$ 100–199,99 → 14% + R$ 20,00 (Pix 5%)</li>
+              <li>R$ 200–499,99 → 14% + R$ 26,00 (Pix 5%)</li>
+              <li>Acima de R$ 500 → 14% + R$ 26,00 (Pix 8%)</li>
+              {sellerType === 'cpf' && <li className="text-warning">+ Taxa CPF: R$ 3,00 por pedido</li>}
+            </ul>
           </div>
-
-          {/* Taxa fixa por venda */}
-          <div className="flex flex-col gap-2">
-            <TooltipLabel label="Taxa fixa por venda" tooltip="Valor fixo cobrado por pedido, não multiplicado pela quantidade." />
-            <Input
-              type="text"
-              value={`R$ ${fixedFeePerItem.toFixed(2).replace('.', ',')}`}
-              className="input-currency bg-muted/50"
-              disabled
-              readOnly
-            />
-            <p className="text-xs text-muted-foreground">Taxa única por pedido (não multiplicada)</p>
-          </div>
-
-          {/* Taxa CPF (apenas para CPF) */}
-          {sellerType === 'cpf' && (
-            <div className="flex flex-col gap-2">
-              <TooltipLabel label="Taxa Vendedor CPF" tooltip="Taxa adicional cobrada de vendedores pessoa física (CPF)." />
-              <Input
-                type="text"
-                value={`R$ ${cpfTax.toFixed(2).replace('.', ',')}`}
-                className="input-currency bg-muted/50"
-                disabled
-                readOnly
-              />
-              <p className="text-xs text-muted-foreground">Taxa única por pedido para vendedores CPF</p>
-            </div>
-          )}
         </>
       )}
 
