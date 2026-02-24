@@ -2,6 +2,8 @@ import React from 'react';
 import { Calculator, Lock, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { calculateShopeePrice, SellerTypeShopee } from '@/lib/shopeeUtils';
+import { MarketplaceType } from './MarketplaceSection';
 
 interface QuantitySimulatorProps {
   unitRawMaterialsCost: number;
@@ -15,6 +17,8 @@ interface QuantitySimulatorProps {
   hasMarketplace: boolean;
   isPro?: boolean;
   onShowUpgrade?: () => void;
+  marketplace?: MarketplaceType;
+  sellerType?: SellerTypeShopee;
 }
 
 const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
@@ -29,6 +33,8 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   hasMarketplace,
   isPro = true,
   onShowUpgrade,
+  marketplace = 'none',
+  sellerType = 'cpf',
 }) => {
   const quantities = [15, 20, 40, 50, 80, 100];
 
@@ -64,26 +70,34 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     // Preço base de venda por unidade
     const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
 
-    // Taxas do marketplace
-    const unitFixedFees = (safeFixedFeePerItem + safeCpfTax) / safeQty;
+    let finalUnitPrice: number;
+    let unitTotalFees: number;
 
-    // Preço unitário final: embute comissão no preço
-    const commissionFraction = safeCommissionPercentage / 100;
-    const unitPrice = commissionFraction < 1
-      ? (unitBaseSellingPrice + unitFixedFees) / (1 - commissionFraction)
-      : unitBaseSellingPrice + unitFixedFees;
-
-    const unitMarketplaceCommission = unitPrice * commissionFraction;
-    const unitMarketplaceFixedFees = unitFixedFees;
+    if (marketplace === 'shopee') {
+      const result = calculateShopeePrice(unitBaseSellingPrice, sellerType);
+      finalUnitPrice = result.price_shopee;
+      unitTotalFees = result.total_fee;
+    } else if (hasMarketplace) {
+      const unitFixedFees = (safeFixedFeePerItem + safeCpfTax) / safeQty;
+      const commissionFraction = safeCommissionPercentage / 100;
+      finalUnitPrice = commissionFraction < 1
+        ? (unitBaseSellingPrice + unitFixedFees) / (1 - commissionFraction)
+        : unitBaseSellingPrice + unitFixedFees;
+      const unitMarketplaceCommission = finalUnitPrice * commissionFraction;
+      unitTotalFees = unitMarketplaceCommission + unitFixedFees;
+    } else {
+      finalUnitPrice = unitBaseSellingPrice;
+      unitTotalFees = 0;
+    }
 
     // Totais do lote
-    const lotPrice = Math.round(unitPrice * safeQty * 100) / 100;
+    const lotPrice = Math.round(finalUnitPrice * safeQty * 100) / 100;
     const totalCost = Math.round(unitProductionCost * safeQty * 100) / 100;
-    const totalFees = Math.round((unitMarketplaceCommission + unitMarketplaceFixedFees) * safeQty * 100) / 100;
+    const totalFees = Math.round(unitTotalFees * safeQty * 100) / 100;
     const totalProfit = Math.round(unitDesiredProfit * safeQty * 100) / 100;
 
     return { 
-      unitPrice: Math.round(unitPrice * 100) / 100, 
+      unitPrice: Math.round(finalUnitPrice * 100) / 100, 
       lotPrice, 
       margin: 0,
       totalCost,
