@@ -7,7 +7,8 @@ import SaveCalculationButton from './SaveCalculationButton';
 import PriceBreakdown from './PriceBreakdown';
 import MarketplaceImpact from './MarketplaceImpact';
 import CouponStrategy from './CouponStrategy';
-import { MarketplaceType } from './MarketplaceSection';
+import { MarketplaceType, SellerType } from './MarketplaceSection';
+import { ShopeeCalcResult } from '@/lib/shopeeUtils';
 interface ResultPanelProps {
   productName: string;
   quantity: number;
@@ -32,6 +33,7 @@ interface ResultPanelProps {
   cpfTax: number;
   // Marketplace info
   marketplace?: MarketplaceType;
+  sellerType?: SellerType;
   // Custos operacionais preenchidos
   hasOperationalCosts?: boolean;
   // Props para salvar
@@ -57,6 +59,7 @@ interface ResultPanelProps {
   // Props para edição
   editingCalculation?: { id: string; mode: 'edit' | 'duplicate' } | null;
   duplicatedFrom?: string | null;
+  shopeeResult?: ShopeeCalcResult | null;
 }
 
 const ResultPanel: React.FC<ResultPanelProps> = ({
@@ -81,6 +84,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   fixedFeePerItem,
   cpfTax,
   marketplace = 'none',
+  sellerType = 'cpf',
   hasOperationalCosts = true,
   saveData,
   onSaved,
@@ -90,6 +94,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   onShowUpgrade,
   editingCalculation = null,
   duplicatedFrom = null,
+  shopeeResult = null,
 }) => {
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) {
@@ -234,7 +239,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
 
         {/* Taxas Marketplace */}
         {hasMarketplace && (
-          <div className="bg-warning/10 rounded-lg p-3">
+          <div className="bg-warning/10 rounded-lg p-3 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <Store className="w-4 h-4 text-warning" />
@@ -249,6 +254,33 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
                 </div>
               </div>
             </div>
+            {/* Detalhamento Shopee */}
+            {shopeeResult && (
+              <div className="border-t border-warning/20 pt-2 space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Comissão {Math.round(shopeeResult.fee_percent * 100)}%
+                  </span>
+                  <span className="text-warning font-medium">
+                    -{formatCurrency(shopeeResult.fee_percent_value * safeQuantity)}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Taxa por venda</span>
+                  <span className="text-warning font-medium">
+                    -{formatCurrency(shopeeResult.fee_fixed * safeQuantity)}
+                  </span>
+                </div>
+                {shopeeResult.fee_cpf_extra > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Taxa CPF</span>
+                    <span className="text-warning font-medium">
+                      -{formatCurrency(shopeeResult.fee_cpf_extra * safeQuantity)}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -329,6 +361,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         hasMarketplace={hasMarketplace}
         isPro={isPro}
         onShowUpgrade={onShowUpgrade}
+        marketplace={marketplace}
+        sellerType={sellerType}
       />
 
       {/* Botão Salvar Cálculo */}
