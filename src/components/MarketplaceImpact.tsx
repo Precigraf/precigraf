@@ -9,6 +9,7 @@ interface MarketplaceImpactProps {
   unitProfit: number;
   marketplaceTotalFees: number;
   quantity: number;
+  netProfit: number;
   onApplySuggestedMargin?: (margin: number) => void;
 }
 
@@ -18,6 +19,7 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
   unitProfit,
   marketplaceTotalFees,
   quantity,
+  netProfit,
   onApplySuggestedMargin,
 }) => {
   const [applied, setApplied] = useState(false);
@@ -33,10 +35,8 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
     });
   };
 
-  // Proteção contra valores inválidos
   const safeQuantity = Math.max(1, Math.floor(quantity || 1));
   const safeMarketplaceTotalFees = Math.max(0, marketplaceTotalFees || 0);
-  const safeUnitProfit = Math.max(0, unitProfit || 0);
 
   if (marketplace === 'none' || safeQuantity <= 0) {
     return null;
@@ -44,7 +44,12 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
 
   const config = MARKETPLACE_CONFIG[marketplace];
   const unitFees = Math.round((safeMarketplaceTotalFees / safeQuantity) * 100) / 100;
-  const netUnitProfit = Math.round((safeUnitProfit - unitFees) * 100) / 100;
+
+  // Lucro líquido por unidade sincronizado com o cálculo principal do ResultPanel
+  const unitNetProfit = Math.round((netProfit / safeQuantity) * 100) / 100;
+
+  // Impacto: quanto das taxas representam no lucro desejado
+  const safeUnitProfit = Math.max(0, unitProfit || 0);
   const profitImpactPercentage = safeUnitProfit > 0 
     ? Math.round((unitFees / safeUnitProfit) * 1000) / 10 
     : 0;
@@ -52,7 +57,7 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
   // Calcular margem sugerida quando taxas consomem muito lucro
   const feesExceedingProfit = profitImpactPercentage > 50;
   const suggestedMargin = feesExceedingProfit 
-    ? Math.ceil(profitImpactPercentage + 30) // Margem mínima sugerida
+    ? Math.ceil(profitImpactPercentage + 30)
     : null;
 
   const handleApplyMargin = () => {
@@ -79,8 +84,8 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
         </div>
         <div className="text-center p-2 bg-background/50 rounded-lg">
           <div className="text-xs text-muted-foreground mb-1">Lucro líquido/un</div>
-          <div className={`text-sm font-semibold ${netUnitProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
-            {formatCurrency(netUnitProfit)}
+          <div className={`text-sm font-semibold ${unitNetProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
+            {formatCurrency(unitNetProfit)}
           </div>
         </div>
       </div>
@@ -88,14 +93,13 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
       <div className="flex items-start gap-2 text-xs text-muted-foreground">
         <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
         <span>
-          As taxas do {config.label} consomem <strong className="text-warning">{profitImpactPercentage}%</strong> do seu lucro por unidade.
+          As taxas do {config.label} representam <strong className="text-warning">{profitImpactPercentage}%</strong> do seu lucro desejado por unidade.
         </span>
       </div>
 
       {/* Sugestão de margem quando taxas estão altas */}
       {suggestedMargin && (
         <div className="w-full bg-primary/10 border border-primary/30 rounded-xl p-4 mt-2 flex flex-col gap-4">
-          {/* Bloco de texto - container próprio */}
           <div className="flex items-start gap-3">
             <Lightbulb className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
             <div className="flex-1 text-left">
@@ -107,7 +111,6 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
             </div>
           </div>
           
-          {/* Área de ação - container exclusivo para o botão */}
           {onApplySuggestedMargin && (
             <div className="w-full">
               <Button
