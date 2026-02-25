@@ -170,7 +170,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
               {/* Detalhamento */}
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 pt-2 border-t border-border/50 text-xs">
                 <div className="flex items-center gap-1">
-                  <span className="text-muted-foreground">Custos:</span>
+                  <span className="text-muted-foreground">Mat. + Operacional:</span>
                   <span className="font-medium text-foreground">{formatCurrency(calc.totalCost)}</span>
                 </div>
                 {hasMarketplace && (
