@@ -291,6 +291,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         unitProfit={unitProfit}
         marketplaceTotalFees={marketplaceTotalFees}
         quantity={safeQuantity}
+        netProfit={netProfit}
         onApplySuggestedMargin={onApplySuggestedMargin}
       />
 

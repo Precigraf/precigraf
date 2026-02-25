@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calculator, Lock, Sparkles } from 'lucide-react';
+import { Calculator, Lock, Sparkles, TrendingUp, Store, DollarSign } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -34,9 +34,8 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   };
 
   const calculateForQuantity = (qty: number) => {
-    if (qty <= 0) return { unitPrice: 0, lotPrice: 0, margin: 0 };
+    if (qty <= 0) return { unitPrice: 0, lotPrice: 0, unitCosts: 0, unitFees: 0, unitProfit: 0 };
 
-    // Proteção contra divisão por zero e valores inválidos
     const safeQty = Math.max(1, Math.floor(qty));
     const safeOperationalTotal = Math.max(0, operationalTotal || 0);
     const safeUnitRawMaterialsCost = Math.max(0, unitRawMaterialsCost || 0);
@@ -45,7 +44,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     const safeCommissionPercentage = Math.min(Math.max(0, commissionPercentage || 0), 100);
     const safeFixedFeePerItem = Math.max(0, fixedFeePerItem || 0);
 
-    // Custo operacional por unidade
+    // Custo operacional por unidade (rateio)
     const unitOperationalCost = safeOperationalTotal / safeQty;
     
     // Custo de produção por unidade
@@ -57,33 +56,28 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
       ? safeFixedProfit / safeQty
       : unitProductionCost * (safeMarginPercentage / 100);
 
-    // Preço base de venda por unidade
+    // Preço base de venda por unidade (sem taxas)
     const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
 
-    // Taxas do marketplace
+    // Taxas do marketplace (idêntico ao cálculo principal)
     const unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
     const unitMarketplaceFixedFees = safeFixedFeePerItem / safeQty;
+    const unitTotalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
 
     // Preço unitário final
-    const unitPrice = unitBaseSellingPrice + unitMarketplaceCommission + unitMarketplaceFixedFees;
-
-    // Preço do lote
-    const lotPrice = unitPrice * safeQty;
-
-    // Margem real calculada
-    const realMargin = unitProductionCost > 0 
-      ? ((unitDesiredProfit / unitProductionCost) * 100) 
-      : safeMarginPercentage;
+    const unitPrice = Math.round((unitBaseSellingPrice + unitTotalFees) * 100) / 100;
+    const lotPrice = Math.round(unitPrice * safeQty * 100) / 100;
 
     return { 
-      unitPrice: Math.round(unitPrice * 100) / 100, 
-      lotPrice: Math.round(lotPrice * 100) / 100, 
-      margin: Math.round(realMargin * 100) / 100 
+      unitPrice, 
+      lotPrice, 
+      unitCosts: Math.round(unitProductionCost * 100) / 100,
+      unitFees: Math.round(unitTotalFees * 100) / 100,
+      unitProfit: Math.round(unitDesiredProfit * 100) / 100,
     };
   };
 
-  // Calcular valores atuais para comparação
-  const currentCalc = calculateForQuantity(currentQuantity);
+  const hasMarketplace = commissionPercentage > 0 || fixedFeePerItem > 0;
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -100,7 +94,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
         className="relative overflow-hidden rounded-xl"
         onClick={handleUpgradeClick}
       >
-        {/* Overlay de bloqueio */}
         <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center gap-2 cursor-pointer">
           <Lock className="w-5 h-5 text-muted-foreground" />
           <Badge variant="outline" className="text-xs bg-background/80">
@@ -116,7 +109,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
           </Button>
         </div>
 
-        {/* Conteúdo bloqueado (visível mas desativado) */}
         <div className="opacity-70 pointer-events-none select-none filter grayscale bg-secondary/30 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-4">
             <Calculator className="w-4 h-4 text-primary" />
@@ -158,34 +150,57 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
       <div className="flex flex-col gap-2">
         {quantities.map((qty) => {
           const calc = calculateForQuantity(qty);
-          const lotPrice = calc.unitPrice * qty;
           
           return (
             <div 
               key={qty} 
-              className="bg-card rounded-lg p-3 border border-border hover:border-primary/50 transition-colors flex items-center justify-between"
+              className="bg-card rounded-lg p-3 border border-border hover:border-primary/50 transition-colors"
             >
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-muted-foreground min-w-[50px]">
-                  {qty} un
-                </span>
-                <span 
-                  className="font-bold text-foreground"
-                  style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}
-                >
-                  {formatCurrency(lotPrice)}
+              {/* Linha principal: quantidade, preço lote, preço unitário */}
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-muted-foreground min-w-[50px]">
+                    {qty} un
+                  </span>
+                  <span 
+                    className="font-bold text-foreground"
+                    style={{ fontSize: 'clamp(14px, 3.5vw, 16px)' }}
+                  >
+                    {formatCurrency(calc.lotPrice)}
+                  </span>
+                </div>
+                <span className="text-sm text-muted-foreground/80">
+                  {formatCurrency(calc.unitPrice)}/un
                 </span>
               </div>
-              <span className="text-sm text-muted-foreground/80">
-                {formatCurrency(calc.unitPrice)}/un
-              </span>
+
+              {/* Detalhamento: Custos, Taxas, Lucro */}
+              <div className="flex items-center gap-3 text-xs border-t border-border/50 pt-2">
+                <div className="flex items-center gap-1">
+                  <DollarSign className="w-3 h-3 text-muted-foreground" />
+                  <span className="text-muted-foreground">Custos:</span>
+                  <span className="font-medium text-foreground">{formatCurrency(calc.unitCosts)}</span>
+                </div>
+                {hasMarketplace && (
+                  <div className="flex items-center gap-1">
+                    <Store className="w-3 h-3 text-warning" />
+                    <span className="text-warning">Taxas:</span>
+                    <span className="font-medium text-warning">{formatCurrency(calc.unitFees)}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3 text-success" />
+                  <span className="text-success">Lucro:</span>
+                  <span className="font-medium text-success">{formatCurrency(calc.unitProfit)}</span>
+                </div>
+              </div>
             </div>
           );
         })}
       </div>
 
       <p className="text-xs text-muted-foreground text-center mt-3">
-        Quanto maior a quantidade, menor o custo por unidade
+        Valores por unidade · Quanto maior a quantidade, menor o custo por unidade
       </p>
     </div>
   );
