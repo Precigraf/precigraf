@@ -5,8 +5,7 @@ import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
-import MarketplaceSection, { MarketplaceType, SellerType } from './MarketplaceSection';
-import { solveShopeeUnitPrice, getTierLabel } from '@/lib/shopeeUtils';
+import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
@@ -115,10 +114,8 @@ const CostCalculator: React.FC = () => {
 
   // Marketplace
   const [marketplace, setMarketplace] = useState<MarketplaceType>('none');
-  const [sellerType, setSellerType] = useState<SellerType>('cpf');
   const [commissionPercentage, setCommissionPercentage] = useState(0);
   const [fixedFeePerItem, setFixedFeePerItem] = useState(0);
-  const [cpfTax, setCpfTax] = useState(0);
 
   // Handler para quantidade com validação
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,10 +195,8 @@ const CostCalculator: React.FC = () => {
     
     // Limpar marketplace
     setMarketplace('none');
-    setSellerType('cpf');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
-    setCpfTax(0);
     
     // Para duplicação: armazenar ID original e NÃO definir ID de edição
     // O cálculo será tratado como NOVO até o momento do save
@@ -235,10 +230,8 @@ const CostCalculator: React.FC = () => {
     setProfitMargin(0);
     setFixedProfit(0);
     setMarketplace('none');
-    setSellerType('cpf');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
-    setCpfTax(0);
     setProductPreset('custom');
     toast.info('Edição cancelada');
   }, []);
@@ -287,10 +280,8 @@ const CostCalculator: React.FC = () => {
     setProfitMargin(35);
     setFixedProfit(0);
     setMarketplace('none');
-    setSellerType('cpf');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
-    setCpfTax(0);
     setProductPreset('paper_bag');
   }, []);
 
@@ -392,34 +383,16 @@ const CostCalculator: React.FC = () => {
       ? roundCurrency(safeFixedProfit / safeLotQuantity)
       : roundCurrency(unitProductionCost * (safeProfitMargin / 100));
 
-    // Preço base de venda por unidade (sem taxas marketplace)
+    // Preço base de venda por unidade (sem taxas)
     const unitBaseSellingPrice = roundCurrency(unitProductionCost + unitDesiredProfit);
 
-    // Marketplace: usar solver iterativo para Shopee, manual para custom
-    let unitPrice = unitBaseSellingPrice;
-    let unitMarketplaceCommission = 0;
-    let unitMarketplaceFixedFees = 0;
-    let unitMarketplaceTotalFees = 0;
-    let activeTierLabel = '';
+    // Taxas do marketplace por unidade
+    const unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
+    const unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);
+    const unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
 
-    if (marketplace === 'shopee') {
-      const shopeeResult = solveShopeeUnitPrice(unitBaseSellingPrice, safeLotQuantity, sellerType);
-      unitPrice = shopeeResult.unitPrice;
-      unitMarketplaceCommission = shopeeResult.commissionAmount;
-      unitMarketplaceFixedFees = roundCurrency(shopeeResult.fixedFeeAmount + shopeeResult.cpfFeeAmount);
-      unitMarketplaceTotalFees = shopeeResult.totalFeesPerUnit;
-      activeTierLabel = getTierLabel(shopeeResult.tier, sellerType);
-    } else if (marketplace === 'custom') {
-      const safeCpfTax = safeNumber(cpfTax);
-      const unitFixedFees = roundCurrency((safeFixedFeePerItem + safeCpfTax) / safeLotQuantity);
-      const commissionFraction = safeCommissionPercentage / 100;
-      unitPrice = commissionFraction < 1
-        ? roundCurrency((unitBaseSellingPrice + unitFixedFees) / (1 - commissionFraction))
-        : roundCurrency(unitBaseSellingPrice + unitFixedFees);
-      unitMarketplaceCommission = roundCurrency(unitPrice * commissionFraction);
-      unitMarketplaceFixedFees = unitFixedFees;
-      unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
-    }
+    // Preço unitário final (com taxas)
+    const unitPrice = roundCurrency(unitBaseSellingPrice + unitMarketplaceTotalFees);
 
     // PREÇO FINAL = Preço unitário × Quantidade
     const finalSellingPrice = roundCurrency(unitPrice * safeLotQuantity);
@@ -453,7 +426,6 @@ const CostCalculator: React.FC = () => {
       totalCost: productionCost,
       profitValue: desiredProfit,
       sellingPrice: finalSellingPrice,
-      activeTierLabel,
     };
   }, [
     lotQuantity,
@@ -463,9 +435,6 @@ const CostCalculator: React.FC = () => {
     fixedProfit,
     commissionPercentage,
     fixedFeePerItem,
-    cpfTax,
-    marketplace,
-    sellerType,
   ]);
 
   // Valores para salvar (compatibilidade com banco de dados)
@@ -713,17 +682,12 @@ const CostCalculator: React.FC = () => {
           <MarketplaceSection
             marketplace={marketplace}
             onMarketplaceChange={setMarketplace}
-            sellerType={sellerType}
-            onSellerTypeChange={setSellerType}
             commissionPercentage={commissionPercentage}
             onCommissionChange={setCommissionPercentage}
             fixedFeePerItem={fixedFeePerItem}
             onFixedFeeChange={setFixedFeePerItem}
-            cpfTax={cpfTax}
-            onCpfTaxChange={setCpfTax}
             profitValue={calculations.desiredProfit}
             marketplaceTotalFees={calculations.marketplaceTotalFees}
-            activeTierLabel={calculations.activeTierLabel}
             isPro={isPro}
             onShowUpgrade={() => setShowUpgradeModal(true)}
           />
@@ -751,10 +715,7 @@ const CostCalculator: React.FC = () => {
             fixedProfit={fixedProfit}
             commissionPercentage={commissionPercentage}
             fixedFeePerItem={fixedFeePerItem}
-            cpfTax={cpfTax}
             marketplace={marketplace}
-            sellerType={sellerType}
-            activeTierLabel={calculations.activeTierLabel}
             hasOperationalCosts={hasOperationalCosts}
             saveData={saveDataValues}
             onSaved={handleCalculationSaved}

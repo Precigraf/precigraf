@@ -7,7 +7,7 @@ import SaveCalculationButton from './SaveCalculationButton';
 import PriceBreakdown from './PriceBreakdown';
 import MarketplaceImpact from './MarketplaceImpact';
 import CouponStrategy from './CouponStrategy';
-import { MarketplaceType, SellerType } from './MarketplaceSection';
+import { MarketplaceType } from './MarketplaceSection';
 interface ResultPanelProps {
   productName: string;
   quantity: number;
@@ -29,11 +29,8 @@ interface ResultPanelProps {
   fixedProfit: number;
   commissionPercentage: number;
   fixedFeePerItem: number;
-  cpfTax: number;
   // Marketplace info
   marketplace?: MarketplaceType;
-  sellerType?: SellerType;
-  activeTierLabel?: string;
   // Custos operacionais preenchidos
   hasOperationalCosts?: boolean;
   // Props para salvar
@@ -81,10 +78,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   fixedProfit,
   commissionPercentage,
   fixedFeePerItem,
-  cpfTax,
   marketplace = 'none',
-  sellerType = 'cpf',
-  activeTierLabel = '',
   hasOperationalCosts = true,
   saveData,
   onSaved,
@@ -253,11 +247,6 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
                 </div>
               </div>
             </div>
-            {activeTierLabel && (
-              <div className="mt-2 text-xs text-warning/80 bg-warning/5 rounded px-2 py-1">
-                {activeTierLabel}
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -300,7 +289,6 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         marketplace={marketplace}
         unitPrice={unitPrice}
         unitProfit={unitProfit}
-        unitNetProfit={unitNetProfit}
         marketplaceTotalFees={marketplaceTotalFees}
         quantity={safeQuantity}
         onApplySuggestedMargin={onApplySuggestedMargin}
@@ -333,11 +321,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         fixedProfit={fixedProfit}
         commissionPercentage={commissionPercentage}
         fixedFeePerItem={fixedFeePerItem}
-        cpfTax={cpfTax}
         currentQuantity={safeQuantity}
-        hasMarketplace={hasMarketplace}
-        marketplace={marketplace}
-        sellerType={sellerType}
         isPro={isPro}
         onShowUpgrade={onShowUpgrade}
       />
