@@ -1,7 +1,9 @@
 project_id = "bnknukftvojrfvedjsba"
 
-[functions.webhook-infinitepay]
-verify_jwt = false
-
-[functions.export-data]
-verify_jwt = false
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.export-data]
+    verify_jwt = false
+  [functions.webhook-infinitepay]
+    verify_jwt = false
