@@ -234,6 +234,7 @@ const CostCalculator: React.FC = () => {
     setMarketplace('none');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
+    setShopeeExtra(DEFAULT_SHOPEE_EXTRA);
     setProductPreset('custom');
     toast.info('Edição cancelada');
   }, []);
