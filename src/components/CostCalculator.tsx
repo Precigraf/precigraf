@@ -117,6 +117,7 @@ const CostCalculator: React.FC = () => {
   const [marketplace, setMarketplace] = useState<MarketplaceType>('none');
   const [commissionPercentage, setCommissionPercentage] = useState(0);
   const [fixedFeePerItem, setFixedFeePerItem] = useState(0);
+  const [shopeeExtra, setShopeeExtra] = useState<ShopeeExtraFields>(DEFAULT_SHOPEE_EXTRA);
 
   // Handler para quantidade com validação
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
