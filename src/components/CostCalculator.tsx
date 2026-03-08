@@ -804,6 +804,8 @@ const CostCalculator: React.FC = () => {
             onShowUpgrade={() => setShowUpgradeModal(true)}
             editingCalculation={editingCalculation}
             duplicatedFrom={duplicatedFrom}
+            shopeeResult={calculations.shopeeResult}
+            shopeeExtra={shopeeExtra}
           />
         </div>
 
