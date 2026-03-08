@@ -767,6 +767,8 @@ const CostCalculator: React.FC = () => {
             marketplaceTotalFees={calculations.marketplaceTotalFees}
             isPro={isPro}
             onShowUpgrade={() => setShowUpgradeModal(true)}
+            shopeeExtra={shopeeExtra}
+            onShopeeExtraChange={setShopeeExtra}
           />
         </div>
 
