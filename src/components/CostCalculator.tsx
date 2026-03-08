@@ -5,7 +5,7 @@ import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
-import MarketplaceSection, { MarketplaceType, ShopeeExtraFields, DEFAULT_SHOPEE_EXTRA } from './MarketplaceSection';
+import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
@@ -28,7 +28,6 @@ import {
   DEFAULT_OPERATIONAL_COSTS_DATA,
   calculateAllOperationalCosts 
 } from './OperationalCosts';
-import { calcularPrecoShopee, ShopeeCalcResult } from '@/lib/shopeeUtils';
 
 // Interface para cálculo em edição
 interface EditingCalculation {
@@ -117,7 +116,6 @@ const CostCalculator: React.FC = () => {
   const [marketplace, setMarketplace] = useState<MarketplaceType>('none');
   const [commissionPercentage, setCommissionPercentage] = useState(0);
   const [fixedFeePerItem, setFixedFeePerItem] = useState(0);
-  const [shopeeExtra, setShopeeExtra] = useState<ShopeeExtraFields>(DEFAULT_SHOPEE_EXTRA);
 
   // Handler para quantidade com validação
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -234,7 +232,6 @@ const CostCalculator: React.FC = () => {
     setMarketplace('none');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
-    setShopeeExtra(DEFAULT_SHOPEE_EXTRA);
     setProductPreset('custom');
     toast.info('Edição cancelada');
   }, []);
@@ -359,7 +356,6 @@ const CostCalculator: React.FC = () => {
         totalCost: 0,
         profitValue: 0,
         sellingPrice: 0,
-        shopeeResult: null as ShopeeCalcResult | null,
       };
     }
 
@@ -381,76 +377,6 @@ const CostCalculator: React.FC = () => {
     // Custo de produção por unidade (apenas matéria-prima + operacional por unidade)
     const unitProductionCost = roundCurrency(unitRawMaterialsCost + unitOperationalCost);
 
-    // === SHOPEE 2026: Solver Iterativo ===
-    if (marketplace === 'shopee') {
-      const isFixedProfit = safeFixedProfit > 0;
-      const margemDecimal = isFixedProfit 
-        ? 0 // Solver não suporta lucro fixo diretamente, calcular manualmente
-        : safeProfitMargin / 100;
-
-      const shopeeResult = calcularPrecoShopee({
-        custoProduto: unitProductionCost,
-        custoEmbalagem: 0,
-        margemDesejada: margemDecimal,
-        impostoVenda: (shopeeExtra.impostoVenda || 0) / 100,
-        taxaCPF: shopeeExtra.sellerType === 'cpf' ? 3 : 0,
-        adsFixo: shopeeExtra.adsFixo || 0,
-        roasAds: shopeeExtra.roasAds || 0,
-        quantidade: safeLotQuantity,
-      });
-
-      if (shopeeResult.margemImpossivel) {
-        return {
-          rawMaterialsCost,
-          operationalCost: operationalTotal,
-          operationalTotal,
-          productionCost: roundCurrency(unitProductionCost * safeLotQuantity),
-          isFixedProfit,
-          desiredProfit: 0,
-          baseSellingPrice: 0,
-          marketplaceCommission: 0,
-          marketplaceFixedFees: 0,
-          marketplaceTotalFees: 0,
-          finalSellingPrice: 0,
-          unitPrice: 0,
-          unitRawMaterialsCost,
-          netProfit: 0,
-          totalCost: roundCurrency(unitProductionCost * safeLotQuantity),
-          profitValue: 0,
-          sellingPrice: 0,
-          shopeeResult,
-        };
-      }
-
-      const unitPrice = shopeeResult.precoIdeal;
-      const finalSellingPrice = roundCurrency(unitPrice * safeLotQuantity);
-      const productionCost = roundCurrency(unitProductionCost * safeLotQuantity);
-      const marketplaceTotalFees = roundCurrency(shopeeResult.totalTaxasMarketplace * safeLotQuantity);
-      const desiredProfit = roundCurrency(shopeeResult.lucroPorUnidade * safeLotQuantity);
-
-      return {
-        rawMaterialsCost,
-        operationalCost: operationalTotal,
-        operationalTotal,
-        productionCost,
-        isFixedProfit,
-        desiredProfit,
-        baseSellingPrice: productionCost,
-        marketplaceCommission: roundCurrency(unitPrice * shopeeResult.comissaoEfetiva * safeLotQuantity),
-        marketplaceFixedFees: roundCurrency((shopeeResult.tarifaFixaAplicada / safeLotQuantity) * safeLotQuantity),
-        marketplaceTotalFees,
-        finalSellingPrice,
-        unitPrice,
-        unitRawMaterialsCost,
-        netProfit: desiredProfit,
-        totalCost: productionCost,
-        profitValue: desiredProfit,
-        sellingPrice: finalSellingPrice,
-        shopeeResult,
-      };
-    }
-
-    // === CÁLCULO PADRÃO (custom / none) ===
     // Lucro desejado por unidade (valor fixo tem prioridade)
     const isFixedProfit = safeFixedProfit > 0;
     const unitDesiredProfit = isFixedProfit
@@ -500,7 +426,6 @@ const CostCalculator: React.FC = () => {
       totalCost: productionCost,
       profitValue: desiredProfit,
       sellingPrice: finalSellingPrice,
-      shopeeResult: null as ShopeeCalcResult | null,
     };
   }, [
     lotQuantity,
@@ -510,8 +435,6 @@ const CostCalculator: React.FC = () => {
     fixedProfit,
     commissionPercentage,
     fixedFeePerItem,
-    marketplace,
-    shopeeExtra,
   ]);
 
   // Valores para salvar (compatibilidade com banco de dados)
@@ -767,8 +690,6 @@ const CostCalculator: React.FC = () => {
             marketplaceTotalFees={calculations.marketplaceTotalFees}
             isPro={isPro}
             onShowUpgrade={() => setShowUpgradeModal(true)}
-            shopeeExtra={shopeeExtra}
-            onShopeeExtraChange={setShopeeExtra}
           />
         </div>
 
@@ -804,8 +725,6 @@ const CostCalculator: React.FC = () => {
             onShowUpgrade={() => setShowUpgradeModal(true)}
             editingCalculation={editingCalculation}
             duplicatedFrom={duplicatedFrom}
-            shopeeResult={calculations.shopeeResult}
-            shopeeExtra={shopeeExtra}
           />
         </div>
 

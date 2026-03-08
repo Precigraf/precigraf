@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Package, DollarSign, Percent, Store, Wallet, BadgeDollarSign, Sparkles, AlertTriangle, Tag, Megaphone } from 'lucide-react';
+import { TrendingUp, Package, DollarSign, Percent, Store, Wallet, BadgeDollarSign } from 'lucide-react';
 import SmartAlerts from './SmartAlerts';
 import QuantitySimulator from './QuantitySimulator';
 import CostChart from './CostChart';
@@ -8,11 +8,6 @@ import PriceBreakdown from './PriceBreakdown';
 import MarketplaceImpact from './MarketplaceImpact';
 import CouponStrategy from './CouponStrategy';
 import { MarketplaceType } from './MarketplaceSection';
-import { ShopeeCalcResult } from '@/lib/shopeeUtils';
-import { ShopeeExtraFields } from './MarketplaceSection';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-
 interface ResultPanelProps {
   productName: string;
   quantity: number;
@@ -28,13 +23,17 @@ interface ResultPanelProps {
   unitPrice: number;
   isFixedProfit: boolean;
   hasMarketplace: boolean;
+  // Novos props para simulador
   unitRawMaterialsCost: number;
   operationalTotal: number;
   fixedProfit: number;
   commissionPercentage: number;
   fixedFeePerItem: number;
+  // Marketplace info
   marketplace?: MarketplaceType;
+  // Custos operacionais preenchidos
   hasOperationalCosts?: boolean;
+  // Props para salvar
   saveData?: {
     paper: number;
     ink: number;
@@ -47,15 +46,16 @@ interface ResultPanelProps {
     otherCosts: number;
   };
   onSaved?: () => void;
+  // Nova prop para sugestão de margem do MarketplaceImpact
   onApplySuggestedMargin?: (margin: number) => void;
+  // Prop para indicar se está bloqueado
   isBlocked?: boolean;
+  // Props para plano do usuário (estratégia de cupom)
   isPro?: boolean;
   onShowUpgrade?: () => void;
+  // Props para edição
   editingCalculation?: { id: string; mode: 'edit' | 'duplicate' } | null;
   duplicatedFrom?: string | null;
-  // Shopee solver result
-  shopeeResult?: ShopeeCalcResult | null;
-  shopeeExtra?: ShopeeExtraFields;
 }
 
 const ResultPanel: React.FC<ResultPanelProps> = ({
@@ -88,13 +88,12 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   onShowUpgrade,
   editingCalculation = null,
   duplicatedFrom = null,
-  shopeeResult = null,
-  shopeeExtra,
 }) => {
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) {
       return 'R$ 0,00';
     }
+    // Arredondar para 2 casas decimais antes de formatar
     const rounded = Math.round(value * 100) / 100;
     return rounded.toLocaleString('pt-BR', {
       style: 'currency',
@@ -102,16 +101,19 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
     });
   };
 
+  // Garantir que quantity seja pelo menos 0 para exibição
   const safeQuantity = Math.max(0, Math.floor(quantity || 0));
+
+  // Cálculos adicionais com proteção contra divisão por zero
   const unitProductionCost = safeQuantity > 0 ? Math.round((productionCost / safeQuantity) * 100) / 100 : 0;
   const unitProfit = safeQuantity > 0 ? Math.round((desiredProfit / safeQuantity) * 100) / 100 : 0;
   const netProfit = Math.round((finalSellingPrice - productionCost - marketplaceTotalFees) * 100) / 100;
   const unitNetProfit = safeQuantity > 0 ? Math.round((netProfit / safeQuantity) * 100) / 100 : 0;
+
+  // Margem real calculada (com proteção contra divisão por zero)
   const realMarginPercentage = productionCost > 0 
     ? Math.round((desiredProfit / productionCost) * 100) 
     : profitMargin;
-
-  const isShopee = marketplace === 'shopee';
 
   return (
     <div className="glass-card result-gradient p-6 sticky top-6 animate-slide-up space-y-6">
@@ -128,29 +130,17 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         </div>
       </div>
 
-      {/* Alerta de margem impossível (Shopee) */}
-      {shopeeResult?.margemImpossivel && (
-        <Alert className="bg-destructive/10 border-destructive/30">
-          <AlertTriangle className="w-4 h-4 text-destructive" />
-          <AlertDescription className="text-destructive text-sm font-medium">
-            {shopeeResult.erro}
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Alertas Inteligentes */}
-      {!shopeeResult?.margemImpossivel && (
-        <SmartAlerts
-          marginPercentage={realMarginPercentage}
-          netProfit={netProfit}
-          rawMaterialsCost={rawMaterialsCost}
-          operationalCost={operationalCost}
-          quantity={safeQuantity}
-          hasOperationalCosts={hasOperationalCosts}
-          productionCost={productionCost}
-          finalSellingPrice={finalSellingPrice}
-        />
-      )}
+      {/* Alertas Inteligentes Aprimorados */}
+      <SmartAlerts
+        marginPercentage={realMarginPercentage}
+        netProfit={netProfit}
+        rawMaterialsCost={rawMaterialsCost}
+        operationalCost={operationalCost}
+        quantity={safeQuantity}
+        hasOperationalCosts={hasOperationalCosts}
+        productionCost={productionCost}
+        finalSellingPrice={finalSellingPrice}
+      />
 
       {/* PREÇO FINAL - DESTAQUE MÁXIMO */}
       <div className="bg-foreground rounded-xl p-6">
@@ -182,53 +172,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         </div>
       </div>
 
-      {/* Preço Psicológico (Shopee) */}
-      {isShopee && shopeeResult && !shopeeResult.margemImpossivel && shopeeResult.precoPsicologico > 0 && (
-        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <div>
-                <span className="text-sm font-medium text-foreground">
-                  Preço Psicológico
-                </span>
-                <p className="text-xs text-muted-foreground">Sugestão para maior conversão</p>
-              </div>
-            </div>
-            <span className="text-xl font-bold text-primary">
-              {formatCurrency(shopeeResult.precoPsicologico)}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Faixa Shopee aplicada */}
-      {isShopee && shopeeResult && !shopeeResult.margemImpossivel && (
-        <div className="bg-secondary/50 rounded-lg p-3">
-          <div className="flex items-center gap-2 mb-2">
-            <Store className="w-4 h-4 text-warning" />
-            <span className="text-sm font-medium text-foreground">Faixa Shopee Aplicada</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="text-xs">
-              {shopeeResult.faixaAplicada.label}
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              Comissão: {Math.round(shopeeResult.comissaoEfetiva * 100)}%
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              Tarifa: {formatCurrency(shopeeResult.tarifaFixaAplicada)}/pedido
-            </Badge>
-            {shopeeResult.taxaCPFAplicada > 0 && (
-              <Badge variant="outline" className="text-xs text-warning">
-                CPF: +{formatCurrency(shopeeResult.taxaCPFAplicada)}/pedido
-              </Badge>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Resumo de Valores */}
+      {/* Resumo de Valores - Layout Vertical */}
       <div className="space-y-3">
         {/* Custo de Produção */}
         <div className="bg-secondary/50 rounded-lg p-3">
@@ -248,7 +192,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
           </div>
         </div>
 
-        {/* Lucro */}
+        {/* Lucro Desejado */}
         <div className="bg-secondary/50 rounded-lg p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
@@ -299,53 +243,11 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
                   -{formatCurrency(marketplaceTotalFees)}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {isShopee ? 'Comissão + Tarifa + CPF' : 'Comissão + Taxa fixa'}
+                  Comissão + Taxa fixa
                 </div>
               </div>
             </div>
           </div>
-        )}
-
-        {/* Impostos e Ads (Shopee) */}
-        {isShopee && shopeeResult && !shopeeResult.margemImpossivel && (
-          <>
-            {shopeeResult.impostoValor > 0 && (
-              <div className="bg-secondary/50 rounded-lg p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Tag className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Imposto ({shopeeExtra?.impostoVenda || 0}%)</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-foreground">
-                      -{formatCurrency(shopeeResult.impostoValor * safeQuantity)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      -{formatCurrency(shopeeResult.impostoValor)}/un
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            {(shopeeResult.custoAdsVariavel > 0 || shopeeResult.custoAdsFixo > 0) && (
-              <div className="bg-secondary/50 rounded-lg p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Megaphone className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Custo Ads</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-foreground">
-                      -{formatCurrency((shopeeResult.custoAdsVariavel + shopeeResult.custoAdsFixo) * safeQuantity)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      -{formatCurrency(shopeeResult.custoAdsVariavel + shopeeResult.custoAdsFixo)}/un
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
         )}
       </div>
 
@@ -393,7 +295,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         onApplySuggestedMargin={onApplySuggestedMargin}
       />
 
-      {/* Estratégia de Cupom */}
+      {/* Estratégia de Cupom - PRO Feature */}
       <CouponStrategy
         finalSellingPrice={finalSellingPrice}
         unitPrice={unitPrice}
@@ -423,8 +325,6 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         currentQuantity={safeQuantity}
         isPro={isPro}
         onShowUpgrade={onShowUpgrade}
-        marketplace={marketplace}
-        shopeeExtra={shopeeExtra}
       />
 
       {/* Botão Salvar Cálculo */}

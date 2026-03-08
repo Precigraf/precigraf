@@ -2,9 +2,6 @@ import React from 'react';
 import { Calculator, Lock, Sparkles, TrendingUp, Store, DollarSign } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { MarketplaceType } from './MarketplaceSection';
-import { ShopeeExtraFields } from './MarketplaceSection';
-import { calcularPrecoShopeePorQuantidade } from '@/lib/shopeeUtils';
 
 interface QuantitySimulatorProps {
   unitRawMaterialsCost: number;
@@ -16,8 +13,6 @@ interface QuantitySimulatorProps {
   currentQuantity: number;
   isPro?: boolean;
   onShowUpgrade?: () => void;
-  marketplace?: MarketplaceType;
-  shopeeExtra?: ShopeeExtraFields;
 }
 
 const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
@@ -30,8 +25,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   currentQuantity,
   isPro = true,
   onShowUpgrade,
-  marketplace = 'none',
-  shopeeExtra,
 }) => {
   const quantities = [15, 20, 40, 50, 80, 100];
 
@@ -40,43 +33,10 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
-  const isShopee = marketplace === 'shopee';
-
   const calculateForQuantity = (qty: number) => {
     if (qty <= 0) return { unitPrice: 0, lotPrice: 0, unitCosts: 0, unitFees: 0, unitProfit: 0 };
 
     const safeQty = Math.max(1, Math.floor(qty));
-
-    // Shopee: usar solver iterativo
-    if (isShopee && shopeeExtra) {
-      const result = calcularPrecoShopeePorQuantidade(
-        Math.max(0, unitRawMaterialsCost || 0),
-        Math.max(0, operationalTotal || 0),
-        marginPercentage / 100,
-        (shopeeExtra.impostoVenda || 0) / 100,
-        shopeeExtra.sellerType === 'cpf' ? 3 : 0,
-        shopeeExtra.adsFixo || 0,
-        shopeeExtra.roasAds || 0,
-        safeQty,
-      );
-
-      if (result.margemImpossivel) {
-        return { unitPrice: 0, lotPrice: 0, unitCosts: 0, unitFees: 0, unitProfit: 0 };
-      }
-
-      const unitOperationalCost = Math.max(0, operationalTotal || 0) / safeQty;
-      const unitCosts = Math.round((Math.max(0, unitRawMaterialsCost || 0) + unitOperationalCost) * 100) / 100;
-
-      return {
-        unitPrice: result.precoIdeal,
-        lotPrice: Math.round(result.precoIdeal * safeQty * 100) / 100,
-        unitCosts,
-        unitFees: result.totalTaxasMarketplace,
-        unitProfit: result.lucroPorUnidade,
-      };
-    }
-
-    // Cálculo padrão (custom / none)
     const safeOperationalTotal = Math.max(0, operationalTotal || 0);
     const safeUnitRawMaterialsCost = Math.max(0, unitRawMaterialsCost || 0);
     const safeMarginPercentage = Math.min(Math.max(0, marginPercentage || 0), 1000);
@@ -84,19 +44,27 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     const safeCommissionPercentage = Math.min(Math.max(0, commissionPercentage || 0), 100);
     const safeFixedFeePerItem = Math.max(0, fixedFeePerItem || 0);
 
+    // Custo operacional por unidade (rateio)
     const unitOperationalCost = safeOperationalTotal / safeQty;
+    
+    // Custo de produção por unidade
     const unitProductionCost = safeUnitRawMaterialsCost + unitOperationalCost;
 
-    const isFixed = safeFixedProfit > 0;
-    const unitDesiredProfit = isFixed
+    // Lucro desejado por unidade
+    const isFixedProfit = safeFixedProfit > 0;
+    const unitDesiredProfit = isFixedProfit
       ? safeFixedProfit / safeQty
       : unitProductionCost * (safeMarginPercentage / 100);
 
+    // Preço base de venda por unidade (sem taxas)
     const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
+
+    // Taxas do marketplace (idêntico ao cálculo principal)
     const unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
     const unitMarketplaceFixedFees = safeFixedFeePerItem / safeQty;
     const unitTotalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
 
+    // Preço unitário final
     const unitPrice = Math.round((unitBaseSellingPrice + unitTotalFees) * 100) / 100;
     const lotPrice = Math.round(unitPrice * safeQty * 100) / 100;
 
@@ -109,7 +77,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     };
   };
 
-  const hasMarketplace = marketplace !== 'none';
+  const hasMarketplace = commissionPercentage > 0 || fixedFeePerItem > 0;
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -177,9 +145,6 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
       <div className="flex items-center gap-2 mb-4">
         <Calculator className="w-4 h-4 text-primary" />
         <span className="text-sm font-medium text-foreground">Simulador de Quantidade</span>
-        {isShopee && (
-          <Badge variant="outline" className="text-xs">Shopee 2026</Badge>
-        )}
       </div>
 
       <div className="flex flex-col gap-2">
@@ -191,6 +156,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
               key={qty} 
               className="bg-card rounded-lg p-3 border border-border hover:border-primary/50 transition-colors"
             >
+              {/* Linha principal: quantidade, preço lote, preço unitário */}
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium text-muted-foreground min-w-[50px]">
@@ -208,6 +174,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
                 </span>
               </div>
 
+              {/* Detalhamento: Custos, Taxas, Lucro */}
               <div className="flex items-center gap-3 text-xs border-t border-border/50 pt-2">
                 <div className="flex items-center gap-1">
                   <DollarSign className="w-3 h-3 text-muted-foreground" />
@@ -233,10 +200,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
       </div>
 
       <p className="text-xs text-muted-foreground text-center mt-3">
-        {isShopee 
-          ? 'Valores com taxas Shopee 2026 embutidas · Solver iterativo por faixa'
-          : 'Valores por unidade · Quanto maior a quantidade, menor o custo por unidade'
-        }
+        Valores por unidade · Quanto maior a quantidade, menor o custo por unidade
       </p>
     </div>
   );
