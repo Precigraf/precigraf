@@ -14,16 +14,10 @@ import {
   WORKING_MINUTES_PER_MONTH,
 } from './types';
 
-// Função auxiliar para arredondar para 6 casas decimais (precisão para custo/minuto)
-const roundPrecise = (value: number): number => {
+// Sem arredondamento — valores exatos
+const safeValue = (value: number): number => {
   if (!Number.isFinite(value) || isNaN(value)) return 0;
-  return Math.round(value * 1000000) / 1000000;
-};
-
-// Função auxiliar para arredondar valores monetários (2 casas decimais)
-const roundCurrency = (value: number): number => {
-  if (!Number.isFinite(value) || isNaN(value)) return 0;
-  return Math.round(value * 100) / 100;
+  return value;
 };
 
 /**
