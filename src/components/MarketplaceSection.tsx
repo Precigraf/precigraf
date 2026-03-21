@@ -154,6 +154,15 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   }
 
   const handleMarketplaceChange = (value: MarketplaceType) => {
+    if (marketplace === 'custom' && value !== 'custom') {
+      const hasCustomValues = commissionPercentage !== 0 || fixedFeePerItem !== 0;
+      if (hasCustomValues) {
+        const confirmed = window.confirm(
+          'Isso vai substituir as taxas personalizadas que você preencheu. Continuar?'
+        );
+        if (!confirmed) return;
+      }
+    }
     onMarketplaceChange(value);
     const newConfig = MARKETPLACE_CONFIG[value];
     onCommissionChange(newConfig.commissionPercentage);
