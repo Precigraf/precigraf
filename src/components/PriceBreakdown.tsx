@@ -22,11 +22,10 @@ const PriceBreakdown: React.FC<PriceBreakdownProps> = ({
     if (!Number.isFinite(value) || isNaN(value)) {
       return 'R$ 0,00';
     }
-    return value.toLocaleString('pt-BR', {
+    const rounded = Math.round(value * 100) / 100;
+    return rounded.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 4,
     });
   };
 

@@ -50,10 +50,10 @@ export const calcShopeeCost = (
   accountType: ShopeeAccountType
 ): { commission: number; fixedFee: number; cpfExtra: number; total: number; tier: ShopeeTier } => {
   const tier = getShopeeTier(unitPrice);
-  const commission = unitPrice * (tier.commissionPct / 100);
+  const commission = Math.round(unitPrice * (tier.commissionPct / 100) * 100) / 100;
   const fixedFee = tier.fixedFee;
   const cpfExtra = accountType === 'cpf_high' ? SHOPEE_CPF_HIGH_EXTRA : 0;
-  const total = commission + fixedFee + cpfExtra;
+  const total = Math.round((commission + fixedFee + cpfExtra) * 100) / 100;
   return { commission, fixedFee, cpfExtra, total, tier };
 };
 
@@ -139,7 +139,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
     showTaxFields && marketplaceTotalFees > 0 && profitValue > 0 && marketplaceTotalFees > profitValue;
 
   const formatCurrency = (v: number) =>
-    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.preventDefault();

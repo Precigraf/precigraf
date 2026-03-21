@@ -35,7 +35,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
 
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) return 'R$ 0,00';
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
   const calculateForQuantity = (qty: number) => {
@@ -73,15 +73,15 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     }
 
     const unitTotalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
-    const unitPrice = unitBaseSellingPrice + unitTotalFees;
-    const lotPrice = unitPrice * safeQty;
+    const unitPrice = Math.round((unitBaseSellingPrice + unitTotalFees) * 100) / 100;
+    const lotPrice = Math.round(unitPrice * safeQty * 100) / 100;
 
     return { 
       unitPrice, 
       lotPrice, 
-      unitCosts: unitProductionCost,
-      unitFees: unitTotalFees,
-      unitProfit: unitDesiredProfit,
+      unitCosts: Math.round(unitProductionCost * 100) / 100,
+      unitFees: Math.round(unitTotalFees * 100) / 100,
+      unitProfit: Math.round(unitDesiredProfit * 100) / 100,
     };
   };
 
