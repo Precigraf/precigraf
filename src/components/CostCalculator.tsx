@@ -686,12 +686,15 @@ const CostCalculator: React.FC = () => {
           <MarketplaceSection
             marketplace={marketplace}
             onMarketplaceChange={setMarketplace}
+            shopeeAccountType={shopeeAccountType}
+            onShopeeAccountTypeChange={setShopeeAccountType}
             commissionPercentage={commissionPercentage}
             onCommissionChange={setCommissionPercentage}
             fixedFeePerItem={fixedFeePerItem}
             onFixedFeeChange={setFixedFeePerItem}
             profitValue={calculations.desiredProfit}
             marketplaceTotalFees={calculations.marketplaceTotalFees}
+            unitPrice={calculations.unitPrice}
             isPro={isPro}
             onShowUpgrade={() => setShowUpgradeModal(true)}
           />
