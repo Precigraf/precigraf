@@ -71,7 +71,7 @@ export function useCalculator() {
     const mlBottle = inkData.mlPerBottle  > 0 ? inkData.mlPerBottle  : 1;
     const mlPrint  = inkData.mlPerPrint  >= 0 ? inkData.mlPerPrint   : 0;
     const prints   = inkData.printQuantity >= 0 ? inkData.printQuantity : 0;
-    return roundCurrency((inkData.totalValue / (bottles * mlBottle)) * mlPrint * prints);
+    return (inkData.totalValue / (bottles * mlBottle)) * mlPrint * prints;
   }, [inkData]);
 
   const rawMaterialCosts = useMemo(() => ({
