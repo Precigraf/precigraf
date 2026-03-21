@@ -85,6 +85,7 @@ interface MarketplaceSectionProps {
   profitValue: number;
   marketplaceTotalFees: number;
   unitPrice: number;
+  lotQuantity: number;
   isPro?: boolean;
   onShowUpgrade?: () => void;
 }
