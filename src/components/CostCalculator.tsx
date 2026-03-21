@@ -5,7 +5,7 @@ import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
-import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
+import MarketplaceSection, { MarketplaceType, ShopeeAccountType } from './MarketplaceSection';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
