@@ -22,7 +22,7 @@ const safeNumber = (v: number) =>
 
 // Sem arredondamento — valores exatos
 
-const roundCurrency = (v: number) => Math.round(v * 100) / 100;
+const exact = (v: number) => v;
 
 const calcRawMaterial = (d: RawMaterialData) => {
   const qty = d.packageQuantity > 0 ? d.packageQuantity : 1;
