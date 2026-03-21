@@ -107,18 +107,25 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   profitValue,
   marketplaceTotalFees,
   unitPrice,
+  lotQuantity,
   isPro = true,
   onShowUpgrade,
 }) => {
   const isShopee  = marketplace === 'shopee';
   const isCustom  = marketplace === 'custom';
+  const qty = Math.max(1, Math.floor(lotQuantity || 1));
 
   const shopeeCost = isShopee && unitPrice > 0
     ? calcShopeeCost(unitPrice, shopeeAccountType)
     : null;
 
-  const profitImpactPct = shopeeCost && profitValue > 0
-    ? Math.round((shopeeCost.total / profitValue) * 1000) / 10
+  // Total fees for the whole lot
+  const shopeeTotalFees = shopeeCost
+    ? shopeeCost.commission * qty + shopeeCost.fixedFee + shopeeCost.cpfExtra
+    : 0;
+
+  const profitImpactPct = shopeeTotalFees > 0 && profitValue > 0
+    ? Math.round((shopeeTotalFees / profitValue) * 1000) / 10
     : 0;
 
   const feesExceedProfit = isShopee && shopeeCost != null && profitValue > 0 && shopeeCost.total > profitValue;
