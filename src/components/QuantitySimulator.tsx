@@ -35,7 +35,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
 
   const formatCurrency = (value: number) => {
     if (!Number.isFinite(value) || isNaN(value)) return 'R$ 0,00';
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 4 });
   };
 
   const calculateForQuantity = (qty: number) => {
