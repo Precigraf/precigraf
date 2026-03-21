@@ -708,6 +708,7 @@ const CostCalculator: React.FC = () => {
             profitValue={calculations.desiredProfit}
             marketplaceTotalFees={calculations.marketplaceTotalFees}
             unitPrice={calculations.unitPrice}
+            lotQuantity={lotQuantity}
             isPro={isPro}
             onShowUpgrade={() => setShowUpgradeModal(true)}
           />

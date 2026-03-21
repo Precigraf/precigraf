@@ -103,6 +103,7 @@ interface MarketplaceSectionProps {
   profitValue: number;
   marketplaceTotalFees: number;
   unitPrice: number;
+  lotQuantity: number;
   isPro?: boolean;
   onShowUpgrade?: () => void;
 }
@@ -121,6 +122,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   profitValue,
   marketplaceTotalFees,
   unitPrice,
+  lotQuantity,
   isPro = true,
   onShowUpgrade,
 }) => {
@@ -128,6 +130,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   const showTaxFields = marketplace !== 'none';
   const isShopee = marketplace === 'shopee';
 
+  const qty = Math.max(1, Math.floor(lotQuantity || 1));
   const shopeeCost = isShopee && unitPrice > 0
     ? calcShopeeCost(unitPrice, shopeeAccountType)
     : null;
@@ -259,12 +262,12 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
-                    Comissão ({shopeeCost.tier.commissionPct}% × {formatCurrency(unitPrice)})
+                    Comissão ({shopeeCost.tier.commissionPct}% × {formatCurrency(unitPrice)} × {qty} un)
                   </span>
-                  <span className="font-medium">{formatCurrency(shopeeCost.commission)}</span>
+                  <span className="font-medium">{formatCurrency(shopeeCost.commission * qty)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Taxa fixa</span>
+                  <span className="text-muted-foreground">Taxa fixa ({formatCurrency(shopeeCost.fixedFee)}/pedido)</span>
                   <span className="font-medium">{formatCurrency(shopeeCost.fixedFee)}</span>
                 </div>
                 {shopeeCost.cpfExtra > 0 && (
@@ -275,8 +278,8 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
                 )}
                 <Separator />
                 <div className="flex justify-between font-semibold">
-                  <span>Custo Shopee por unidade</span>
-                  <span>{formatCurrency(shopeeCost.total)}</span>
+                  <span>Total de taxas Shopee</span>
+                  <span>{formatCurrency(shopeeCost.commission * qty + shopeeCost.fixedFee + shopeeCost.cpfExtra)}</span>
                 </div>
               </div>
 
