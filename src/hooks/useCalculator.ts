@@ -20,6 +20,8 @@ interface RawMaterialData {
 const safeNumber = (v: number) =>
   !Number.isFinite(v) || isNaN(v) ? 0 : Math.max(0, v);
 
+// Sem arredondamento — valores exatos
+
 const roundCurrency = (v: number) => Math.round(v * 100) / 100;
 
 const calcRawMaterial = (d: RawMaterialData) => {
