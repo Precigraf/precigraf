@@ -34,7 +34,7 @@ export const calculateEquipmentCostPerMinute = (data: EquipmentDepreciationData)
   
   const usageMultiplier = data.usagePercentage / 100;
   
-  return roundPrecise(minuteDepreciation * usageMultiplier);
+  return safeValue(minuteDepreciation * usageMultiplier);
 };
 
 /**
