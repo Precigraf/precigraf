@@ -139,7 +139,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
     showTaxFields && marketplaceTotalFees > 0 && profitValue > 0 && marketplaceTotalFees > profitValue;
 
   const formatCurrency = (v: number) =>
-    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2, maximumFractionDigits: 4 });
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.preventDefault();
