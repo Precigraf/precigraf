@@ -85,6 +85,7 @@ interface MarketplaceSectionProps {
   profitValue: number;
   marketplaceTotalFees: number;
   unitPrice: number;
+  lotQuantity: number;
   isPro?: boolean;
   onShowUpgrade?: () => void;
 }
@@ -106,21 +107,28 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   profitValue,
   marketplaceTotalFees,
   unitPrice,
+  lotQuantity,
   isPro = true,
   onShowUpgrade,
 }) => {
   const isShopee  = marketplace === 'shopee';
   const isCustom  = marketplace === 'custom';
+  const qty = Math.max(1, Math.floor(lotQuantity || 1));
 
   const shopeeCost = isShopee && unitPrice > 0
     ? calcShopeeCost(unitPrice, shopeeAccountType)
     : null;
 
-  const profitImpactPct = shopeeCost && profitValue > 0
-    ? Math.round((shopeeCost.total / profitValue) * 1000) / 10
+  // Total fees for the whole lot
+  const shopeeTotalFees = shopeeCost
+    ? shopeeCost.commission * qty + shopeeCost.fixedFee + shopeeCost.cpfExtra
     : 0;
 
-  const feesExceedProfit = isShopee && shopeeCost != null && profitValue > 0 && shopeeCost.total > profitValue;
+  const profitImpactPct = shopeeTotalFees > 0 && profitValue > 0
+    ? Math.round((shopeeTotalFees / profitValue) * 1000) / 10
+    : 0;
+
+  const feesExceedProfit = isShopee && shopeeTotalFees > 0 && profitValue > 0 && shopeeTotalFees > profitValue;
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -297,17 +305,17 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
                   </div>
                 </div>
 
-                {/* Linhas de custo */}
+                {/* Linhas de custo — valores totais para o lote */}
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">
-                      Comissão ({shopeeCost.tier.commissionPct}% × {fmt(unitPrice)})
+                      Comissão ({shopeeCost.tier.commissionPct}% × {fmt(unitPrice)} × {qty} un)
                     </span>
-                    <span className="font-medium text-foreground">{fmt(shopeeCost.commission)}</span>
+                    <span className="font-medium text-foreground">{fmt(shopeeCost.commission * qty)}</span>
                   </div>
 
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Taxa fixa</span>
+                    <span className="text-muted-foreground">Taxa fixa ({fmt(shopeeCost.fixedFee)}/pedido)</span>
                     <span className="font-medium text-foreground">{fmt(shopeeCost.fixedFee)}</span>
                   </div>
 
@@ -323,9 +331,9 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
                   <div className="border-t border-border my-1" />
 
                   <div className="flex justify-between font-semibold">
-                    <span className="text-foreground">Custo Shopee / unidade</span>
+                    <span className="text-foreground">Total de taxas Shopee</span>
                     <span className="text-destructive">
-                      {fmt(shopeeCost.total)}
+                      {fmt(shopeeTotalFees)}
                     </span>
                   </div>
                 </div>
@@ -350,7 +358,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
                   <div className="text-center p-2.5 rounded-lg bg-secondary/30">
                     <p className="text-[10px] text-muted-foreground mb-1">Custo total Shopee</p>
                     <p className="text-sm font-semibold text-destructive">
-                      -{fmt(shopeeCost.total)}
+                      -{fmt(shopeeTotalFees)}
                     </p>
                   </div>
                   <div className="text-center p-2.5 rounded-lg bg-secondary/30">
