@@ -289,6 +289,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
       {/* Impacto do Marketplace */}
       <MarketplaceImpact
         marketplace={marketplace}
+        shopeeAccountType={shopeeAccountType}
         unitPrice={unitPrice}
         unitProfit={unitProfit}
         marketplaceTotalFees={marketplaceTotalFees}

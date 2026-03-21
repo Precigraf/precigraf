@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
-import { TrendingDown, Info, Lightbulb, Check } from 'lucide-react';
-import { MarketplaceType, MARKETPLACE_CONFIG } from './MarketplaceSection';
+import { Lightbulb, Check } from 'lucide-react';
+import {
+  MarketplaceType,
+  ShopeeAccountType,
+  calcShopeeCost,
+  MARKETPLACE_CONFIG,
+} from './MarketplaceSection';
 import { Button } from '@/components/ui/button';
 
 interface MarketplaceImpactProps {
   marketplace: MarketplaceType;
+  shopeeAccountType: ShopeeAccountType;
   unitPrice: number;
   unitProfit: number;
   marketplaceTotalFees: number;
@@ -15,6 +21,7 @@ interface MarketplaceImpactProps {
 
 const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
   marketplace,
+  shopeeAccountType,
   unitPrice,
   unitProfit,
   marketplaceTotalFees,
@@ -24,41 +31,26 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
 }) => {
   const [applied, setApplied] = useState(false);
 
-  const formatCurrency = (value: number) => {
-    if (!Number.isFinite(value) || isNaN(value)) {
-      return 'R$ 0,00';
-    }
-    const rounded = Math.round(value * 100) / 100;
-    return rounded.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    });
+  const fmt = (v: number) => {
+    if (!Number.isFinite(v) || isNaN(v)) return 'R$ 0,00';
+    return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
-  const safeQuantity = Math.max(1, Math.floor(quantity || 1));
-  const safeMarketplaceTotalFees = Math.max(0, marketplaceTotalFees || 0);
+  const safeQty = Math.max(1, Math.floor(quantity || 1));
+  if (marketplace === 'none' || safeQty <= 0) return null;
 
-  if (marketplace === 'none' || safeQuantity <= 0) {
-    return null;
-  }
+  const unitFees =
+    marketplace === 'shopee' && unitPrice > 0
+      ? calcShopeeCost(unitPrice, shopeeAccountType).total
+      : Math.max(0, marketplaceTotalFees) / safeQty;
 
-  const config = MARKETPLACE_CONFIG[marketplace];
-  const unitFees = Math.round((safeMarketplaceTotalFees / safeQuantity) * 100) / 100;
-
-  // Lucro líquido por unidade sincronizado com o cálculo principal do ResultPanel
-  const unitNetProfit = Math.round((netProfit / safeQuantity) * 100) / 100;
-
-  // Impacto: quanto das taxas representam no lucro desejado
-  const safeUnitProfit = Math.max(0, unitProfit || 0);
-  const profitImpactPercentage = safeUnitProfit > 0 
-    ? Math.round((unitFees / safeUnitProfit) * 1000) / 10 
+  const safeUnitProfit   = Math.max(0, unitProfit || 0);
+  const profitImpactPct  = safeUnitProfit > 0
+    ? Math.round((unitFees / safeUnitProfit) * 1000) / 10
     : 0;
 
-  // Calcular margem sugerida quando taxas consomem muito lucro
-  const feesExceedingProfit = profitImpactPercentage > 50;
-  const suggestedMargin = feesExceedingProfit 
-    ? Math.ceil(profitImpactPercentage + 30)
-    : null;
+  const feesExceedingProfit = profitImpactPct > 50;
+  const suggestedMargin     = feesExceedingProfit ? Math.ceil(profitImpactPct + 30) : null;
 
   const handleApplyMargin = () => {
     if (suggestedMargin && onApplySuggestedMargin) {
@@ -68,73 +60,41 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
     }
   };
 
+  if (!suggestedMargin) return null;
+
   return (
-    <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 space-y-3">
-      <div className="flex items-center gap-2">
-        <TrendingDown className="w-4 h-4 text-warning" />
-        <span className="text-sm font-medium text-warning">Impacto do Marketplace</span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="text-center p-2 bg-background/50 rounded-lg">
-          <div className="text-xs text-muted-foreground mb-1">Taxa por unidade</div>
-          <div className="text-sm font-semibold text-warning">
-            -{formatCurrency(unitFees)}
-          </div>
-        </div>
-        <div className="text-center p-2 bg-background/50 rounded-lg">
-          <div className="text-xs text-muted-foreground mb-1">Lucro líquido/un</div>
-          <div className={`text-sm font-semibold ${unitNetProfit >= 0 ? 'text-success' : 'text-destructive'}`}>
-            {formatCurrency(unitNetProfit)}
-          </div>
+    <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-4">
+      <div className="flex items-start gap-3">
+        <Lightbulb className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-primary">Sugestão de margem</p>
+          <p className="text-sm text-muted-foreground leading-relaxed mt-1">
+            As taxas do marketplace estão consumindo{' '}
+            <strong className="text-primary">{profitImpactPct}%</strong> do lucro por unidade.
+            Sugerimos uma margem mínima de{' '}
+            <strong className="text-primary">{suggestedMargin}%</strong> para manter lucratividade.
+          </p>
         </div>
       </div>
 
-      <div className="flex items-start gap-2 text-xs text-muted-foreground">
-        <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
-        <span>
-          As taxas do {config.label} representam <strong className="text-warning">{profitImpactPercentage}%</strong> do seu lucro desejado por unidade.
-        </span>
-      </div>
-
-      {/* Sugestão de margem quando taxas estão altas */}
-      {suggestedMargin && (
-        <div className="w-full bg-primary/10 border border-primary/30 rounded-xl p-4 mt-2 flex flex-col gap-4">
-          <div className="flex items-start gap-3">
-            <Lightbulb className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-            <div className="flex-1 text-left">
-              <p className="text-base font-semibold text-primary mb-1">Sugestão de margem</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                As taxas do marketplace estão reduzindo significativamente seu lucro. 
-                Sugerimos uma margem mínima de <strong className="text-primary">{suggestedMargin}%</strong> para manter lucratividade.
-              </p>
-            </div>
-          </div>
-          
-          {onApplySuggestedMargin && (
-            <div className="w-full">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleApplyMargin}
-                className={`w-full h-11 text-sm rounded-lg flex items-center justify-center ${applied ? 'border-success/30 text-success hover:bg-success/10' : 'border-primary/30 text-primary hover:bg-primary/10'}`}
-                disabled={applied}
-              >
-                {applied ? (
-                  <>
-                    <Check className="w-4 h-4 mr-2 flex-shrink-0 text-success" />
-                    <span>Margem aplicada!</span>
-                  </>
-                ) : (
-                  <>
-                    <Lightbulb className="w-4 h-4 mr-2 flex-shrink-0" />
-                    <span>Aplicar margem de {suggestedMargin}%</span>
-                  </>
-                )}
-              </Button>
-            </div>
+      {onApplySuggestedMargin && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleApplyMargin}
+          disabled={applied}
+          className={`w-full h-11 text-sm rounded-lg ${
+            applied
+              ? 'border-green-500/30 text-green-600 dark:text-green-400'
+              : 'border-primary/30 text-primary hover:bg-primary/10'
+          }`}
+        >
+          {applied ? (
+            <><Check className="w-4 h-4 mr-2" />Margem aplicada!</>
+          ) : (
+            <><Lightbulb className="w-4 h-4 mr-2" />Aplicar margem de {suggestedMargin}%</>
           )}
-        </div>
+        </Button>
       )}
     </div>
   );
