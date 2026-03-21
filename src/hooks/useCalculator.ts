@@ -104,14 +104,14 @@ export function useCalculator() {
     };
     if (qty === 0) return zero;
 
-    const unitRaw     = roundCurrency(Object.values(rawMaterialCosts).reduce((a, b) => a + b, 0));
-    const unitOp      = roundCurrency(opTotal / qty);
-    const unitCost    = roundCurrency(unitRaw + unitOp);
+    const unitRaw     = Object.values(rawMaterialCosts).reduce((a, b) => a + b, 0);
+    const unitOp      = opTotal / qty;
+    const unitCost    = unitRaw + unitOp;
     const isFixed     = fixed > 0;
     const unitProfit  = isFixed
-      ? roundCurrency(fixed / qty)
-      : roundCurrency(unitCost * (margin / 100));
-    const unitBase    = roundCurrency(unitCost + unitProfit);
+      ? fixed / qty
+      : unitCost * (margin / 100);
+    const unitBase    = unitCost + unitProfit;
 
     // Marketplace fees: Shopee uses tier-based, custom uses flat commission
     let unitComm = 0;
@@ -120,18 +120,17 @@ export function useCalculator() {
     if (marketplace === 'shopee') {
       const shopee = calcShopeeCost(unitBase, shopeeAccountType);
       unitComm = shopee.commission;
-      // fixedFee is per-order, amortized by lot quantity
-      unitFee  = roundCurrency(shopee.fixedFee / qty) + (shopee.cpfExtra > 0 ? roundCurrency(shopee.cpfExtra / qty) : 0);
+      unitFee  = shopee.fixedFee / qty + (shopee.cpfExtra > 0 ? shopee.cpfExtra / qty : 0);
     } else if (marketplace === 'custom') {
-      unitComm = roundCurrency(unitBase * (commission / 100));
-      unitFee  = roundCurrency(fixedFee / qty);
+      unitComm = unitBase * (commission / 100);
+      unitFee  = fixedFee / qty;
     }
 
-    const unitFees    = roundCurrency(unitComm + unitFee);
-    const unitPrice   = roundCurrency(unitBase + unitFees);
-    const totalSell   = roundCurrency(unitPrice * qty);
-    const totalProd   = roundCurrency(unitCost * qty);
-    const totalFees   = roundCurrency(unitFees * qty);
+    const unitFees    = unitComm + unitFee;
+    const unitPrice   = unitBase + unitFees;
+    const totalSell   = unitPrice * qty;
+    const totalProd   = unitCost * qty;
+    const totalFees   = unitFees * qty;
 
     return {
       rawMaterialsCost:     roundCurrency(unitRaw * qty),
