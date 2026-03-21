@@ -100,7 +100,7 @@ export const calculateOtherFixedCostPerMinute = (item: OtherFixedCostItem): numb
  */
 export const calculateAppliedCost = (costPerMinute: number, productionTimeMinutes: number): number => {
   if (costPerMinute <= 0 || productionTimeMinutes <= 0) return 0;
-  return roundCurrency(costPerMinute * productionTimeMinutes);
+  return safeValue(costPerMinute * productionTimeMinutes);
 };
 
 /**
