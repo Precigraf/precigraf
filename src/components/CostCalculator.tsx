@@ -283,6 +283,7 @@ const CostCalculator: React.FC = () => {
     setProfitMargin(35);
     setFixedProfit(0);
     setMarketplace('none');
+    setShopeeAccountType('cnpj');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
     setProductPreset('paper_bag');
