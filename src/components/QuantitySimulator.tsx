@@ -182,26 +182,27 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
                 </span>
               </div>
 
-              {/* Detalhamento: Custos, Taxas, Lucro */}
+              {/* Linha 1: Custos + Lucro */}
               <div className="flex items-center gap-3 text-xs border-t border-border/50 pt-2">
                 <div className="flex items-center gap-1">
                   <DollarSign className="w-3 h-3 text-muted-foreground" />
                   <span className="text-muted-foreground">Custos:</span>
                   <span className="font-medium text-foreground">{formatCurrency(calc.unitCosts)}</span>
                 </div>
-                {hasMarketplace && (
-                  <div className="flex items-center gap-1">
-                    <Store className="w-3 h-3 text-warning" />
-                    <span className="text-warning">Taxas:</span>
-                    <span className="font-medium text-warning">{formatCurrency(calc.unitFees)}</span>
-                  </div>
-                )}
                 <div className="flex items-center gap-1">
                   <TrendingUp className="w-3 h-3 text-success" />
                   <span className="text-success">Lucro:</span>
                   <span className="font-medium text-success">{formatCurrency(calc.unitProfit)}</span>
                 </div>
               </div>
+              {/* Linha 2: Taxas (se houver marketplace) */}
+              {hasMarketplace && (
+                <div className="flex items-center gap-1 text-xs">
+                  <Store className="w-3 h-3 text-warning" />
+                  <span className="text-warning">Taxas:</span>
+                  <span className="font-medium text-warning">{formatCurrency(calc.unitFees)}</span>
+                </div>
+              )}
             </div>
           );
         })}
