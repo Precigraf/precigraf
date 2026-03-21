@@ -31,6 +31,7 @@ interface ResultPanelProps {
   fixedFeePerItem: number;
   // Marketplace info
   marketplace?: MarketplaceType;
+  shopeeAccountType?: ShopeeAccountType;
   // Custos operacionais preenchidos
   hasOperationalCosts?: boolean;
   // Props para salvar
