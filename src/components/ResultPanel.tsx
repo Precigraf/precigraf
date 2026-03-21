@@ -7,7 +7,7 @@ import SaveCalculationButton from './SaveCalculationButton';
 import PriceBreakdown from './PriceBreakdown';
 import MarketplaceImpact from './MarketplaceImpact';
 import CouponStrategy from './CouponStrategy';
-import { MarketplaceType } from './MarketplaceSection';
+import { MarketplaceType, ShopeeAccountType } from './MarketplaceSection';
 interface ResultPanelProps {
   productName: string;
   quantity: number;
