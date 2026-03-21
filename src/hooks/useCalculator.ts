@@ -20,7 +20,7 @@ interface RawMaterialData {
 const safeNumber = (v: number) =>
   !Number.isFinite(v) || isNaN(v) ? 0 : Math.max(0, v);
 
-const roundCurrency = (v: number) => Math.round(v * 100) / 100;
+const roundCurrency = (v: number) => v;
 
 const calcRawMaterial = (d: RawMaterialData) => {
   const qty = d.packageQuantity > 0 ? d.packageQuantity : 1;
