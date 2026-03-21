@@ -130,6 +130,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   const showTaxFields = marketplace !== 'none';
   const isShopee = marketplace === 'shopee';
 
+  const qty = Math.max(1, Math.floor(lotQuantity || 1));
   const shopeeCost = isShopee && unitPrice > 0
     ? calcShopeeCost(unitPrice, shopeeAccountType)
     : null;
