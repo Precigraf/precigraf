@@ -122,6 +122,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   profitValue,
   marketplaceTotalFees,
   unitPrice,
+  lotQuantity,
   isPro = true,
   onShowUpgrade,
 }) => {
