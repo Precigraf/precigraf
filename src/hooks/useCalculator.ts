@@ -79,9 +79,7 @@ export function useCalculator() {
     handle:   calcRawMaterial(handleData),
     ink:      inkCost,
     packaging: calcRawMaterial(packagingData),
-    other:    roundCurrency(
-      otherMaterialsItems.reduce((s, i) => s + calculateOtherMaterialItemCost(i), 0)
-    ),
+    other:    otherMaterialsItems.reduce((s, i) => s + calculateOtherMaterialItemCost(i), 0),
   }), [paperData, handleData, inkCost, packagingData, otherMaterialsItems]);
 
   const calculatedOperationalCosts = useMemo(
