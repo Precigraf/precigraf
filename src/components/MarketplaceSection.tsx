@@ -128,7 +128,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
     ? Math.round((shopeeTotalFees / profitValue) * 1000) / 10
     : 0;
 
-  const feesExceedProfit = isShopee && shopeeCost != null && profitValue > 0 && shopeeCost.total > profitValue;
+  const feesExceedProfit = isShopee && shopeeTotalFees > 0 && profitValue > 0 && shopeeTotalFees > profitValue;
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.preventDefault();
