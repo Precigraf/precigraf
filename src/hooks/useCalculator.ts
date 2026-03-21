@@ -27,7 +27,7 @@ const exact = (v: number) => v;
 const calcRawMaterial = (d: RawMaterialData) => {
   const qty = d.packageQuantity > 0 ? d.packageQuantity : 1;
   const used = d.quantityUsed > 0 ? d.quantityUsed : 1;
-  return roundCurrency((d.packageValue / qty) * used);
+  return (d.packageValue / qty) * used;
 };
 
 // ─── estado inicial ────────────────────────────────────────────────────────────
