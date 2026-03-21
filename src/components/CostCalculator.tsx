@@ -196,6 +196,7 @@ const CostCalculator: React.FC = () => {
     
     // Limpar marketplace
     setMarketplace('none');
+    setShopeeAccountType('cnpj');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
     
