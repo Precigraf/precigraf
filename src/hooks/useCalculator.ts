@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { InkCostData } from '@/components/InkCostInput';
 import { OtherMaterialItem, calculateOtherMaterialItemCost } from '@/components/OtherMaterialsInput';
-import { MarketplaceType } from '@/components/MarketplaceSection';
+import { MarketplaceType, ShopeeAccountType, calcShopeeCost } from '@/components/MarketplaceSection';
 import { ProductPresetType, PRODUCT_PRESETS } from '@/components/ProductPresets';
 import {
   OperationalCostsData,
@@ -9,7 +9,7 @@ import {
   calculateAllOperationalCosts,
 } from '@/components/OperationalCosts';
 
-// ─── helpers (mesmos do CostCalculator original) ──────────────────────────────
+// ─── helpers ──────────────────────────────────────────────────────────────────
 
 interface RawMaterialData {
   packageValue: number;
@@ -58,6 +58,7 @@ export function useCalculator() {
 
   // marketplace
   const [marketplace, setMarketplace]               = useState<MarketplaceType>('none');
+  const [shopeeAccountType, setShopeeAccountType]   = useState<ShopeeAccountType>('cnpj');
   const [commissionPercentage, setCommissionPercentage] = useState(0);
   const [fixedFeePerItem, setFixedFeePerItem]         = useState(0);
 
@@ -95,10 +96,11 @@ export function useCalculator() {
     const opTotal    = calculatedOperationalCosts.totalAppliedCost;
 
     const zero = {
-      rawMaterialsCost: 0, operationalCost: 0, productionCost: 0,
-      isFixedProfit: fixed > 0, desiredProfit: 0, finalSellingPrice: 0,
-      unitPrice: 0, unitRawMaterialsCost: 0, netProfit: 0,
+      rawMaterialsCost: 0, operationalCost: 0, operationalTotal: 0, productionCost: 0,
+      isFixedProfit: fixed > 0, desiredProfit: 0, baseSellingPrice: 0,
+      finalSellingPrice: 0, unitPrice: 0, unitRawMaterialsCost: 0, netProfit: 0,
       marketplaceCommission: 0, marketplaceFixedFees: 0, marketplaceTotalFees: 0,
+      totalCost: 0, profitValue: 0, sellingPrice: 0,
     };
     if (qty === 0) return zero;
 
@@ -110,8 +112,21 @@ export function useCalculator() {
       ? roundCurrency(fixed / qty)
       : roundCurrency(unitCost * (margin / 100));
     const unitBase    = roundCurrency(unitCost + unitProfit);
-    const unitComm    = roundCurrency(unitBase * (commission / 100));
-    const unitFee     = roundCurrency(fixedFee / qty);
+
+    // Marketplace fees: Shopee uses tier-based, custom uses flat commission
+    let unitComm = 0;
+    let unitFee  = 0;
+
+    if (marketplace === 'shopee') {
+      const shopee = calcShopeeCost(unitBase, shopeeAccountType);
+      unitComm = shopee.commission;
+      // fixedFee is per-order, amortized by lot quantity
+      unitFee  = roundCurrency(shopee.fixedFee / qty) + (shopee.cpfExtra > 0 ? roundCurrency(shopee.cpfExtra / qty) : 0);
+    } else if (marketplace === 'custom') {
+      unitComm = roundCurrency(unitBase * (commission / 100));
+      unitFee  = roundCurrency(fixedFee / qty);
+    }
+
     const unitFees    = roundCurrency(unitComm + unitFee);
     const unitPrice   = roundCurrency(unitBase + unitFees);
     const totalSell   = roundCurrency(unitPrice * qty);
@@ -121,9 +136,11 @@ export function useCalculator() {
     return {
       rawMaterialsCost:     roundCurrency(unitRaw * qty),
       operationalCost:      opTotal,
+      operationalTotal:     opTotal,
       productionCost:       totalProd,
       isFixedProfit:        isFixed,
       desiredProfit:        roundCurrency(unitProfit * qty),
+      baseSellingPrice:     roundCurrency(unitBase * qty),
       finalSellingPrice:    totalSell,
       unitPrice,
       unitRawMaterialsCost: unitRaw,
@@ -131,9 +148,12 @@ export function useCalculator() {
       marketplaceCommission: roundCurrency(unitComm * qty),
       marketplaceFixedFees:  roundCurrency(unitFee  * qty),
       marketplaceTotalFees:  totalFees,
+      totalCost:            totalProd,
+      profitValue:          roundCurrency(unitProfit * qty),
+      sellingPrice:         totalSell,
     };
   }, [lotQuantity, rawMaterialCosts, calculatedOperationalCosts, profitMargin,
-      fixedProfit, commissionPercentage, fixedFeePerItem]);
+      fixedProfit, commissionPercentage, fixedFeePerItem, marketplace, shopeeAccountType]);
 
   // ── ações ────────────────────────────────────────────────────────────────────
 
@@ -144,7 +164,8 @@ export function useCalculator() {
     setOtherMaterialsItems([]);
     setOperationalCostsData(DEFAULT_OPERATIONAL_COSTS_DATA);
     setProfitMargin(0); setFixedProfit(0);
-    setMarketplace('none'); setCommissionPercentage(0); setFixedFeePerItem(0);
+    setMarketplace('none'); setShopeeAccountType('cnpj');
+    setCommissionPercentage(0); setFixedFeePerItem(0);
   }, []);
 
   const applyPreset = useCallback((preset: ProductPresetType) => {
@@ -160,7 +181,7 @@ export function useCalculator() {
     if (!productName) setProductName(c.label);
   }, [lotQuantity, productName]);
 
-  // valores mapeados para salvar no banco (sem mudar o schema)
+  // valores mapeados para salvar no banco
   const saveDataValues = useMemo(() => ({
     paper:         rawMaterialCosts.paper,
     ink:           rawMaterialCosts.handle,
@@ -190,6 +211,7 @@ export function useCalculator() {
     profitMargin, setProfitMargin,
     fixedProfit, setFixedProfit,
     marketplace, setMarketplace,
+    shopeeAccountType, setShopeeAccountType,
     commissionPercentage, setCommissionPercentage,
     fixedFeePerItem, setFixedFeePerItem,
     // derivados

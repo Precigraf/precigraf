@@ -14,13 +14,50 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
-export type MarketplaceType =
-  | 'none'
-  | 'shopee_no_shipping'
-  | 'shopee_free_shipping'
-  | 'custom';
+// ─── Tipos ────────────────────────────────────────────────────────────────────
 
+export type MarketplaceType = 'none' | 'shopee' | 'custom';
+export type ShopeeAccountType = 'cnpj' | 'cpf_high' | 'cpf_low';
+
+// ─── Tabela de faixas Shopee 2026 ─────────────────────────────────────────────
+
+interface ShopeeTier {
+  label: string;
+  maxPrice: number;
+  commissionPct: number;
+  fixedFee: number;
+  pixSubsidy: number;
+}
+
+export const SHOPEE_TIERS: ShopeeTier[] = [
+  { label: 'Até R$ 79,99',          maxPrice:  79.99, commissionPct: 20, fixedFee:  4, pixSubsidy: 0 },
+  { label: 'R$ 80,00 – R$ 99,99',   maxPrice:  99.99, commissionPct: 14, fixedFee: 16, pixSubsidy: 5 },
+  { label: 'R$ 100,00 – R$ 199,99', maxPrice: 199.99, commissionPct: 14, fixedFee: 20, pixSubsidy: 5 },
+  { label: 'R$ 200,00 – R$ 499,99', maxPrice: 499.99, commissionPct: 14, fixedFee: 26, pixSubsidy: 5 },
+  { label: 'Acima de R$ 500,00',     maxPrice: Infinity, commissionPct: 14, fixedFee: 26, pixSubsidy: 8 },
+];
+
+export const SHOPEE_CPF_HIGH_EXTRA = 3;
+
+export const getShopeeTier = (unitPrice: number): ShopeeTier => {
+  return SHOPEE_TIERS.find(t => unitPrice <= t.maxPrice) ?? SHOPEE_TIERS[SHOPEE_TIERS.length - 1];
+};
+
+export const calcShopeeCost = (
+  unitPrice: number,
+  accountType: ShopeeAccountType
+): { commission: number; fixedFee: number; cpfExtra: number; total: number; tier: ShopeeTier } => {
+  const tier = getShopeeTier(unitPrice);
+  const commission = Math.round(unitPrice * (tier.commissionPct / 100) * 100) / 100;
+  const fixedFee = tier.fixedFee;
+  const cpfExtra = accountType === 'cpf_high' ? SHOPEE_CPF_HIGH_EXTRA : 0;
+  const total = Math.round((commission + fixedFee + cpfExtra) * 100) / 100;
+  return { commission, fixedFee, cpfExtra, total, tier };
+};
+
+// Configuração geral de marketplaces (para compatibilidade)
 interface MarketplaceConfig {
   label: string;
   commissionPercentage: number;
@@ -36,19 +73,12 @@ export const MARKETPLACE_CONFIG: Record<MarketplaceType, MarketplaceConfig> = {
     fixedFeePerItem: 0,
     isEditable: false,
   },
-  shopee_no_shipping: {
-    label: 'Shopee (sem frete grátis)',
-    commissionPercentage: 14,
-    fixedFeePerItem: 4,
+  shopee: {
+    label: 'Shopee',
+    commissionPercentage: 0,
+    fixedFeePerItem: 0,
     isEditable: false,
-    description: 'Taxa padrão da Shopee para vendas sem programa de frete grátis.',
-  },
-  shopee_free_shipping: {
-    label: 'Shopee (com frete grátis)',
-    commissionPercentage: 20,
-    fixedFeePerItem: 4,
-    isEditable: false,
-    description: 'Inclui taxa adicional do programa de frete grátis.',
+    description: 'Taxas calculadas automaticamente pela faixa de preço do produto (tabela 2026).',
   },
   custom: {
     label: 'Outro (personalizar)',
@@ -59,82 +89,94 @@ export const MARKETPLACE_CONFIG: Record<MarketplaceType, MarketplaceConfig> = {
   },
 };
 
+// ─── Props ────────────────────────────────────────────────────────────────────
+
 interface MarketplaceSectionProps {
   marketplace: MarketplaceType;
   onMarketplaceChange: (value: MarketplaceType) => void;
+  shopeeAccountType: ShopeeAccountType;
+  onShopeeAccountTypeChange: (value: ShopeeAccountType) => void;
   commissionPercentage: number;
   onCommissionChange: (value: number) => void;
   fixedFeePerItem: number;
   onFixedFeeChange: (value: number) => void;
   profitValue: number;
   marketplaceTotalFees: number;
+  unitPrice: number;
   isPro?: boolean;
   onShowUpgrade?: () => void;
 }
 
+// ─── Componente ───────────────────────────────────────────────────────────────
+
 const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   marketplace,
   onMarketplaceChange,
+  shopeeAccountType,
+  onShopeeAccountTypeChange,
   commissionPercentage,
   onCommissionChange,
   fixedFeePerItem,
   onFixedFeeChange,
   profitValue,
   marketplaceTotalFees,
+  unitPrice,
   isPro = true,
   onShowUpgrade,
 }) => {
   const config = MARKETPLACE_CONFIG[marketplace];
   const showTaxFields = marketplace !== 'none';
-  
-  // Verificar se as taxas excedem o lucro (apenas quando há valores válidos)
-  const feesExceedProfit = showTaxFields && 
-    marketplaceTotalFees > 0 && 
-    profitValue > 0 && 
-    marketplaceTotalFees > profitValue;
+  const isShopee = marketplace === 'shopee';
+
+  const shopeeCost = isShopee && unitPrice > 0
+    ? calcShopeeCost(unitPrice, shopeeAccountType)
+    : null;
+
+  const feesExceedProfit =
+    showTaxFields && marketplaceTotalFees > 0 && profitValue > 0 && marketplaceTotalFees > profitValue;
+
+  const formatCurrency = (v: number) =>
+    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (onShowUpgrade) {
-      onShowUpgrade();
+    onShowUpgrade?.();
+  };
+
+  const handleMarketplaceChange = (value: MarketplaceType) => {
+    onMarketplaceChange(value);
+    if (value !== 'custom') {
+      onCommissionChange(0);
+      onFixedFeeChange(0);
     }
   };
 
-  // Versão bloqueada para usuários FREE
+  const handleCommissionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const parsed = parseFloat(e.target.value);
+    if (!isNaN(parsed)) onCommissionChange(Math.min(Math.max(0, parsed), 100));
+    else onCommissionChange(0);
+  };
+
+  // ── Versão bloqueada (free) ──────────────────────────────────────────────────
   if (!isPro) {
     return (
-      <div 
-        className="relative overflow-hidden"
-        onClick={handleUpgradeClick}
-      >
-        {/* Overlay de bloqueio */}
+      <div className="relative overflow-hidden" onClick={handleUpgradeClick}>
         <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center gap-2 cursor-pointer rounded-xl">
           <Lock className="w-5 h-5 text-muted-foreground" />
           <Badge variant="outline" className="text-xs bg-background/80">
             <Sparkles className="w-3 h-3 mr-1" />
             Recurso exclusivo do Plano Pro
           </Badge>
-          <Button
-            size="sm"
-            onClick={handleUpgradeClick}
-            className="mt-2 text-xs pointer-events-auto"
-          >
+          <Button size="sm" onClick={handleUpgradeClick} className="mt-2 text-xs pointer-events-auto">
             Fazer upgrade
           </Button>
         </div>
 
-        {/* Conteúdo bloqueado (visível mas desativado) */}
         <div className="opacity-40 pointer-events-none select-none filter grayscale">
-          <FormSection
-            title="Marketplace"
-            icon={<Store className="w-5 h-5 text-primary" />}
-          >
+          <FormSection title="Marketplace" icon={<Store className="w-5 h-5 text-primary" />}>
             <div className="col-span-full">
-              <TooltipLabel 
-                label="Onde você vai vender?"
-                tooltip="Cada marketplace cobra taxas diferentes. Escolha o canal para calcular o lucro líquido real após as taxas."
-              />
+              <TooltipLabel label="Onde você vai vender?" tooltip="Cada marketplace cobra taxas diferentes." />
               <Select value="none" disabled>
                 <SelectTrigger className="input-currency mt-2">
                   <SelectValue placeholder="Selecione o marketplace" />
@@ -153,93 +195,120 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
     );
   }
 
-  const handleMarketplaceChange = (value: MarketplaceType) => {
-    if (marketplace === 'custom' && value !== 'custom') {
-      const hasCustomValues = commissionPercentage !== 0 || fixedFeePerItem !== 0;
-      if (hasCustomValues) {
-        const confirmed = window.confirm(
-          'Isso vai substituir as taxas personalizadas que você preencheu. Continuar?'
-        );
-        if (!confirmed) return;
-      }
-    }
-    onMarketplaceChange(value);
-    const newConfig = MARKETPLACE_CONFIG[value];
-    onCommissionChange(newConfig.commissionPercentage);
-    onFixedFeeChange(newConfig.fixedFeePerItem);
-  };
-
-  const handleCommissionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (value === '') {
-      onCommissionChange(0);
-      return;
-    }
-    const parsed = parseFloat(value);
-    if (!isNaN(parsed)) {
-      // Limitar entre 0 e 100
-      onCommissionChange(Math.min(Math.max(0, parsed), 100));
-    }
-  };
-
+  // ── Versão completa ───────────────────────────────────────────────────────────
   return (
-    <FormSection
-      title="Marketplace"
-      icon={<Store className="w-5 h-5 text-primary" />}
-    >
+    <FormSection title="Marketplace" icon={<Store className="w-5 h-5 text-primary" />}>
+      {/* Seleção do canal */}
       <div className="col-span-full">
-        <TooltipLabel 
+        <TooltipLabel
           label="Onde você vai vender?"
           tooltip="Cada marketplace cobra taxas diferentes. Escolha o canal para calcular o lucro líquido real após as taxas."
         />
-        <Select value={marketplace} onValueChange={handleMarketplaceChange}>
+        <Select value={marketplace} onValueChange={(v) => handleMarketplaceChange(v as MarketplaceType)}>
           <SelectTrigger className="input-currency mt-2">
             <SelectValue placeholder="Selecione o marketplace" />
           </SelectTrigger>
           <SelectContent className="bg-card border-border z-50">
-            {Object.entries(MARKETPLACE_CONFIG).map(([key, cfg]) => (
-              <SelectItem key={key} value={key}>
-                <span className="flex items-center gap-2">
-                  {cfg.label}
-                </span>
-              </SelectItem>
-            ))}
+            <SelectItem value="none">Selecione...</SelectItem>
+            <SelectItem value="shopee">Shopee</SelectItem>
+            <SelectItem value="custom">Outro (personalizar)</SelectItem>
           </SelectContent>
         </Select>
         {config.description && marketplace !== 'none' && (
-          <p className="text-xs text-muted-foreground mt-2">
-            {config.description}
-          </p>
+          <p className="text-xs text-muted-foreground mt-2">{config.description}</p>
         )}
       </div>
 
-      {marketplace === 'none' && (
-        <div className="col-span-full">
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <Info className="w-3.5 h-3.5" />
-            Marketplaces cobram comissão + taxas fixas por item vendido
-          </p>
-        </div>
-      )}
-
-      {showTaxFields && (
+      {/* Shopee: tipo de conta + breakdown por faixa */}
+      {isShopee && (
         <>
-          {!config.isEditable && (
+          <div className="col-span-full">
+            <TooltipLabel label="Tipo de conta" tooltip="CPF com mais de 450 pedidos nos últimos 90 dias paga R$ 3,00 a mais por pedido." />
+            <div className="flex flex-col gap-2 mt-2">
+              {([
+                { value: 'cnpj' as const, label: 'CNPJ' },
+                { value: 'cpf_high' as const, label: 'CPF (+450 pedidos/90 dias)' },
+                { value: 'cpf_low' as const, label: 'CPF (até 450 pedidos/90 dias)' },
+              ]).map(opt => (
+                <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="shopee-account"
+                    checked={shopeeAccountType === opt.value}
+                    onChange={() => onShopeeAccountTypeChange(opt.value)}
+                    className="accent-primary"
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Breakdown das taxas */}
+          {shopeeCost && unitPrice > 0 && (
+            <div className="col-span-full bg-secondary/30 rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Faixa detectada</span>
+                <Badge variant="outline" className="text-xs">
+                  {shopeeCost.tier.label}
+                </Badge>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">
+                    Comissão ({shopeeCost.tier.commissionPct}% × {formatCurrency(unitPrice)})
+                  </span>
+                  <span className="font-medium">{formatCurrency(shopeeCost.commission)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Taxa fixa</span>
+                  <span className="font-medium">{formatCurrency(shopeeCost.fixedFee)}</span>
+                </div>
+                {shopeeCost.cpfExtra > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Taxa adicional CPF</span>
+                    <span className="font-medium text-warning">+ {formatCurrency(shopeeCost.cpfExtra)}</span>
+                  </div>
+                )}
+                <Separator />
+                <div className="flex justify-between font-semibold">
+                  <span>Custo Shopee por unidade</span>
+                  <span>{formatCurrency(shopeeCost.total)}</span>
+                </div>
+              </div>
+
+              {shopeeCost.tier.pixSubsidy > 0 && (
+                <div className="flex items-start gap-2 text-xs text-muted-foreground mt-2">
+                  <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                  <span>
+                    Subsídio Pix de {shopeeCost.tier.pixSubsidy}% disponível nessa faixa — desconto dado pela Shopee ao comprador. Não afeta seu recebimento.
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {unitPrice <= 0 && (
             <div className="col-span-full">
-              <Alert className="bg-warning/10 border-warning/30">
-                <Info className="w-4 h-4 text-warning" />
-                <AlertDescription className="text-warning text-sm">
-                  Taxas padrão do marketplace aplicadas automaticamente
+              <Alert className="bg-muted/50 border-muted-foreground/20">
+                <Info className="w-4 h-4" />
+                <AlertDescription className="text-sm">
+                  Preencha os custos e margem para calcular as taxas da faixa correta.
                 </AlertDescription>
               </Alert>
             </div>
           )}
+        </>
+      )}
 
+      {/* Marketplace personalizado */}
+      {marketplace === 'custom' && (
+        <>
           <div className="flex flex-col gap-2">
-            <TooltipLabel 
-              label="Comissão (%)"
-              tooltip="Percentual cobrado pelo marketplace sobre cada venda. Varia de 0% a 20% dependendo do plano."
-            />
+            <TooltipLabel label="Comissão (%)" tooltip="Percentual cobrado pelo marketplace sobre cada venda." />
             <Input
               type="number"
               value={commissionPercentage}
@@ -248,38 +317,27 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
               min={0}
               max={100}
               step={0.1}
-              disabled={!config.isEditable && marketplace !== 'custom'}
             />
           </div>
-
-          <div className="flex flex-col gap-2">
-            <TooltipLabel 
-              label="Taxa fixa por venda"
-              tooltip="Valor fixo cobrado por transação, independente do valor da venda. Este valor é definido pelo marketplace e não pode ser alterado."
-            />
-            <Input
-              type="text"
-              value={`R$ ${fixedFeePerItem.toFixed(2).replace('.', ',')}`}
-              className="input-currency bg-muted/50"
-              disabled
-              readOnly
-            />
-            <p className="text-xs text-muted-foreground">
-              Taxa única por pedido (não pode ser alterada)
-            </p>
-          </div>
-
-          {feesExceedProfit && (
-            <div className="col-span-full">
-              <Alert className="bg-destructive/10 border-destructive/30">
-                <AlertTriangle className="w-4 h-4 text-destructive" />
-                <AlertDescription className="text-destructive text-sm font-medium">
-                  ⚠️ Atenção: as taxas estão consumindo seu lucro!
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
+          <CurrencyInput
+            label="Taxa fixa por venda"
+            value={fixedFeePerItem}
+            onChange={onFixedFeeChange}
+            tooltip="Valor fixo cobrado por transação, independente do valor da venda."
+          />
         </>
+      )}
+
+      {/* Alerta: taxas excedem lucro */}
+      {feesExceedProfit && (
+        <div className="col-span-full">
+          <Alert className="bg-destructive/10 border-destructive/30">
+            <AlertTriangle className="w-4 h-4 text-destructive" />
+            <AlertDescription className="text-destructive text-sm font-medium">
+              As taxas estão consumindo seu lucro. Considere aumentar a margem.
+            </AlertDescription>
+          </Alert>
+        </div>
       )}
     </FormSection>
   );

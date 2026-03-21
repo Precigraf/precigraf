@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { calcShopeeCost } from './MarketplaceSection';
 import { Package, Layers, Percent, Tag, Lock, Edit } from 'lucide-react';
 import ProFeatureGate from './ProFeatureGate';
 import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
-import MarketplaceSection, { MarketplaceType } from './MarketplaceSection';
+import MarketplaceSection, { MarketplaceType, ShopeeAccountType } from './MarketplaceSection';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
@@ -114,6 +115,7 @@ const CostCalculator: React.FC = () => {
 
   // Marketplace
   const [marketplace, setMarketplace] = useState<MarketplaceType>('none');
+  const [shopeeAccountType, setShopeeAccountType] = useState<ShopeeAccountType>('cnpj');
   const [commissionPercentage, setCommissionPercentage] = useState(0);
   const [fixedFeePerItem, setFixedFeePerItem] = useState(0);
 
@@ -195,6 +197,7 @@ const CostCalculator: React.FC = () => {
     
     // Limpar marketplace
     setMarketplace('none');
+    setShopeeAccountType('cnpj');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
     
@@ -230,6 +233,7 @@ const CostCalculator: React.FC = () => {
     setProfitMargin(0);
     setFixedProfit(0);
     setMarketplace('none');
+    setShopeeAccountType('cnpj');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
     setProductPreset('custom');
@@ -280,6 +284,7 @@ const CostCalculator: React.FC = () => {
     setProfitMargin(35);
     setFixedProfit(0);
     setMarketplace('none');
+    setShopeeAccountType('cnpj');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
     setProductPreset('paper_bag');
@@ -387,8 +392,18 @@ const CostCalculator: React.FC = () => {
     const unitBaseSellingPrice = roundCurrency(unitProductionCost + unitDesiredProfit);
 
     // Taxas do marketplace por unidade
-    const unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
-    const unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);
+    let unitMarketplaceCommission = 0;
+    let unitMarketplaceFixedFees = 0;
+
+    if (marketplace === 'shopee') {
+      const shopee = calcShopeeCost(unitBaseSellingPrice, shopeeAccountType);
+      unitMarketplaceCommission = shopee.commission;
+      unitMarketplaceFixedFees = roundCurrency(shopee.fixedFee / safeLotQuantity) + (shopee.cpfExtra > 0 ? roundCurrency(shopee.cpfExtra / safeLotQuantity) : 0);
+    } else if (marketplace === 'custom') {
+      unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
+      unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);
+    }
+
     const unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
 
     // Preço unitário final (com taxas)
@@ -435,6 +450,8 @@ const CostCalculator: React.FC = () => {
     fixedProfit,
     commissionPercentage,
     fixedFeePerItem,
+    marketplace,
+    shopeeAccountType,
   ]);
 
   // Valores para salvar (compatibilidade com banco de dados)
@@ -682,12 +699,15 @@ const CostCalculator: React.FC = () => {
           <MarketplaceSection
             marketplace={marketplace}
             onMarketplaceChange={setMarketplace}
+            shopeeAccountType={shopeeAccountType}
+            onShopeeAccountTypeChange={setShopeeAccountType}
             commissionPercentage={commissionPercentage}
             onCommissionChange={setCommissionPercentage}
             fixedFeePerItem={fixedFeePerItem}
             onFixedFeeChange={setFixedFeePerItem}
             profitValue={calculations.desiredProfit}
             marketplaceTotalFees={calculations.marketplaceTotalFees}
+            unitPrice={calculations.unitPrice}
             isPro={isPro}
             onShowUpgrade={() => setShowUpgradeModal(true)}
           />
@@ -716,6 +736,7 @@ const CostCalculator: React.FC = () => {
             commissionPercentage={commissionPercentage}
             fixedFeePerItem={fixedFeePerItem}
             marketplace={marketplace}
+            shopeeAccountType={shopeeAccountType}
             hasOperationalCosts={hasOperationalCosts}
             saveData={saveDataValues}
             onSaved={handleCalculationSaved}
