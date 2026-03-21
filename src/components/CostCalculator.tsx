@@ -114,6 +114,7 @@ const CostCalculator: React.FC = () => {
 
   // Marketplace
   const [marketplace, setMarketplace] = useState<MarketplaceType>('none');
+  const [shopeeAccountType, setShopeeAccountType] = useState<ShopeeAccountType>('cnpj');
   const [commissionPercentage, setCommissionPercentage] = useState(0);
   const [fixedFeePerItem, setFixedFeePerItem] = useState(0);
 
