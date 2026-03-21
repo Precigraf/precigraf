@@ -392,8 +392,18 @@ const CostCalculator: React.FC = () => {
     const unitBaseSellingPrice = roundCurrency(unitProductionCost + unitDesiredProfit);
 
     // Taxas do marketplace por unidade
-    const unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
-    const unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);
+    let unitMarketplaceCommission = 0;
+    let unitMarketplaceFixedFees = 0;
+
+    if (marketplace === 'shopee') {
+      const shopee = calcShopeeCost(unitBaseSellingPrice, shopeeAccountType);
+      unitMarketplaceCommission = shopee.commission;
+      unitMarketplaceFixedFees = roundCurrency(shopee.fixedFee / safeLotQuantity) + (shopee.cpfExtra > 0 ? roundCurrency(shopee.cpfExtra / safeLotQuantity) : 0);
+    } else if (marketplace === 'custom') {
+      unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
+      unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);
+    }
+
     const unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
 
     // Preço unitário final (com taxas)
