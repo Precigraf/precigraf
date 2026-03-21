@@ -736,6 +736,7 @@ const CostCalculator: React.FC = () => {
             commissionPercentage={commissionPercentage}
             fixedFeePerItem={fixedFeePerItem}
             marketplace={marketplace}
+            shopeeAccountType={shopeeAccountType}
             hasOperationalCosts={hasOperationalCosts}
             saveData={saveDataValues}
             onSaved={handleCalculationSaved}
