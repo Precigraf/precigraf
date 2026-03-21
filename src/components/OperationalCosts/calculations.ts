@@ -92,7 +92,7 @@ export const calculateOtherFixedCostPerMinute = (item: OtherFixedCostItem): numb
   const costPerMinute = item.monthlyValue / MINUTES_PER_MONTH;
   const usageMultiplier = item.usagePercentage / 100;
   
-  return roundPrecise(costPerMinute * usageMultiplier);
+  return safeValue(costPerMinute * usageMultiplier);
 };
 
 /**
