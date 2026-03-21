@@ -69,7 +69,7 @@ export const calculateInternetCostPerMinute = (data: InternetCostData): number =
   const costPerMinute = data.monthlyBill / MINUTES_PER_MONTH;
   const usageMultiplier = data.usagePercentage / 100;
   
-  return roundPrecise(costPerMinute * usageMultiplier);
+  return safeValue(costPerMinute * usageMultiplier);
 };
 
 /**
