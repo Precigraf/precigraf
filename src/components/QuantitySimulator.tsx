@@ -2,6 +2,7 @@ import React from 'react';
 import { Calculator, Lock, Sparkles, TrendingUp, Store, DollarSign } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { MarketplaceType, ShopeeAccountType, calcShopeeCost } from './MarketplaceSection';
 
 interface QuantitySimulatorProps {
   unitRawMaterialsCost: number;
@@ -11,6 +12,8 @@ interface QuantitySimulatorProps {
   commissionPercentage: number;
   fixedFeePerItem: number;
   currentQuantity: number;
+  marketplace: MarketplaceType;
+  shopeeAccountType: ShopeeAccountType;
   isPro?: boolean;
   onShowUpgrade?: () => void;
 }
@@ -23,6 +26,8 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   commissionPercentage,
   fixedFeePerItem,
   currentQuantity,
+  marketplace,
+  shopeeAccountType,
   isPro = true,
   onShowUpgrade,
 }) => {
@@ -44,27 +49,30 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     const safeCommissionPercentage = Math.min(Math.max(0, commissionPercentage || 0), 100);
     const safeFixedFeePerItem = Math.max(0, fixedFeePerItem || 0);
 
-    // Custo operacional por unidade (rateio)
     const unitOperationalCost = safeOperationalTotal / safeQty;
-    
-    // Custo de produção por unidade
     const unitProductionCost = safeUnitRawMaterialsCost + unitOperationalCost;
 
-    // Lucro desejado por unidade
     const isFixedProfit = safeFixedProfit > 0;
     const unitDesiredProfit = isFixedProfit
       ? safeFixedProfit / safeQty
       : unitProductionCost * (safeMarginPercentage / 100);
 
-    // Preço base de venda por unidade (sem taxas)
     const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
 
-    // Taxas do marketplace (idêntico ao cálculo principal)
-    const unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
-    const unitMarketplaceFixedFees = safeFixedFeePerItem / safeQty;
-    const unitTotalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
+    // Marketplace fees: Shopee tier-based or custom flat
+    let unitMarketplaceCommission = 0;
+    let unitMarketplaceFixedFees = 0;
 
-    // Preço unitário final
+    if (marketplace === 'shopee') {
+      const shopee = calcShopeeCost(unitBaseSellingPrice, shopeeAccountType);
+      unitMarketplaceCommission = shopee.commission;
+      unitMarketplaceFixedFees = shopee.fixedFee / safeQty + (shopee.cpfExtra > 0 ? shopee.cpfExtra / safeQty : 0);
+    } else if (marketplace === 'custom') {
+      unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
+      unitMarketplaceFixedFees = safeFixedFeePerItem / safeQty;
+    }
+
+    const unitTotalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
     const unitPrice = Math.round((unitBaseSellingPrice + unitTotalFees) * 100) / 100;
     const lotPrice = Math.round(unitPrice * safeQty * 100) / 100;
 
@@ -77,7 +85,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     };
   };
 
-  const hasMarketplace = commissionPercentage > 0 || fixedFeePerItem > 0;
+  const hasMarketplace = marketplace !== 'none';
 
   const handleUpgradeClick = (e: React.MouseEvent) => {
     e.preventDefault();

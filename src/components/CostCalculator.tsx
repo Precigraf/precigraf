@@ -450,6 +450,8 @@ const CostCalculator: React.FC = () => {
     fixedProfit,
     commissionPercentage,
     fixedFeePerItem,
+    marketplace,
+    shopeeAccountType,
   ]);
 
   // Valores para salvar (compatibilidade com banco de dados)
