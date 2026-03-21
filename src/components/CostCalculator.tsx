@@ -232,6 +232,7 @@ const CostCalculator: React.FC = () => {
     setProfitMargin(0);
     setFixedProfit(0);
     setMarketplace('none');
+    setShopeeAccountType('cnpj');
     setCommissionPercentage(0);
     setFixedFeePerItem(0);
     setProductPreset('custom');
