@@ -358,7 +358,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
                   <div className="text-center p-2.5 rounded-lg bg-secondary/30">
                     <p className="text-[10px] text-muted-foreground mb-1">Custo total Shopee</p>
                     <p className="text-sm font-semibold text-destructive">
-                      -{fmt(shopeeCost.total)}
+                      -{fmt(shopeeTotalFees)}
                     </p>
                   </div>
                   <div className="text-center p-2.5 rounded-lg bg-secondary/30">
