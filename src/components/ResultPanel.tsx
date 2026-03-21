@@ -80,6 +80,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   commissionPercentage,
   fixedFeePerItem,
   marketplace = 'none',
+  shopeeAccountType = 'cnpj',
   hasOperationalCosts = true,
   saveData,
   onSaved,
