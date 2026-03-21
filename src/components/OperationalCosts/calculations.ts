@@ -14,16 +14,10 @@ import {
   WORKING_MINUTES_PER_MONTH,
 } from './types';
 
-// Função auxiliar para arredondar para 6 casas decimais (precisão para custo/minuto)
-const roundPrecise = (value: number): number => {
+// Sem arredondamento — valores exatos
+const safeValue = (value: number): number => {
   if (!Number.isFinite(value) || isNaN(value)) return 0;
-  return Math.round(value * 1000000) / 1000000;
-};
-
-// Função auxiliar para arredondar valores monetários (2 casas decimais)
-const roundCurrency = (value: number): number => {
-  if (!Number.isFinite(value) || isNaN(value)) return 0;
-  return Math.round(value * 100) / 100;
+  return value;
 };
 
 /**
@@ -40,7 +34,7 @@ export const calculateEquipmentCostPerMinute = (data: EquipmentDepreciationData)
   
   const usageMultiplier = data.usagePercentage / 100;
   
-  return roundPrecise(minuteDepreciation * usageMultiplier);
+  return safeValue(minuteDepreciation * usageMultiplier);
 };
 
 /**
@@ -63,7 +57,7 @@ export const calculateElectricityCostPerMinute = (data: ElectricityCostData): nu
   const costPerMinute = data.monthlyBill / MINUTES_PER_MONTH;
   const usageMultiplier = data.usagePercentage / 100;
   
-  return roundPrecise(costPerMinute * usageMultiplier);
+  return safeValue(costPerMinute * usageMultiplier);
 };
 
 /**
@@ -75,7 +69,7 @@ export const calculateInternetCostPerMinute = (data: InternetCostData): number =
   const costPerMinute = data.monthlyBill / MINUTES_PER_MONTH;
   const usageMultiplier = data.usagePercentage / 100;
   
-  return roundPrecise(costPerMinute * usageMultiplier);
+  return safeValue(costPerMinute * usageMultiplier);
 };
 
 /**
@@ -86,7 +80,7 @@ export const calculateLaborCostPerMinute = (data: LaborCostData): number => {
   
   const costPerMinute = data.monthlyWithdrawal / WORKING_MINUTES_PER_MONTH;
   
-  return roundPrecise(costPerMinute);
+  return safeValue(costPerMinute);
 };
 
 /**
@@ -98,7 +92,7 @@ export const calculateOtherFixedCostPerMinute = (item: OtherFixedCostItem): numb
   const costPerMinute = item.monthlyValue / MINUTES_PER_MONTH;
   const usageMultiplier = item.usagePercentage / 100;
   
-  return roundPrecise(costPerMinute * usageMultiplier);
+  return safeValue(costPerMinute * usageMultiplier);
 };
 
 /**
@@ -106,7 +100,7 @@ export const calculateOtherFixedCostPerMinute = (item: OtherFixedCostItem): numb
  */
 export const calculateAppliedCost = (costPerMinute: number, productionTimeMinutes: number): number => {
   if (costPerMinute <= 0 || productionTimeMinutes <= 0) return 0;
-  return roundCurrency(costPerMinute * productionTimeMinutes);
+  return safeValue(costPerMinute * productionTimeMinutes);
 };
 
 /**
@@ -149,7 +143,7 @@ export const calculateAllOperationalCosts = (data: OperationalCostsData): AllCal
   const equipmentsTotalCostPerMinute = equipments.reduce((sum, e) => sum + e.costPerMinute, 0);
   const equipmentsTotalAppliedCost = equipments.reduce((sum, e) => sum + e.appliedCost, 0);
   
-  const totalCostPerMinute = roundPrecise(
+  const totalCostPerMinute = safeValue(
     equipmentCostPerMinute +
     equipmentsTotalCostPerMinute +
     electricityCostPerMinute +
@@ -158,7 +152,7 @@ export const calculateAllOperationalCosts = (data: OperationalCostsData): AllCal
     otherFixedCosts.reduce((sum, cost) => sum + cost.costPerMinute, 0)
   );
   
-  const totalAppliedCost = roundCurrency(
+  const totalAppliedCost = safeValue(
     equipmentAppliedCost +
     equipmentsTotalAppliedCost +
     electricityAppliedCost +

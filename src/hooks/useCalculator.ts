@@ -20,12 +20,14 @@ interface RawMaterialData {
 const safeNumber = (v: number) =>
   !Number.isFinite(v) || isNaN(v) ? 0 : Math.max(0, v);
 
-const roundCurrency = (v: number) => Math.round(v * 100) / 100;
+// Sem arredondamento — valores exatos
+
+const exact = (v: number) => v;
 
 const calcRawMaterial = (d: RawMaterialData) => {
   const qty = d.packageQuantity > 0 ? d.packageQuantity : 1;
   const used = d.quantityUsed > 0 ? d.quantityUsed : 1;
-  return roundCurrency((d.packageValue / qty) * used);
+  return (d.packageValue / qty) * used;
 };
 
 // ─── estado inicial ────────────────────────────────────────────────────────────
@@ -69,7 +71,7 @@ export function useCalculator() {
     const mlBottle = inkData.mlPerBottle  > 0 ? inkData.mlPerBottle  : 1;
     const mlPrint  = inkData.mlPerPrint  >= 0 ? inkData.mlPerPrint   : 0;
     const prints   = inkData.printQuantity >= 0 ? inkData.printQuantity : 0;
-    return roundCurrency((inkData.totalValue / (bottles * mlBottle)) * mlPrint * prints);
+    return (inkData.totalValue / (bottles * mlBottle)) * mlPrint * prints;
   }, [inkData]);
 
   const rawMaterialCosts = useMemo(() => ({
@@ -77,9 +79,7 @@ export function useCalculator() {
     handle:   calcRawMaterial(handleData),
     ink:      inkCost,
     packaging: calcRawMaterial(packagingData),
-    other:    roundCurrency(
-      otherMaterialsItems.reduce((s, i) => s + calculateOtherMaterialItemCost(i), 0)
-    ),
+    other:    otherMaterialsItems.reduce((s, i) => s + calculateOtherMaterialItemCost(i), 0),
   }), [paperData, handleData, inkCost, packagingData, otherMaterialsItems]);
 
   const calculatedOperationalCosts = useMemo(
@@ -104,14 +104,14 @@ export function useCalculator() {
     };
     if (qty === 0) return zero;
 
-    const unitRaw     = roundCurrency(Object.values(rawMaterialCosts).reduce((a, b) => a + b, 0));
-    const unitOp      = roundCurrency(opTotal / qty);
-    const unitCost    = roundCurrency(unitRaw + unitOp);
+    const unitRaw     = Object.values(rawMaterialCosts).reduce((a, b) => a + b, 0);
+    const unitOp      = opTotal / qty;
+    const unitCost    = unitRaw + unitOp;
     const isFixed     = fixed > 0;
     const unitProfit  = isFixed
-      ? roundCurrency(fixed / qty)
-      : roundCurrency(unitCost * (margin / 100));
-    const unitBase    = roundCurrency(unitCost + unitProfit);
+      ? fixed / qty
+      : unitCost * (margin / 100);
+    const unitBase    = unitCost + unitProfit;
 
     // Marketplace fees: Shopee uses tier-based, custom uses flat commission
     let unitComm = 0;
@@ -120,36 +120,35 @@ export function useCalculator() {
     if (marketplace === 'shopee') {
       const shopee = calcShopeeCost(unitBase, shopeeAccountType);
       unitComm = shopee.commission;
-      // fixedFee is per-order, amortized by lot quantity
-      unitFee  = roundCurrency(shopee.fixedFee / qty) + (shopee.cpfExtra > 0 ? roundCurrency(shopee.cpfExtra / qty) : 0);
+      unitFee  = shopee.fixedFee / qty + (shopee.cpfExtra > 0 ? shopee.cpfExtra / qty : 0);
     } else if (marketplace === 'custom') {
-      unitComm = roundCurrency(unitBase * (commission / 100));
-      unitFee  = roundCurrency(fixedFee / qty);
+      unitComm = unitBase * (commission / 100);
+      unitFee  = fixedFee / qty;
     }
 
-    const unitFees    = roundCurrency(unitComm + unitFee);
-    const unitPrice   = roundCurrency(unitBase + unitFees);
-    const totalSell   = roundCurrency(unitPrice * qty);
-    const totalProd   = roundCurrency(unitCost * qty);
-    const totalFees   = roundCurrency(unitFees * qty);
+    const unitFees    = unitComm + unitFee;
+    const unitPrice   = unitBase + unitFees;
+    const totalSell   = unitPrice * qty;
+    const totalProd   = unitCost * qty;
+    const totalFees   = unitFees * qty;
 
     return {
-      rawMaterialsCost:     roundCurrency(unitRaw * qty),
+      rawMaterialsCost:     unitRaw * qty,
       operationalCost:      opTotal,
       operationalTotal:     opTotal,
       productionCost:       totalProd,
       isFixedProfit:        isFixed,
-      desiredProfit:        roundCurrency(unitProfit * qty),
-      baseSellingPrice:     roundCurrency(unitBase * qty),
+      desiredProfit:        unitProfit * qty,
+      baseSellingPrice:     unitBase * qty,
       finalSellingPrice:    totalSell,
       unitPrice,
       unitRawMaterialsCost: unitRaw,
-      netProfit:            roundCurrency(totalSell - totalProd - totalFees),
-      marketplaceCommission: roundCurrency(unitComm * qty),
-      marketplaceFixedFees:  roundCurrency(unitFee  * qty),
+      netProfit:            totalSell - totalProd - totalFees,
+      marketplaceCommission: unitComm * qty,
+      marketplaceFixedFees:  unitFee * qty,
       marketplaceTotalFees:  totalFees,
       totalCost:            totalProd,
-      profitValue:          roundCurrency(unitProfit * qty),
+      profitValue:          unitProfit * qty,
       sellingPrice:         totalSell,
     };
   }, [lotQuantity, rawMaterialCosts, calculatedOperationalCosts, profitMargin,

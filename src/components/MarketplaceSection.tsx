@@ -50,10 +50,10 @@ export const calcShopeeCost = (
   accountType: ShopeeAccountType
 ): { commission: number; fixedFee: number; cpfExtra: number; total: number; tier: ShopeeTier } => {
   const tier = getShopeeTier(unitPrice);
-  const commission = Math.round(unitPrice * (tier.commissionPct / 100) * 100) / 100;
-  const fixedFee = tier.fixedFee;
-  const cpfExtra = accountType === 'cpf_high' ? SHOPEE_CPF_HIGH_EXTRA : 0;
-  const total = Math.round((commission + fixedFee + cpfExtra) * 100) / 100;
+  const commission  = unitPrice * (tier.commissionPct / 100);
+  const fixedFee    = tier.fixedFee;
+  const cpfExtra    = accountType === 'cpf_high' ? SHOPEE_CPF_HIGH_EXTRA : 0;
+  const total       = commission + fixedFee + cpfExtra;
   return { commission, fixedFee, cpfExtra, total, tier };
 };
 
