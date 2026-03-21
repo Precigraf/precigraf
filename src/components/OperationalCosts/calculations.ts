@@ -80,7 +80,7 @@ export const calculateLaborCostPerMinute = (data: LaborCostData): number => {
   
   const costPerMinute = data.monthlyWithdrawal / WORKING_MINUTES_PER_MONTH;
   
-  return roundPrecise(costPerMinute);
+  return safeValue(costPerMinute);
 };
 
 /**
