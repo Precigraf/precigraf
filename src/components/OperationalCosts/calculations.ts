@@ -143,7 +143,7 @@ export const calculateAllOperationalCosts = (data: OperationalCostsData): AllCal
   const equipmentsTotalCostPerMinute = equipments.reduce((sum, e) => sum + e.costPerMinute, 0);
   const equipmentsTotalAppliedCost = equipments.reduce((sum, e) => sum + e.appliedCost, 0);
   
-  const totalCostPerMinute = roundPrecise(
+  const totalCostPerMinute = safeValue(
     equipmentCostPerMinute +
     equipmentsTotalCostPerMinute +
     electricityCostPerMinute +
@@ -152,7 +152,7 @@ export const calculateAllOperationalCosts = (data: OperationalCostsData): AllCal
     otherFixedCosts.reduce((sum, cost) => sum + cost.costPerMinute, 0)
   );
   
-  const totalAppliedCost = roundCurrency(
+  const totalAppliedCost = safeValue(
     equipmentAppliedCost +
     equipmentsTotalAppliedCost +
     electricityAppliedCost +
