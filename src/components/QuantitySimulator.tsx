@@ -64,9 +64,9 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     let unitMarketplaceFixedFees = 0;
 
     if (marketplace === 'shopee') {
-      const shopee = calcShopeeCost(unitBaseSellingPrice, shopeeAccountType);
-      unitMarketplaceCommission = shopee.commission;
-      unitMarketplaceFixedFees = shopee.fixedFee / safeQty + (shopee.cpfExtra > 0 ? shopee.cpfExtra / safeQty : 0);
+      const shopee = calcShopeeCost(unitBaseSellingPrice);
+      unitMarketplaceCommission = shopee.finalPrice - unitBaseSellingPrice;
+      unitMarketplaceFixedFees = 0;
     } else if (marketplace === 'custom') {
       unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
       unitMarketplaceFixedFees = safeFixedFeePerItem / safeQty;

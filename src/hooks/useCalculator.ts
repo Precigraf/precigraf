@@ -118,9 +118,11 @@ export function useCalculator() {
     let unitFee  = 0;
 
     if (marketplace === 'shopee') {
-      const shopee = calcShopeeCost(unitBase, shopeeAccountType);
-      unitComm = shopee.commission;
-      unitFee  = shopee.fixedFee / qty + (shopee.cpfExtra > 0 ? shopee.cpfExtra / qty : 0);
+      const shopee = calcShopeeCost(unitBase);
+      // O solver já calcula o preço final; a diferença é a taxa total
+      const solverUnitPrice = shopee.finalPrice;
+      unitComm = solverUnitPrice - unitBase; // total fees embutidas
+      unitFee  = 0; // já incluído em unitComm
     } else if (marketplace === 'custom') {
       unitComm = unitBase * (commission / 100);
       unitFee  = fixedFee / qty;

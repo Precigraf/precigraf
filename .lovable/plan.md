@@ -1,42 +1,24 @@
+## Plan: Implement Shopee 2026 Solver-Based Marketplace
 
+### Current State (implemented)
 
-## Plan: Implement Shopee 2026 Tier-Based Marketplace
+**Solver Formula**: `finalPrice = (baseCost + fixedFee) / (1 - commissionRate)`
 
-The user provided a complete new `MarketplaceSection.tsx` with Shopee 2026 tiered pricing (CPF/CNPJ), replacing the old `shopee_no_shipping`/`shopee_free_shipping` system. This requires updating multiple files.
+The Shopee calculation uses a solver approach that embeds commission and fixed fees into the final selling price. Given the seller's base cost (production + desired profit), the solver calculates the minimum selling price that covers all marketplace fees.
 
-### Changes Required
+**Price Ranges (2026)**:
+| Faixa | Min | Max | Comissão | Taxa Fixa |
+|---|---|---|---|---|
+| Até R$ 79,99 | 0 | 79.99 | 20% | R$ 4 |
+| R$ 80 – R$ 99,99 | 80 | 99.99 | 14% | R$ 16 |
+| R$ 100 – R$ 199,99 | 100 | 199.99 | 14% | R$ 20 |
+| R$ 200 – R$ 499,99 | 200 | 499.99 | 14% | R$ 26 |
+| Acima de R$ 500 | 500 | ∞ | 14% | R$ 26 |
 
-**1. Replace `MarketplaceSection.tsx`**
-- Overwrite with the user's provided code (fixing JSX that was stripped — the user pasted code that lost HTML tags)
-- New types: `MarketplaceType = 'none' | 'shopee' | 'custom'`, `ShopeeAccountType`
-- New exports: `SHOPEE_TIERS`, `calcShopeeCost`, `getShopeeTier`
+**CPF/CNPJ**: Removed. `ShopeeAccountType` kept as deprecated type for compatibility only.
 
-**2. Update `CostCalculator.tsx`**
-- Add `shopeeAccountType` state (`ShopeeAccountType`)
-- Pass `shopeeAccountType`, `onShopeeAccountTypeChange`, and `unitPrice` to `MarketplaceSection`
-- When marketplace is `'shopee'`, use `calcShopeeCost` to derive commission/fees instead of flat percentages
-- Update the calculation logic to use Shopee tier-based fees when `marketplace === 'shopee'`
-
-**3. Update `useCalculator.ts`**
-- Add `shopeeAccountType` state
-- Update `MarketplaceType` import (already compatible with 'none'/'shopee'/'custom')
-- When `marketplace === 'shopee'`, calculate fees using `calcShopeeCost` instead of flat commission
-
-**4. Update `MarketplaceImpact.tsx`**
-- Remove reference to old `MARKETPLACE_CONFIG` labels for `shopee_no_shipping`/`shopee_free_shipping`
-- Adapt to work with new `'shopee'` type
-
-**5. Update `QuantitySimulator.tsx`**
-- When marketplace is Shopee, use `calcShopeeCost` per quantity tier instead of flat commission
-- Add `marketplace` and `shopeeAccountType` props
-
-**6. Update `ResultPanel.tsx`**
-- Pass new marketplace/Shopee props through to child components
-
-### Key Technical Details
-
-- The Shopee solver calculates fees per-unit based on price tiers (5 tiers from R$0-R$79.99 up to R$500+)
-- CPF high-volume sellers pay an extra R$3/order
-- Fixed fees are per-order (amortized by lot quantity)
-- The calculation must be iterative: the price determines the tier, but the tier affects the price
-
+**Files**:
+- `MarketplaceSection.tsx` — types, `calcShopeeCost` solver, UI
+- `useCalculator.ts` — uses solver to compute `unitPrice`
+- `CostCalculator.tsx` — uses solver
+- `QuantitySimulator.tsx` — uses solver
