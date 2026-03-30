@@ -396,9 +396,10 @@ const CostCalculator: React.FC = () => {
     let unitMarketplaceFixedFees = 0;
 
     if (marketplace === 'shopee') {
-      const shopee = calcShopeeCost(unitBaseSellingPrice, shopeeAccountType);
-      unitMarketplaceCommission = shopee.commission;
-      unitMarketplaceFixedFees = roundCurrency(shopee.fixedFee / safeLotQuantity) + (shopee.cpfExtra > 0 ? roundCurrency(shopee.cpfExtra / safeLotQuantity) : 0);
+      const shopee = calcShopeeCost(unitBaseSellingPrice);
+      // Solver: preço final já embute comissão + taxa fixa
+      unitMarketplaceCommission = roundCurrency(shopee.finalPrice - unitBaseSellingPrice);
+      unitMarketplaceFixedFees = 0;
     } else if (marketplace === 'custom') {
       unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
       unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);

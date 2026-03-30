@@ -17,41 +17,66 @@ import { Input } from '@/components/ui/input';
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 export type MarketplaceType = 'none' | 'shopee' | 'custom';
+/** @deprecated Mantido apenas para compatibilidade de tipo — não utilizado na lógica Shopee. */
 export type ShopeeAccountType = 'cnpj' | 'cpf_high' | 'cpf_low';
 
-// ─── Tabela Shopee 2026 ───────────────────────────────────────────────────────
+// ─── Tabela Shopee 2026 (faixas de preço) ─────────────────────────────────────
 
 export interface ShopeeTier {
   label: string;
+  min: number;
   maxPrice: number;
   commissionPct: number;
   fixedFee: number;
-  pixSubsidy: number;
 }
 
 export const SHOPEE_TIERS: ShopeeTier[] = [
-  { label: 'Até R$ 79,99',           maxPrice:  79.99, commissionPct: 20, fixedFee:  4, pixSubsidy: 0 },
-  { label: 'R$ 80,00 – R$ 99,99',    maxPrice:  99.99, commissionPct: 14, fixedFee: 16, pixSubsidy: 5 },
-  { label: 'R$ 100,00 – R$ 199,99',  maxPrice: 199.99, commissionPct: 14, fixedFee: 20, pixSubsidy: 5 },
-  { label: 'R$ 200,00 – R$ 499,99',  maxPrice: 499.99, commissionPct: 14, fixedFee: 26, pixSubsidy: 5 },
-  { label: 'Acima de R$ 500,00',     maxPrice: Infinity, commissionPct: 14, fixedFee: 26, pixSubsidy: 8 },
+  { label: 'Até R$ 79,99',          min: 0,   maxPrice:  79.99,   commissionPct: 20, fixedFee:  4 },
+  { label: 'R$ 80 – R$ 99,99',      min: 80,  maxPrice:  99.99,   commissionPct: 14, fixedFee: 16 },
+  { label: 'R$ 100 – R$ 199,99',    min: 100, maxPrice: 199.99,   commissionPct: 14, fixedFee: 20 },
+  { label: 'R$ 200 – R$ 499,99',    min: 200, maxPrice: 499.99,   commissionPct: 14, fixedFee: 26 },
+  { label: 'Acima de R$ 500',       min: 500, maxPrice: Infinity,  commissionPct: 14, fixedFee: 26 },
 ];
 
-export const SHOPEE_CPF_HIGH_EXTRA = 3;
+export const getShopeeTier = (price: number): ShopeeTier =>
+  SHOPEE_TIERS.find(t => price >= t.min && price <= t.maxPrice) ?? SHOPEE_TIERS[0];
 
-export const getShopeeTier = (unitPrice: number): ShopeeTier =>
-  SHOPEE_TIERS.find(t => unitPrice <= t.maxPrice) ?? SHOPEE_TIERS[SHOPEE_TIERS.length - 1];
-
+/**
+ * Solver Shopee 2026.
+ *
+ * Dado o custo base (custo de produção + lucro desejado), calcula o preço final
+ * de venda embutindo comissão e taxa fixa.
+ *
+ *   finalPrice = (baseCost + fixedFee) / (1 − commissionRate)
+ *
+ * @param baseCost  Custo que o vendedor precisa cobrir (produção + lucro desejado)
+ * @param _accountType  (ignorado — mantido para compatibilidade de assinatura)
+ */
 export const calcShopeeCost = (
-  unitPrice: number,
-  accountType: ShopeeAccountType
-): { commission: number; fixedFee: number; cpfExtra: number; total: number; tier: ShopeeTier } => {
-  const tier       = getShopeeTier(unitPrice);
-  const commission = unitPrice * (tier.commissionPct / 100);
-  const fixedFee   = tier.fixedFee;
-  const cpfExtra   = accountType === 'cpf_high' ? SHOPEE_CPF_HIGH_EXTRA : 0;
-  const total      = commission + fixedFee + cpfExtra;
-  return { commission, fixedFee, cpfExtra, total, tier };
+  baseCost: number,
+  _accountType?: ShopeeAccountType,
+): {
+  finalPrice: number;
+  commission: number;
+  fixedFee: number;
+  cpfExtra: number;
+  total: number;
+  tier: ShopeeTier;
+} => {
+  const tier = getShopeeTier(baseCost);
+  const commissionRate = tier.commissionPct / 100;
+
+  const finalPrice = parseFloat(((baseCost + tier.fixedFee) / (1 - commissionRate)).toFixed(2));
+  const commission = parseFloat((finalPrice * commissionRate).toFixed(2));
+
+  return {
+    finalPrice,
+    commission,
+    fixedFee: tier.fixedFee,
+    cpfExtra: 0,
+    total: parseFloat((commission + tier.fixedFee).toFixed(2)),
+    tier,
+  };
 };
 
 // ─── Config marketplace (compatibilidade) ────────────────────────────────────
@@ -98,8 +123,6 @@ const fmt = (v: number) =>
 const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   marketplace,
   onMarketplaceChange,
-  shopeeAccountType,
-  onShopeeAccountTypeChange,
   commissionPercentage,
   onCommissionChange,
   fixedFeePerItem,
@@ -111,21 +134,22 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   isPro = true,
   onShowUpgrade,
 }) => {
-  const isShopee  = marketplace === 'shopee';
-  const isCustom  = marketplace === 'custom';
+  const isShopee = marketplace === 'shopee';
+  const isCustom = marketplace === 'custom';
   const qty = Math.max(1, Math.floor(lotQuantity || 1));
 
+  // Solver: usa o preço unitário (já com taxas embutidas) para mostrar a faixa
   const shopeeCost = isShopee && unitPrice > 0
-    ? calcShopeeCost(unitPrice, shopeeAccountType)
+    ? calcShopeeCost(unitPrice)
     : null;
 
-  // Total fees for the whole lot
+  // Total de taxas para o lote inteiro
   const shopeeTotalFees = shopeeCost
-    ? shopeeCost.commission * qty + shopeeCost.fixedFee + shopeeCost.cpfExtra
+    ? (shopeeCost.commission + shopeeCost.fixedFee) * qty
     : 0;
 
   const profitImpactPct = shopeeTotalFees > 0 && profitValue > 0
-    ? Math.round((shopeeTotalFees / profitValue) * 1000) / 10
+    ? parseFloat(((shopeeTotalFees / profitValue) * 100).toFixed(1))
     : 0;
 
   const feesExceedProfit = isShopee && shopeeTotalFees > 0 && profitValue > 0 && shopeeTotalFees > profitValue;
@@ -160,7 +184,6 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
             Fazer upgrade
           </Button>
         </div>
-
         <div className="opacity-40 pointer-events-none select-none filter grayscale">
           <FormSection title="Marketplace" icon={<Store className="w-5 h-5 text-primary" />}>
             <div className="col-span-full">
@@ -186,24 +209,16 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
         <div className="rounded-lg bg-primary/10 p-2">
           <ShoppingCart className="w-5 h-5 text-primary" />
         </div>
-
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-foreground">Marketplace</h3>
           {isShopee && shopeeCost ? (
             <p className="text-xs text-muted-foreground truncate mt-0.5">
-              Shopee ·{' '}
-              {shopeeAccountType === 'cnpj'
-                ? 'CNPJ'
-                : shopeeAccountType === 'cpf_high'
-                ? 'CPF alto volume'
-                : 'CPF baixo volume'}{' '}
-              · {shopeeCost.tier.label}
+              Shopee · {shopeeCost.tier.label}
             </p>
           ) : (
             <p className="text-xs text-muted-foreground mt-0.5">Configure o canal de venda</p>
           )}
         </div>
-
         {isShopee && (
           <Badge variant="default" className="text-[10px] px-2 py-0.5 bg-primary/15 text-primary border-0">
             Ativo
@@ -227,78 +242,28 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
         {isShopee && (
           <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <Info className="w-3 h-3 flex-shrink-0" />
-            Taxas calculadas automaticamente a partir do preço final de venda
+            Taxas calculadas automaticamente (solver) a partir do preço base
           </p>
         )}
       </div>
 
-      {/* Shopee */}
+      {/* Shopee breakdown */}
       {isShopee && (
         <>
-          {/* Tipo de conta */}
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-medium text-foreground">Tipo de conta</p>
-              <p className="text-[11px] text-muted-foreground">(determina taxa adicional por item)</p>
-            </div>
-
-            <div className="space-y-2">
-              {([
-                { value: 'cnpj'    as const, name: 'CNPJ',               sub: 'Sem taxa adicional' },
-                { value: 'cpf_high' as const, name: 'CPF — alto volume',  sub: '+450 pedidos/90 dias · +R$ 3,00/item' },
-                { value: 'cpf_low'  as const, name: 'CPF — baixo volume', sub: 'Até 450 pedidos/90 dias · sem adicional' },
-              ]).map(opt => {
-                const active = shopeeAccountType === opt.value;
-                return (
-                  <label
-                    key={opt.value}
-                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                      active
-                        ? 'border-primary/40 bg-primary/5'
-                        : 'border-border hover:border-muted-foreground/30'
-                    }`}
-                  >
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                      active ? 'border-primary' : 'border-muted-foreground/40'
-                    }`}>
-                      {active && <div className="w-2 h-2 rounded-full bg-primary" />}
-                    </div>
-                    <input
-                      type="radio"
-                      name="shopee-account"
-                      checked={active}
-                      onChange={() => onShopeeAccountTypeChange(opt.value)}
-                      className="sr-only"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
-                        {opt.name}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">{opt.sub}</p>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Preço → faixa → breakdown */}
           {unitPrice > 0 && shopeeCost ? (
             <>
               <div className="bg-secondary/30 rounded-lg p-4 space-y-4">
-                {/* Preço de venda → Faixa */}
+                {/* Preço base → Faixa */}
                 <div className="flex items-center gap-3">
                   <div className="flex-1 text-center">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Preço final de venda</p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Preço base</p>
                     <p className="text-sm font-semibold text-foreground">{fmt(unitPrice)}</p>
                   </div>
-
                   <div className="text-muted-foreground/40">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                       <path d="M6 3l5 5-5 5" />
                     </svg>
                   </div>
-
                   <div className="flex-1 text-center">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Faixa identificada</p>
                     <p className="text-sm font-semibold text-primary">{shopeeCost.tier.label}</p>
@@ -309,24 +274,15 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">
-                      Comissão ({shopeeCost.tier.commissionPct}% × {fmt(unitPrice)} × {qty} un)
+                      Comissão ({shopeeCost.tier.commissionPct}% × {fmt(shopeeCost.finalPrice)} × {qty} un)
                     </span>
                     <span className="font-medium text-foreground">{fmt(shopeeCost.commission * qty)}</span>
                   </div>
 
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Taxa fixa ({fmt(shopeeCost.fixedFee)}/pedido)</span>
-                    <span className="font-medium text-foreground">{fmt(shopeeCost.fixedFee)}</span>
+                    <span className="text-muted-foreground">Taxa fixa ({fmt(shopeeCost.fixedFee)}/un × {qty} un)</span>
+                    <span className="font-medium text-foreground">{fmt(shopeeCost.fixedFee * qty)}</span>
                   </div>
-
-                  {shopeeCost.cpfExtra > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Taxa adicional CPF</span>
-                      <span className="font-medium text-warning">
-                        + {fmt(shopeeCost.cpfExtra)}
-                      </span>
-                    </div>
-                  )}
 
                   <div className="border-t border-border my-1" />
 
@@ -336,20 +292,13 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
                       {fmt(shopeeTotalFees)}
                     </span>
                   </div>
+
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Preço final de venda (solver)</span>
+                    <span className="font-semibold text-primary">{fmt(shopeeCost.finalPrice)}/un</span>
+                  </div>
                 </div>
               </div>
-
-              {/* Subsídio Pix */}
-              {shopeeCost.tier.pixSubsidy > 0 && (
-                <div className="flex items-start gap-2 text-[11px] text-muted-foreground">
-                  <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                  <span>
-                    Subsídio Pix de{' '}
-                    <strong>{shopeeCost.tier.pixSubsidy}%</strong> disponível nessa faixa —
-                    desconto dado pela Shopee ao comprador. Não afeta seu recebimento.
-                  </span>
-                </div>
-              )}
 
               {/* Impacto */}
               <div className="space-y-2">
@@ -390,7 +339,6 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
               )}
             </>
           ) : (
-            /* Preço ainda não calculado */
             <div className="rounded-lg border border-dashed border-border p-4">
               <div className="flex items-start gap-3">
                 <Info className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
