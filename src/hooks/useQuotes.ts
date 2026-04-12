@@ -50,9 +50,21 @@ export function useQuotes() {
       raw_data?: Record<string, unknown>;
     }) => {
       if (!user) throw new Error('Not authenticated');
+      const payload = {
+        client_id: quote.client_id,
+        calculation_id: quote.calculation_id ?? null,
+        description: quote.description ?? null,
+        product_name: quote.product_name ?? null,
+        total_value: quote.total_value,
+        unit_value: quote.unit_value ?? null,
+        quantity: quote.quantity ?? null,
+        raw_data: quote.raw_data ? (quote.raw_data as unknown as import('@/integrations/supabase/types').Json) : null,
+        user_id: user.id,
+        status: 'pending',
+      };
       const { data, error } = await supabase
         .from('quotes')
-        .insert({ ...quote, user_id: user.id, status: 'pending' })
+        .insert(payload)
         .select('*, clients(name, whatsapp)')
         .single();
       if (error) throw error;
