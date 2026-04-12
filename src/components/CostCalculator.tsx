@@ -55,7 +55,7 @@ const calculateRawMaterialCost = (data: RawMaterialData): number => {
   const safePackageQuantity = data.packageQuantity > 0 ? data.packageQuantity : 1;
   const safeQuantityUsed = data.quantityUsed > 0 ? data.quantityUsed : 1;
   const unitValue = data.packageValue / safePackageQuantity;
-  return roundCurrency(unitValue * safeQuantityUsed);
+  return unitValue * safeQuantityUsed;
 };
 
 const CostCalculator: React.FC = () => {
@@ -307,7 +307,7 @@ const CostCalculator: React.FC = () => {
     const totalConsumption = safeMlPerPrint * safePrintQuantity;
     const finalCost = totalConsumption * valuePerMl;
 
-    return roundCurrency(finalCost);
+    return finalCost;
   }, [inkData]);
 
   // Calcular custo total de outros insumos
@@ -322,7 +322,7 @@ const CostCalculator: React.FC = () => {
       handle: calculateRawMaterialCost(handleData),
       ink: inkCost,
       packaging: calculateRawMaterialCost(packagingData),
-      other: roundCurrency(otherMaterialsTotalCost),
+      other: otherMaterialsTotalCost,
     };
   }, [paperData, handleData, inkCost, packagingData, otherMaterialsTotalCost]);
 
@@ -361,31 +361,30 @@ const CostCalculator: React.FC = () => {
     }
 
     // Matéria-prima por unidade (soma dos custos calculados)
-    const unitRawMaterialsCost = roundCurrency(
+    const unitRawMaterialsCost = 
       rawMaterialCosts.paper + 
       rawMaterialCosts.handle + 
       rawMaterialCosts.ink + 
       rawMaterialCosts.packaging + 
-      rawMaterialCosts.other
-    );
+      rawMaterialCosts.other;
     
     // Matéria-prima total = unitário × quantidade
-    const rawMaterialsCost = roundCurrency(unitRawMaterialsCost * safeLotQuantity);
+    const rawMaterialsCost = unitRawMaterialsCost * safeLotQuantity;
 
     // Custos operacionais - usar o total calculado pelo sistema avançado
-    const unitOperationalCost = safeLotQuantity > 0 ? roundCurrency(operationalTotal / safeLotQuantity) : 0;
+    const unitOperationalCost = safeLotQuantity > 0 ? operationalTotal / safeLotQuantity : 0;
 
     // Custo de produção por unidade (apenas matéria-prima + operacional por unidade)
-    const unitProductionCost = roundCurrency(unitRawMaterialsCost + unitOperationalCost);
+    const unitProductionCost = unitRawMaterialsCost + unitOperationalCost;
 
     // Lucro desejado por unidade (valor fixo tem prioridade)
     const isFixedProfit = safeFixedProfit > 0;
     const unitDesiredProfit = isFixedProfit
-      ? roundCurrency(safeFixedProfit / safeLotQuantity)
-      : roundCurrency(unitProductionCost * (safeProfitMargin / 100));
+      ? safeFixedProfit / safeLotQuantity
+      : unitProductionCost * (safeProfitMargin / 100);
 
     // Preço base de venda por unidade (sem taxas)
-    const unitBaseSellingPrice = roundCurrency(unitProductionCost + unitDesiredProfit);
+    const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
 
     // Taxas do marketplace por unidade
     let unitMarketplaceCommission = 0;
@@ -394,31 +393,31 @@ const CostCalculator: React.FC = () => {
     if (marketplace === 'shopee') {
       const shopee = calcShopeeCost(unitBaseSellingPrice);
       // Solver: preço final já embute comissão + taxa fixa
-      unitMarketplaceCommission = roundCurrency(shopee.finalPrice - unitBaseSellingPrice);
+      unitMarketplaceCommission = shopee.finalPrice - unitBaseSellingPrice;
       unitMarketplaceFixedFees = 0;
     } else if (marketplace === 'custom') {
-      unitMarketplaceCommission = roundCurrency(unitBaseSellingPrice * (safeCommissionPercentage / 100));
-      unitMarketplaceFixedFees = roundCurrency(safeFixedFeePerItem / safeLotQuantity);
+      unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
+      unitMarketplaceFixedFees = safeFixedFeePerItem / safeLotQuantity;
     }
 
-    const unitMarketplaceTotalFees = roundCurrency(unitMarketplaceCommission + unitMarketplaceFixedFees);
+    const unitMarketplaceTotalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
 
     // Preço unitário final (com taxas)
-    const unitPrice = roundCurrency(unitBaseSellingPrice + unitMarketplaceTotalFees);
+    const unitPrice = unitBaseSellingPrice + unitMarketplaceTotalFees;
 
     // PREÇO FINAL = Preço unitário × Quantidade
-    const finalSellingPrice = roundCurrency(unitPrice * safeLotQuantity);
+    const finalSellingPrice = unitPrice * safeLotQuantity;
 
     // Totais para exibição
     const operationalCost = operationalTotal;
-    const productionCost = roundCurrency(unitProductionCost * safeLotQuantity);
-    const desiredProfit = roundCurrency(unitDesiredProfit * safeLotQuantity);
-    const marketplaceCommission = roundCurrency(unitMarketplaceCommission * safeLotQuantity);
-    const marketplaceFixedFees = roundCurrency(unitMarketplaceFixedFees * safeLotQuantity);
-    const marketplaceTotalFees = roundCurrency(unitMarketplaceTotalFees * safeLotQuantity);
+    const productionCost = unitProductionCost * safeLotQuantity;
+    const desiredProfit = unitDesiredProfit * safeLotQuantity;
+    const marketplaceCommission = unitMarketplaceCommission * safeLotQuantity;
+    const marketplaceFixedFees = unitMarketplaceFixedFees * safeLotQuantity;
+    const marketplaceTotalFees = unitMarketplaceTotalFees * safeLotQuantity;
 
     // Lucro líquido (pode ser negativo em caso de prejuízo)
-    const netProfit = roundCurrency(finalSellingPrice - productionCost - marketplaceTotalFees);
+    const netProfit = finalSellingPrice - productionCost - marketplaceTotalFees;
 
     return {
       rawMaterialsCost,
@@ -427,7 +426,7 @@ const CostCalculator: React.FC = () => {
       productionCost,
       isFixedProfit,
       desiredProfit,
-      baseSellingPrice: roundCurrency(unitBaseSellingPrice * safeLotQuantity),
+      baseSellingPrice: unitBaseSellingPrice * safeLotQuantity,
       marketplaceCommission,
       marketplaceFixedFees,
       marketplaceTotalFees,
