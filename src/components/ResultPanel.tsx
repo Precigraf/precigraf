@@ -95,9 +95,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
     if (!Number.isFinite(value) || isNaN(value)) {
       return 'R$ 0,00';
     }
-    // Arredondar para 2 casas decimais antes de formatar
-    const rounded = Math.round(value * 100) / 100;
-    return rounded.toLocaleString('pt-BR', {
+    return value.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL',
     });
@@ -107,10 +105,10 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   const safeQuantity = Math.max(0, Math.floor(quantity || 0));
 
   // Cálculos adicionais com proteção contra divisão por zero
-  const unitProductionCost = safeQuantity > 0 ? Math.round((productionCost / safeQuantity) * 100) / 100 : 0;
-  const unitProfit = safeQuantity > 0 ? Math.round((desiredProfit / safeQuantity) * 100) / 100 : 0;
-  const netProfit = Math.round((finalSellingPrice - productionCost - marketplaceTotalFees) * 100) / 100;
-  const unitNetProfit = safeQuantity > 0 ? Math.round((netProfit / safeQuantity) * 100) / 100 : 0;
+  const unitProductionCost = safeQuantity > 0 ? productionCost / safeQuantity : 0;
+  const unitProfit = safeQuantity > 0 ? desiredProfit / safeQuantity : 0;
+  const netProfit = finalSellingPrice - productionCost - marketplaceTotalFees;
+  const unitNetProfit = safeQuantity > 0 ? netProfit / safeQuantity : 0;
 
   // Margem real calculada (com proteção contra divisão por zero)
   const realMarginPercentage = productionCost > 0 

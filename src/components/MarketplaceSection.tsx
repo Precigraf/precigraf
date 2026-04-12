@@ -42,12 +42,15 @@ export const getShopeeTier = (price: number): ShopeeTier =>
   SHOPEE_TIERS.find(t => price >= t.min && price <= t.maxPrice) ?? SHOPEE_TIERS[0];
 
 /**
- * Solver Shopee 2026.
+ * Solver Shopee 2026 (iterativo).
  *
  * Dado o custo base (custo de produção + lucro desejado), calcula o preço final
  * de venda embutindo comissão e taxa fixa.
  *
  *   finalPrice = (baseCost + fixedFee) / (1 − commissionRate)
+ *
+ * A faixa é determinada pelo preço final estimado (não pelo baseCost),
+ * com até 3 iterações para convergir quando o preço cruza faixas.
  *
  * @param baseCost  Custo que o vendedor precisa cobrir (produção + lucro desejado)
  * @param _accountType  (ignorado — mantido para compatibilidade de assinatura)
@@ -63,18 +66,28 @@ export const calcShopeeCost = (
   total: number;
   tier: ShopeeTier;
 } => {
-  const tier = getShopeeTier(baseCost);
-  const commissionRate = tier.commissionPct / 100;
+  // Estimativa inicial: usar baseCost para encontrar a primeira faixa
+  let tier = getShopeeTier(baseCost);
+  let finalPrice = 0;
 
-  const finalPrice = parseFloat(((baseCost + tier.fixedFee) / (1 - commissionRate)).toFixed(2));
-  const commission = parseFloat((finalPrice * commissionRate).toFixed(2));
+  // Iterar até a faixa convergir (máx 3 iterações)
+  for (let i = 0; i < 3; i++) {
+    const commissionRate = tier.commissionPct / 100;
+    finalPrice = (baseCost + tier.fixedFee) / (1 - commissionRate);
+    const newTier = getShopeeTier(finalPrice);
+    if (newTier.min === tier.min) break; // convergiu
+    tier = newTier;
+  }
+
+  const commissionRate = tier.commissionPct / 100;
+  const commission = finalPrice * commissionRate;
 
   return {
     finalPrice,
     commission,
     fixedFee: tier.fixedFee,
     cpfExtra: 0,
-    total: parseFloat((commission + tier.fixedFee).toFixed(2)),
+    total: commission + tier.fixedFee,
     tier,
   };
 };
@@ -108,8 +121,7 @@ interface MarketplaceSectionProps {
   fixedFeePerItem: number;
   onFixedFeeChange: (value: number) => void;
   profitValue: number;
-  marketplaceTotalFees: number;
-  unitPrice: number;
+  unitBasePrice: number;
   lotQuantity: number;
   isPro?: boolean;
   onShowUpgrade?: () => void;
@@ -128,8 +140,8 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   fixedFeePerItem,
   onFixedFeeChange,
   profitValue,
-  marketplaceTotalFees,
-  unitPrice,
+  
+  unitBasePrice,
   lotQuantity,
   isPro = true,
   onShowUpgrade,
@@ -138,9 +150,9 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   const isCustom = marketplace === 'custom';
   const qty = Math.max(1, Math.floor(lotQuantity || 1));
 
-  // Solver: usa o preço unitário (já com taxas embutidas) para mostrar a faixa
-  const shopeeCost = isShopee && unitPrice > 0
-    ? calcShopeeCost(unitPrice)
+  // Solver: usa o preço base (custo + lucro, SEM taxas) para calcular
+  const shopeeCost = isShopee && unitBasePrice > 0
+    ? calcShopeeCost(unitBasePrice)
     : null;
 
   // Total de taxas para o lote inteiro
@@ -250,14 +262,14 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
       {/* Shopee breakdown */}
       {isShopee && (
         <>
-          {unitPrice > 0 && shopeeCost ? (
+          {unitBasePrice > 0 && shopeeCost ? (
             <>
               <div className="bg-secondary/30 rounded-lg p-4 space-y-4">
                 {/* Preço base → Faixa */}
                 <div className="flex items-center gap-3">
                   <div className="flex-1 text-center">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Preço base</p>
-                    <p className="text-sm font-semibold text-foreground">{fmt(unitPrice)}</p>
+                    <p className="text-sm font-semibold text-foreground">{fmt(unitBasePrice)}</p>
                   </div>
                   <div className="text-muted-foreground/40">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
