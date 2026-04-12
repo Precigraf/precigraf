@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 
 interface MarketplaceImpactProps {
   marketplace: MarketplaceType;
-  shopeeAccountType: ShopeeAccountType;
+  shopeeAccountType?: string;
   unitPrice: number;
   unitProfit: number;
   marketplaceTotalFees: number;

@@ -264,14 +264,14 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
       {/* Shopee breakdown */}
       {isShopee && (
         <>
-          {unitPrice > 0 && shopeeCost ? (
+          {unitBasePrice > 0 && shopeeCost ? (
             <>
               <div className="bg-secondary/30 rounded-lg p-4 space-y-4">
                 {/* Preço base → Faixa */}
                 <div className="flex items-center gap-3">
                   <div className="flex-1 text-center">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Preço base</p>
-                    <p className="text-sm font-semibold text-foreground">{fmt(unitPrice)}</p>
+                    <p className="text-sm font-semibold text-foreground">{fmt(unitBasePrice)}</p>
                   </div>
                   <div className="text-muted-foreground/40">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
