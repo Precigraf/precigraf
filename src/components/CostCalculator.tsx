@@ -427,6 +427,7 @@ const CostCalculator: React.FC = () => {
       isFixedProfit,
       desiredProfit,
       baseSellingPrice: unitBaseSellingPrice * safeLotQuantity,
+      unitBaseSellingPrice,
       marketplaceCommission,
       marketplaceFixedFees,
       marketplaceTotalFees,
