@@ -1,0 +1,1 @@
+ALTER TABLE public.calculations ADD COLUMN raw_inputs jsonb DEFAULT NULL;

@@ -34,6 +34,7 @@ export type Database = {
           paper_cost: number
           product_name: string
           profit: number
+          raw_inputs: Json | null
           rent_cost: number
           sale_price: number
           total_cost: number
@@ -60,6 +61,7 @@ export type Database = {
           paper_cost?: number
           product_name: string
           profit: number
+          raw_inputs?: Json | null
           rent_cost?: number
           sale_price: number
           total_cost: number
@@ -86,6 +88,7 @@ export type Database = {
           paper_cost?: number
           product_name?: string
           profit?: number
+          raw_inputs?: Json | null
           rent_cost?: number
           sale_price?: number
           total_cost?: number
