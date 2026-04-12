@@ -175,17 +175,30 @@ const CostCalculator: React.FC = () => {
     other_operational_cost: number;
     margin_percentage: number;
     fixed_profit: number | null;
+    raw_inputs?: Record<string, unknown> | null;
   }, mode: 'edit' | 'duplicate') => {
     // Carregar dados do cálculo no formulário
     setProductName(calculation.product_name);
     setLotQuantity(calculation.lot_quantity);
+
+    const ri = calculation.raw_inputs as Record<string, any> | null | undefined;
     
-    // Carregar custos de matéria-prima (como valores diretos para simplicidade)
-    setPaperData({ packageValue: calculation.paper_cost, packageQuantity: 1, quantityUsed: 1 });
-    setHandleData({ packageValue: calculation.ink_cost, packageQuantity: 1, quantityUsed: 1 });
-    setInkData({ totalValue: calculation.varnish_cost, bottleCount: 1, mlPerBottle: 1, mlPerPrint: 1, printQuantity: 1 });
-    setPackagingData({ packageValue: 0, packageQuantity: 1, quantityUsed: 1 });
-    setOtherMaterialsItems(calculation.other_material_cost > 0 ? [{ id: 'edit-other', name: 'Outros insumos', packageValue: calculation.other_material_cost, packageQuantity: 1, quantityUsed: 1 }] : []);
+    if (ri) {
+      // Restaurar dados originais dos inputs
+      if (ri.paperData) setPaperData(ri.paperData);
+      if (ri.handleData) setHandleData(ri.handleData);
+      if (ri.inkData) setInkData(ri.inkData);
+      if (ri.packagingData) setPackagingData(ri.packagingData);
+      if (ri.otherMaterialsItems) setOtherMaterialsItems(ri.otherMaterialsItems);
+      if (ri.operationalCostsData) setOperationalCostsData(ri.operationalCostsData);
+    } else {
+      // Fallback para registros antigos sem raw_inputs
+      setPaperData({ packageValue: calculation.paper_cost, packageQuantity: 1, quantityUsed: 1 });
+      setHandleData({ packageValue: calculation.ink_cost, packageQuantity: 1, quantityUsed: 1 });
+      setInkData({ totalValue: calculation.varnish_cost, bottleCount: 1, mlPerBottle: 1, mlPerPrint: 1, printQuantity: 1 });
+      setPackagingData({ packageValue: 0, packageQuantity: 1, quantityUsed: 1 });
+      setOtherMaterialsItems(calculation.other_material_cost > 0 ? [{ id: 'edit-other', name: 'Outros insumos', packageValue: calculation.other_material_cost, packageQuantity: 1, quantityUsed: 1 }] : []);
+    }
     
     // Margem e lucro
     setProfitMargin(calculation.margin_percentage);
@@ -198,10 +211,9 @@ const CostCalculator: React.FC = () => {
     setFixedFeePerItem(0);
     
     // Para duplicação: armazenar ID original e NÃO definir ID de edição
-    // O cálculo será tratado como NOVO até o momento do save
     if (mode === 'duplicate') {
       setDuplicatedFrom(calculation.id);
-      setEditingCalculation({ id: '', mode: 'duplicate' }); // ID vazio = novo registro
+      setEditingCalculation({ id: '', mode: 'duplicate' });
     } else {
       setDuplicatedFrom(null);
       setEditingCalculation({ id: calculation.id, mode });
@@ -737,6 +749,14 @@ const CostCalculator: React.FC = () => {
             shopeeAccountType={shopeeAccountType}
             hasOperationalCosts={hasOperationalCosts}
             saveData={saveDataValues}
+            rawInputs={{
+              paperData,
+              handleData,
+              inkData,
+              packagingData,
+              otherMaterialsItems,
+              operationalCostsData,
+            }}
             onSaved={handleCalculationSaved}
             onApplySuggestedMargin={handleSuggestMargin}
             isBlocked={isBlocked}

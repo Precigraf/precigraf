@@ -33,6 +33,7 @@ interface SaveCalculationButtonProps {
   onSaved?: () => void;
   editingCalculation?: { id: string; mode: 'edit' | 'duplicate' } | null;
   duplicatedFrom?: string | null;
+  rawInputs?: Record<string, unknown>;
 }
 
 const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ 
@@ -40,6 +41,7 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
   onSaved,
   editingCalculation = null,
   duplicatedFrom = null,
+  rawInputs,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
@@ -90,7 +92,8 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
         profit: data.desiredProfit,
         sale_price: data.finalSellingPrice,
         unit_price: data.unitPrice,
-      };
+        raw_inputs: rawInputs || null,
+      } as Record<string, unknown>;
 
       let error;
 
