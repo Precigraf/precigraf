@@ -42,10 +42,6 @@ const safeNumber = (value: number): number => {
   return Math.max(0, value);
 };
 
-// Função para arredondar valores monetários (2 casas decimais)
-const roundCurrency = (value: number): number => {
-  return Math.round(value * 100) / 100;
-};
 
 // Interface para dados de matéria-prima
 interface RawMaterialData {
