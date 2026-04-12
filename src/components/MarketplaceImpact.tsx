@@ -39,10 +39,8 @@ const MarketplaceImpact: React.FC<MarketplaceImpactProps> = ({
   const safeQty = Math.max(1, Math.floor(quantity || 1));
   if (marketplace === 'none' || safeQty <= 0) return null;
 
-  const unitFees =
-    marketplace === 'shopee' && unitPrice > 0
-      ? calcShopeeCost(unitPrice, shopeeAccountType).total
-      : Math.max(0, marketplaceTotalFees) / safeQty;
+  // Use pre-calculated fees from parent — don't re-run solver
+  const unitFees = Math.max(0, marketplaceTotalFees) / safeQty;
 
   const safeUnitProfit   = Math.max(0, unitProfit || 0);
   const profitImpactPct  = safeUnitProfit > 0

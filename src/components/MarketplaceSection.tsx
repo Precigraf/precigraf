@@ -42,12 +42,15 @@ export const getShopeeTier = (price: number): ShopeeTier =>
   SHOPEE_TIERS.find(t => price >= t.min && price <= t.maxPrice) ?? SHOPEE_TIERS[0];
 
 /**
- * Solver Shopee 2026.
+ * Solver Shopee 2026 (iterativo).
  *
  * Dado o custo base (custo de produção + lucro desejado), calcula o preço final
  * de venda embutindo comissão e taxa fixa.
  *
  *   finalPrice = (baseCost + fixedFee) / (1 − commissionRate)
+ *
+ * A faixa é determinada pelo preço final estimado (não pelo baseCost),
+ * com até 3 iterações para convergir quando o preço cruza faixas.
  *
  * @param baseCost  Custo que o vendedor precisa cobrir (produção + lucro desejado)
  * @param _accountType  (ignorado — mantido para compatibilidade de assinatura)
@@ -63,18 +66,28 @@ export const calcShopeeCost = (
   total: number;
   tier: ShopeeTier;
 } => {
-  const tier = getShopeeTier(baseCost);
-  const commissionRate = tier.commissionPct / 100;
+  // Estimativa inicial: usar baseCost para encontrar a primeira faixa
+  let tier = getShopeeTier(baseCost);
+  let finalPrice = 0;
 
-  const finalPrice = parseFloat(((baseCost + tier.fixedFee) / (1 - commissionRate)).toFixed(2));
-  const commission = parseFloat((finalPrice * commissionRate).toFixed(2));
+  // Iterar até a faixa convergir (máx 3 iterações)
+  for (let i = 0; i < 3; i++) {
+    const commissionRate = tier.commissionPct / 100;
+    finalPrice = (baseCost + tier.fixedFee) / (1 - commissionRate);
+    const newTier = getShopeeTier(finalPrice);
+    if (newTier.min === tier.min) break; // convergiu
+    tier = newTier;
+  }
+
+  const commissionRate = tier.commissionPct / 100;
+  const commission = finalPrice * commissionRate;
 
   return {
     finalPrice,
     commission,
     fixedFee: tier.fixedFee,
     cpfExtra: 0,
-    total: parseFloat((commission + tier.fixedFee).toFixed(2)),
+    total: commission + tier.fixedFee,
     tier,
   };
 };
@@ -109,7 +122,7 @@ interface MarketplaceSectionProps {
   onFixedFeeChange: (value: number) => void;
   profitValue: number;
   marketplaceTotalFees: number;
-  unitPrice: number;
+  unitBasePrice: number;
   lotQuantity: number;
   isPro?: boolean;
   onShowUpgrade?: () => void;

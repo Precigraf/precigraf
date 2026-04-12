@@ -73,15 +73,15 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     }
 
     const unitTotalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
-    const unitPrice = Math.round((unitBaseSellingPrice + unitTotalFees) * 100) / 100;
-    const lotPrice = Math.round(unitPrice * safeQty * 100) / 100;
+    const unitPrice = unitBaseSellingPrice + unitTotalFees;
+    const lotPrice = unitPrice * safeQty;
 
     return { 
       unitPrice, 
       lotPrice, 
-      unitCosts: Math.round(unitProductionCost * 100) / 100,
-      unitFees: Math.round(unitTotalFees * 100) / 100,
-      unitProfit: Math.round(unitDesiredProfit * 100) / 100,
+      unitCosts: unitProductionCost,
+      unitFees: unitTotalFees,
+      unitProfit: unitDesiredProfit,
     };
   };
 
