@@ -121,10 +121,8 @@ interface MarketplaceSectionProps {
   fixedFeePerItem: number;
   onFixedFeeChange: (value: number) => void;
   profitValue: number;
-  marketplaceTotalFees: number;
   unitBasePrice: number;
   lotQuantity: number;
-  _marketplaceTotalFees?: number;
   isPro?: boolean;
   onShowUpgrade?: () => void;
 }
