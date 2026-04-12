@@ -92,8 +92,8 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
         profit: data.desiredProfit,
         sale_price: data.finalSellingPrice,
         unit_price: data.unitPrice,
-        raw_inputs: rawInputs || null,
-      } as Record<string, unknown>;
+        raw_inputs: (rawInputs || null) as any,
+      };
 
       let error;
 
