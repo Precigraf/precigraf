@@ -98,6 +98,63 @@ export type Database = {
         }
         Relationships: []
       }
+      clients: {
+        Row: {
+          address: string | null
+          address_number: string | null
+          cep: string | null
+          city: string | null
+          cpf: string | null
+          created_at: string
+          email: string | null
+          id: string
+          landmark: string | null
+          name: string
+          neighborhood: string | null
+          notes: string | null
+          state: string | null
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          address?: string | null
+          address_number?: string | null
+          cep?: string | null
+          city?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          landmark?: string | null
+          name: string
+          neighborhood?: string | null
+          notes?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          address?: string | null
+          address_number?: string | null
+          cep?: string | null
+          city?: string | null
+          cpf?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          landmark?: string | null
+          name?: string
+          neighborhood?: string | null
+          notes?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       device_fingerprints: {
         Row: {
           created_at: string | null
@@ -124,6 +181,89 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      order_status_history: {
+        Row: {
+          created_at: string
+          id: string
+          new_status: string
+          old_status: string | null
+          order_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_status: string
+          old_status?: string | null
+          order_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_status?: string
+          old_status?: string | null
+          order_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          kanban_position: number
+          quote_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          kanban_position?: number
+          quote_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          kanban_position?: number
+          quote_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pending_payments: {
         Row: {
@@ -204,6 +344,69 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          calculation_id: string | null
+          client_id: string
+          created_at: string
+          description: string | null
+          id: string
+          product_name: string | null
+          quantity: number | null
+          raw_data: Json | null
+          status: string
+          total_value: number
+          unit_value: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calculation_id?: string | null
+          client_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          product_name?: string | null
+          quantity?: number | null
+          raw_data?: Json | null
+          status?: string
+          total_value: number
+          unit_value?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calculation_id?: string | null
+          client_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          product_name?: string | null
+          quantity?: number | null
+          raw_data?: Json | null
+          status?: string
+          total_value?: number
+          unit_value?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_calculation_id_fkey"
+            columns: ["calculation_id"]
+            isOneToOne: false
+            referencedRelation: "calculations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
             referencedColumns: ["id"]
           },
         ]

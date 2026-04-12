@@ -11,7 +11,10 @@ import Auth from "./pages/Auth";
 import Cadastro from "./pages/Cadastro";
 import Perfil from "./pages/Perfil";
 import Upgrade from "./pages/Upgrade";
-
+import Clientes from "./pages/Clientes";
+import Orcamentos from "./pages/Orcamentos";
+import Pedidos from "./pages/Pedidos";
+import Gestao from "./pages/Gestao";
 import PagamentoConfirmado from "./pages/PagamentoConfirmado";
 import NotFound from "./pages/NotFound";
 
@@ -28,39 +31,14 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/cadastro" element={<Cadastro />} />
-              <Route 
-                path="/" 
-                element={
-                  <ProtectedRoute>
-                    <Index />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/perfil" 
-                element={
-                  <ProtectedRoute>
-                    <Perfil />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/upgrade" 
-                element={
-                  <ProtectedRoute>
-                    <Upgrade />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/pagamento-confirmado" 
-                element={
-                  <ProtectedRoute>
-                    <PagamentoConfirmado />
-                  </ProtectedRoute>
-                } 
-              />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+              <Route path="/upgrade" element={<ProtectedRoute><Upgrade /></ProtectedRoute>} />
+              <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
+              <Route path="/orcamentos" element={<ProtectedRoute><Orcamentos /></ProtectedRoute>} />
+              <Route path="/pedidos" element={<ProtectedRoute><Pedidos /></ProtectedRoute>} />
+              <Route path="/gestao" element={<ProtectedRoute><Gestao /></ProtectedRoute>} />
+              <Route path="/pagamento-confirmado" element={<ProtectedRoute><PagamentoConfirmado /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>
