@@ -347,6 +347,7 @@ const CostCalculator: React.FC = () => {
         isFixedProfit: safeFixedProfit > 0,
         desiredProfit: 0,
         baseSellingPrice: 0,
+        unitBaseSellingPrice: 0,
         marketplaceCommission: 0,
         marketplaceFixedFees: 0,
         marketplaceTotalFees: 0,
@@ -704,7 +705,7 @@ const CostCalculator: React.FC = () => {
             onFixedFeeChange={setFixedFeePerItem}
             profitValue={calculations.desiredProfit}
             marketplaceTotalFees={calculations.marketplaceTotalFees}
-            unitBasePrice={calculations.unitPrice > 0 ? calculations.unitPrice - (calculations.marketplaceTotalFees / Math.max(1, lotQuantity)) : 0}
+            unitBasePrice={calculations.unitBaseSellingPrice}
             lotQuantity={lotQuantity}
             isPro={isPro}
             onShowUpgrade={() => setShowUpgradeModal(true)}
