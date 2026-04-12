@@ -704,7 +704,6 @@ const CostCalculator: React.FC = () => {
             fixedFeePerItem={fixedFeePerItem}
             onFixedFeeChange={setFixedFeePerItem}
             profitValue={calculations.desiredProfit}
-            marketplaceTotalFees={calculations.marketplaceTotalFees}
             unitBasePrice={calculations.unitBaseSellingPrice}
             lotQuantity={lotQuantity}
             isPro={isPro}

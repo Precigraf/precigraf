@@ -140,7 +140,7 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   fixedFeePerItem,
   onFixedFeeChange,
   profitValue,
-  _marketplaceTotalFees,
+  
   unitBasePrice,
   lotQuantity,
   isPro = true,
