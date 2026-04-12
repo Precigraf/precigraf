@@ -708,7 +708,7 @@ const CostCalculator: React.FC = () => {
             onFixedFeeChange={setFixedFeePerItem}
             profitValue={calculations.desiredProfit}
             marketplaceTotalFees={calculations.marketplaceTotalFees}
-            unitPrice={calculations.unitPrice}
+            unitBasePrice={calculations.unitPrice > 0 ? calculations.unitPrice - (calculations.marketplaceTotalFees / Math.max(1, lotQuantity)) : 0}
             lotQuantity={lotQuantity}
             isPro={isPro}
             onShowUpgrade={() => setShowUpgradeModal(true)}

@@ -124,6 +124,7 @@ interface MarketplaceSectionProps {
   marketplaceTotalFees: number;
   unitBasePrice: number;
   lotQuantity: number;
+  _marketplaceTotalFees?: number;
   isPro?: boolean;
   onShowUpgrade?: () => void;
 }
@@ -141,8 +142,8 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   fixedFeePerItem,
   onFixedFeeChange,
   profitValue,
-  marketplaceTotalFees,
-  unitPrice,
+  _marketplaceTotalFees,
+  unitBasePrice,
   lotQuantity,
   isPro = true,
   onShowUpgrade,
@@ -151,9 +152,9 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
   const isCustom = marketplace === 'custom';
   const qty = Math.max(1, Math.floor(lotQuantity || 1));
 
-  // Solver: usa o preço unitário (já com taxas embutidas) para mostrar a faixa
-  const shopeeCost = isShopee && unitPrice > 0
-    ? calcShopeeCost(unitPrice)
+  // Solver: usa o preço base (custo + lucro, SEM taxas) para calcular
+  const shopeeCost = isShopee && unitBasePrice > 0
+    ? calcShopeeCost(unitBasePrice)
     : null;
 
   // Total de taxas para o lote inteiro

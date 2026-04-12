@@ -2,9 +2,6 @@ import React, { useState } from 'react';
 import { Lightbulb, Check } from 'lucide-react';
 import {
   MarketplaceType,
-  ShopeeAccountType,
-  calcShopeeCost,
-  MARKETPLACE_CONFIG,
 } from './MarketplaceSection';
 import { Button } from '@/components/ui/button';
 
