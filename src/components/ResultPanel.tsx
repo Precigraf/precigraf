@@ -1,13 +1,12 @@
 import React from 'react';
-import { TrendingUp, Package, DollarSign, Percent, Store, Wallet, BadgeDollarSign } from 'lucide-react';
+import { TrendingUp, Package, DollarSign, Wallet, BadgeDollarSign } from 'lucide-react';
 import SmartAlerts from './SmartAlerts';
 import QuantitySimulator from './QuantitySimulator';
 import CostChart from './CostChart';
 import SaveCalculationButton from './SaveCalculationButton';
 import PriceBreakdown from './PriceBreakdown';
-import MarketplaceImpact from './MarketplaceImpact';
 import CouponStrategy from './CouponStrategy';
-import { MarketplaceType, ShopeeAccountType } from './MarketplaceSection';
+
 interface ResultPanelProps {
   productName: string;
   quantity: number;
@@ -16,25 +15,13 @@ interface ResultPanelProps {
   productionCost: number;
   profitMargin: number;
   desiredProfit: number;
-  marketplaceCommission: number;
-  marketplaceFixedFees: number;
-  marketplaceTotalFees: number;
   finalSellingPrice: number;
   unitPrice: number;
   isFixedProfit: boolean;
-  hasMarketplace: boolean;
-  // Novos props para simulador
   unitRawMaterialsCost: number;
   operationalTotal: number;
   fixedProfit: number;
-  commissionPercentage: number;
-  fixedFeePerItem: number;
-  // Marketplace info
-  marketplace?: MarketplaceType;
-  shopeeAccountType?: ShopeeAccountType;
-  // Custos operacionais preenchidos
   hasOperationalCosts?: boolean;
-  // Props para salvar
   saveData?: {
     paper: number;
     ink: number;
@@ -47,17 +34,12 @@ interface ResultPanelProps {
     otherCosts: number;
   };
   onSaved?: () => void;
-  // Nova prop para sugestão de margem do MarketplaceImpact
   onApplySuggestedMargin?: (margin: number) => void;
-  // Prop para indicar se está bloqueado
   isBlocked?: boolean;
-  // Props para plano do usuário (estratégia de cupom)
   isPro?: boolean;
   onShowUpgrade?: () => void;
-  // Props para edição
   editingCalculation?: { id: string; mode: 'edit' | 'duplicate' } | null;
   duplicatedFrom?: string | null;
-  // Raw inputs para salvar
   rawInputs?: Record<string, unknown>;
 }
 
@@ -69,20 +51,12 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   productionCost,
   profitMargin,
   desiredProfit,
-  marketplaceCommission,
-  marketplaceFixedFees,
-  marketplaceTotalFees,
   finalSellingPrice,
   unitPrice,
   isFixedProfit,
-  hasMarketplace,
   unitRawMaterialsCost,
   operationalTotal,
   fixedProfit,
-  commissionPercentage,
-  fixedFeePerItem,
-  marketplace = 'none',
-  shopeeAccountType = 'cnpj',
   hasOperationalCosts = true,
   saveData,
   onSaved,
@@ -104,16 +78,12 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
     });
   };
 
-  // Garantir que quantity seja pelo menos 0 para exibição
   const safeQuantity = Math.max(0, Math.floor(quantity || 0));
-
-  // Cálculos adicionais com proteção contra divisão por zero
   const unitProductionCost = safeQuantity > 0 ? productionCost / safeQuantity : 0;
   const unitProfit = safeQuantity > 0 ? desiredProfit / safeQuantity : 0;
-  const netProfit = finalSellingPrice - productionCost - marketplaceTotalFees;
+  const netProfit = finalSellingPrice - productionCost;
   const unitNetProfit = safeQuantity > 0 ? netProfit / safeQuantity : 0;
 
-  // Margem real calculada (com proteção contra divisão por zero)
   const realMarginPercentage = productionCost > 0 
     ? Math.round((desiredProfit / productionCost) * 100) 
     : profitMargin;
@@ -133,7 +103,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         </div>
       </div>
 
-      {/* Alertas Inteligentes Aprimorados */}
+      {/* Alertas Inteligentes */}
       <SmartAlerts
         marginPercentage={realMarginPercentage}
         netProfit={netProfit}
@@ -145,7 +115,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         finalSellingPrice={finalSellingPrice}
       />
 
-      {/* PREÇO FINAL - DESTAQUE MÁXIMO */}
+      {/* PREÇO FINAL */}
       <div className="bg-foreground rounded-xl p-6">
         <div className="text-center">
           <span className="text-xs font-medium text-background/70 uppercase tracking-wide">
@@ -175,9 +145,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         </div>
       </div>
 
-      {/* Resumo de Valores - Layout Vertical */}
+      {/* Resumo de Valores */}
       <div className="space-y-3">
-        {/* Custo de Produção */}
         <div className="bg-secondary/50 rounded-lg p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
@@ -195,7 +164,6 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
           </div>
         </div>
 
-        {/* Lucro Desejado */}
         <div className="bg-secondary/50 rounded-lg p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
@@ -215,7 +183,6 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
           </div>
         </div>
 
-        {/* Lucro Líquido Total */}
         <div className="bg-success/10 rounded-lg p-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
@@ -232,26 +199,6 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
             </div>
           </div>
         </div>
-
-        {/* Taxas Marketplace */}
-        {hasMarketplace && (
-          <div className="bg-warning/10 rounded-lg p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Store className="w-4 h-4 text-warning" />
-                <span className="text-sm text-warning">Taxas Marketplace</span>
-              </div>
-              <div className="text-right">
-                <div className="text-sm font-semibold text-warning">
-                  -{formatCurrency(marketplaceTotalFees)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Comissão + Taxa fixa
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Breakdown Detalhado */}
@@ -282,21 +229,9 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         rawMaterialsCost={rawMaterialsCost}
         operationalCost={operationalCost}
         desiredProfit={desiredProfit}
-        marketplaceTotalFees={marketplaceTotalFees}
+        marketplaceTotalFees={0}
         finalSellingPrice={finalSellingPrice}
         quantity={safeQuantity}
-      />
-
-      {/* Impacto do Marketplace */}
-      <MarketplaceImpact
-        marketplace={marketplace}
-        shopeeAccountType={shopeeAccountType}
-        unitPrice={unitPrice}
-        unitProfit={unitProfit}
-        marketplaceTotalFees={marketplaceTotalFees}
-        quantity={safeQuantity}
-        netProfit={netProfit}
-        onApplySuggestedMargin={onApplySuggestedMargin}
       />
 
       {/* Estratégia de Cupom - PRO Feature */}
@@ -304,7 +239,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         finalSellingPrice={finalSellingPrice}
         unitPrice={unitPrice}
         quantity={safeQuantity}
-        totalCost={productionCost + marketplaceTotalFees}
+        totalCost={productionCost}
         profit={desiredProfit}
         isPro={isPro}
         onShowUpgrade={onShowUpgrade}
@@ -315,7 +250,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         rawMaterialsCost={rawMaterialsCost}
         operationalCost={operationalCost}
         profit={desiredProfit}
-        marketplaceFees={marketplaceTotalFees}
+        marketplaceFees={0}
       />
 
       {/* Simulador de Quantidade */}
@@ -324,11 +259,11 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         operationalTotal={operationalTotal}
         marginPercentage={profitMargin}
         fixedProfit={fixedProfit}
-        commissionPercentage={commissionPercentage}
-        fixedFeePerItem={fixedFeePerItem}
+        commissionPercentage={0}
+        fixedFeePerItem={0}
         currentQuantity={safeQuantity}
-        marketplace={marketplace}
-        shopeeAccountType={shopeeAccountType}
+        marketplace="none"
+        shopeeAccountType="cnpj"
         isPro={isPro}
         onShowUpgrade={onShowUpgrade}
       />
