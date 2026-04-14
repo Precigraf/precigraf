@@ -1,8 +1,8 @@
 import React from 'react';
-import { Users, FileText, CheckCircle, XCircle, DollarSign } from 'lucide-react';
+import { Users, FileText, CheckCircle, XCircle, DollarSign, Crown, Clock } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/components/AppLayout';
-import PlanBadge from '@/components/PlanBadge';
 import { useClients } from '@/hooks/useClients';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useUserPlan } from '@/hooks/useUserPlan';
@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 const Gestao: React.FC = () => {
   const { clients } = useClients();
   const { quotes } = useQuotes();
-  const { plan } = useUserPlan();
+  const { plan, isTrialActive, trialRemainingHours } = useUserPlan();
   const navigate = useNavigate();
 
   const approvedQuotes = quotes.filter(q => q.status === 'approved');
