@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Crown, Check, Zap, Infinity, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import Header from '@/components/Header';
+import AppLayout from '@/components/AppLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -64,9 +64,8 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
   };
 
   return (
-    <div ref={ref} className="min-h-screen bg-background">
-      <Header />
-      
+    <AppLayout>
+      <div ref={ref}>
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Back button */}
         <Button
@@ -148,7 +147,8 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
           </CardContent>
         </Card>
       </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 });
 

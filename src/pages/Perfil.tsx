@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import Header from '@/components/Header';
+import AppLayout from '@/components/AppLayout';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
@@ -120,9 +120,8 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   };
 
   return (
-    <div ref={ref} className="min-h-screen bg-background">
-      <Header />
-      
+    <AppLayout>
+      <div ref={ref}>
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Back button */}
         <Button
@@ -306,7 +305,8 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
           </Card>
         </div>
       </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 });
 

@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import Header from '@/components/Header';
+import AppLayout from '@/components/AppLayout';
 import QuoteForm from '@/components/gestao/QuoteForm';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useClients } from '@/hooks/useClients';
@@ -31,8 +31,7 @@ const Orcamentos: React.FC = () => {
   const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <AppLayout>
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -130,7 +129,7 @@ const Orcamentos: React.FC = () => {
           createQuote.mutate(data, { onSuccess: () => setFormOpen(false) });
         }} isLoading={createQuote.isPending} />
       </div>
-    </div>
+    </AppLayout>
   );
 };
 

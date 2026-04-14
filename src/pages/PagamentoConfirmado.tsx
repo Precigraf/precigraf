@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Loader2, XCircle, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import Header from '@/components/Header';
+import AppLayout from '@/components/AppLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -60,8 +60,8 @@ const PagamentoConfirmado = forwardRef<HTMLDivElement>((_, ref) => {
   }, [user]);
 
   return (
-    <div ref={ref} className="min-h-screen bg-background">
-      <Header />
+    <AppLayout>
+      <div ref={ref}>
       <main className="container mx-auto px-4 py-16 max-w-md">
         <Card className="bg-card border-border">
           <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
@@ -110,7 +110,8 @@ const PagamentoConfirmado = forwardRef<HTMLDivElement>((_, ref) => {
           </CardContent>
         </Card>
       </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 });
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Users, FileText, CheckCircle, XCircle, Package, Truck, DollarSign, TrendingUp, Percent } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import Header from '@/components/Header';
+import AppLayout from '@/components/AppLayout';
 import { useClients } from '@/hooks/useClients';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useOrders, KANBAN_COLUMNS } from '@/hooks/useOrders';
@@ -40,8 +40,7 @@ const Gestao: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <AppLayout>
       <div className="container mx-auto px-4 py-6 max-w-5xl">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">Dashboard de Gestão</h1>
@@ -67,7 +66,7 @@ const Gestao: React.FC = () => {
           {advancedMetrics.map(m => (
             <Card key={m.label} className="p-5 bg-card border-border">
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg bg-secondary flex items-center justify-center`}>
+                <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center">
                   <m.icon className={`w-5 h-5 ${m.color}`} />
                 </div>
                 <div>
@@ -79,7 +78,6 @@ const Gestao: React.FC = () => {
           ))}
         </div>
 
-        {/* Kanban summary */}
         <h2 className="text-lg font-semibold text-foreground mb-3">Status dos Pedidos</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
           {KANBAN_COLUMNS.map(col => {
@@ -94,7 +92,7 @@ const Gestao: React.FC = () => {
           })}
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 
