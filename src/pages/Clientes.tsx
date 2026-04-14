@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import Header from '@/components/Header';
+import AppLayout from '@/components/AppLayout';
 import ClientForm from '@/components/gestao/ClientForm';
 import { useClients, type Client } from '@/hooks/useClients';
 
@@ -34,8 +34,7 @@ const Clientes: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <AppLayout>
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -118,7 +117,7 @@ const Clientes: React.FC = () => {
           isLoading={createClient.isPending || updateClient.isPending}
         />
       </div>
-    </div>
+    </AppLayout>
   );
 };
 
