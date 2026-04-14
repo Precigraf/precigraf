@@ -64,9 +64,8 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
   };
 
   return (
-    <div ref={ref} className="min-h-screen bg-background">
-      <Header />
-      
+    <AppLayout>
+      <div ref={ref}>
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Back button */}
         <Button
@@ -147,8 +146,8 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
             </p>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 });
 

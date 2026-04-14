@@ -120,9 +120,8 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   };
 
   return (
-    <div ref={ref} className="min-h-screen bg-background">
-      <Header />
-      
+    <AppLayout>
+      <div ref={ref}>
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         {/* Back button */}
         <Button
@@ -306,8 +305,8 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
           </Card>
         </div>
       </main>
-    </div>
-  );
+      </div>
+    </AppLayout>
 });
 
 Perfil.displayName = 'Perfil';

@@ -60,8 +60,8 @@ const PagamentoConfirmado = forwardRef<HTMLDivElement>((_, ref) => {
   }, [user]);
 
   return (
-    <div ref={ref} className="min-h-screen bg-background">
-      <Header />
+    <AppLayout>
+      <div ref={ref}>
       <main className="container mx-auto px-4 py-16 max-w-md">
         <Card className="bg-card border-border">
           <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-4">
@@ -109,8 +109,8 @@ const PagamentoConfirmado = forwardRef<HTMLDivElement>((_, ref) => {
             )}
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 });
 
