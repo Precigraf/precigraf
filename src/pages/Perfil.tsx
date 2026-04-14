@@ -308,6 +308,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
       </div>
     </AppLayout>
   );
+});
 
 Perfil.displayName = 'Perfil';
 
