@@ -377,24 +377,8 @@ const CostCalculator: React.FC = () => {
     // Preço base de venda por unidade (sem taxas)
     const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
 
-    // Taxas do marketplace por unidade
-    let unitMarketplaceCommission = 0;
-    let unitMarketplaceFixedFees = 0;
-
-    if (marketplace === 'shopee') {
-      const shopee = calcShopeeCost(unitBaseSellingPrice);
-      // Solver: preço final já embute comissão + taxa fixa
-      unitMarketplaceCommission = shopee.finalPrice - unitBaseSellingPrice;
-      unitMarketplaceFixedFees = 0;
-    } else if (marketplace === 'custom') {
-      unitMarketplaceCommission = unitBaseSellingPrice * (safeCommissionPercentage / 100);
-      unitMarketplaceFixedFees = safeFixedFeePerItem / safeLotQuantity;
-    }
-
-    const unitMarketplaceTotalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
-
-    // Preço unitário final (com taxas)
-    const unitPrice = unitBaseSellingPrice + unitMarketplaceTotalFees;
+    // Preço unitário final (sem marketplace)
+    const unitPrice = unitBaseSellingPrice;
 
     // PREÇO FINAL = Preço unitário × Quantidade
     const finalSellingPrice = unitPrice * safeLotQuantity;
@@ -403,12 +387,9 @@ const CostCalculator: React.FC = () => {
     const operationalCost = operationalTotal;
     const productionCost = unitProductionCost * safeLotQuantity;
     const desiredProfit = unitDesiredProfit * safeLotQuantity;
-    const marketplaceCommission = unitMarketplaceCommission * safeLotQuantity;
-    const marketplaceFixedFees = unitMarketplaceFixedFees * safeLotQuantity;
-    const marketplaceTotalFees = unitMarketplaceTotalFees * safeLotQuantity;
 
-    // Lucro líquido (pode ser negativo em caso de prejuízo)
-    const netProfit = finalSellingPrice - productionCost - marketplaceTotalFees;
+    // Lucro líquido
+    const netProfit = finalSellingPrice - productionCost;
 
     return {
       rawMaterialsCost,
@@ -419,9 +400,6 @@ const CostCalculator: React.FC = () => {
       desiredProfit,
       baseSellingPrice: unitBaseSellingPrice * safeLotQuantity,
       unitBaseSellingPrice,
-      marketplaceCommission,
-      marketplaceFixedFees,
-      marketplaceTotalFees,
       finalSellingPrice,
       unitPrice,
       unitRawMaterialsCost,
@@ -436,10 +414,6 @@ const CostCalculator: React.FC = () => {
     calculatedOperationalCosts.totalAppliedCost,
     profitMargin,
     fixedProfit,
-    commissionPercentage,
-    fixedFeePerItem,
-    marketplace,
-    shopeeAccountType,
   ]);
 
   // Valores para salvar (compatibilidade com banco de dados)
@@ -683,22 +657,6 @@ const CostCalculator: React.FC = () => {
             />
           </FormSection>
 
-          {/* Seção 6: Marketplace */}
-          <MarketplaceSection
-            marketplace={marketplace}
-            onMarketplaceChange={setMarketplace}
-            shopeeAccountType={shopeeAccountType}
-            onShopeeAccountTypeChange={setShopeeAccountType}
-            commissionPercentage={commissionPercentage}
-            onCommissionChange={setCommissionPercentage}
-            fixedFeePerItem={fixedFeePerItem}
-            onFixedFeeChange={setFixedFeePerItem}
-            profitValue={calculations.desiredProfit}
-            unitBasePrice={calculations.unitBaseSellingPrice}
-            lotQuantity={lotQuantity}
-            isPro={isPro}
-            onShowUpgrade={() => setShowUpgradeModal(true)}
-          />
         </div>
 
         {/* Coluna Direita - Resultados */}
@@ -711,20 +669,12 @@ const CostCalculator: React.FC = () => {
             productionCost={calculations.productionCost}
             profitMargin={profitMargin}
             desiredProfit={calculations.desiredProfit}
-            marketplaceCommission={calculations.marketplaceCommission}
-            marketplaceFixedFees={calculations.marketplaceFixedFees}
-            marketplaceTotalFees={calculations.marketplaceTotalFees}
             finalSellingPrice={calculations.finalSellingPrice}
             unitPrice={calculations.unitPrice}
             isFixedProfit={calculations.isFixedProfit}
-            hasMarketplace={marketplace !== 'none'}
             unitRawMaterialsCost={calculations.unitRawMaterialsCost}
             operationalTotal={calculations.operationalTotal}
             fixedProfit={fixedProfit}
-            commissionPercentage={commissionPercentage}
-            fixedFeePerItem={fixedFeePerItem}
-            marketplace={marketplace}
-            shopeeAccountType={shopeeAccountType}
             hasOperationalCosts={hasOperationalCosts}
             saveData={saveDataValues}
             rawInputs={{
