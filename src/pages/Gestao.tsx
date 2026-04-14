@@ -27,33 +27,36 @@ const Gestao: React.FC = () => {
     { label: 'Recusados', value: rejectedQuotes.length, icon: XCircle, color: 'text-red-500' },
   ];
 
-  const renderPlanInfo = () => {
-    if (plan === 'pro') {
-      return (
-        <div
-          className="flex items-center gap-2 cursor-pointer bg-primary/10 hover:bg-primary/20 transition-colors rounded-lg px-3 py-2"
-          onClick={() => navigate('/upgrade')}
-        >
-          <Crown className="w-4 h-4 text-primary" />
-          <span className="text-sm font-semibold text-primary">Plano Profissional</span>
-        </div>
-      );
-    }
-    return (
-      <div
-        className="flex items-center gap-2 cursor-pointer bg-orange-500/10 hover:bg-orange-500/20 transition-colors rounded-lg px-3 py-2"
-        onClick={() => navigate('/upgrade')}
-      >
-        <Clock className="w-4 h-4 text-orange-500" />
-        <div className="text-right">
-          <span className="text-sm font-semibold text-orange-500">Plano Gratuito</span>
-          {isTrialActive && (
-            <p className="text-xs text-orange-400">{trialRemainingHours}h restantes de teste</p>
+  return (
+    <AppLayout>
+      <div className="container mx-auto px-4 py-6 max-w-5xl">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Visão geral do seu negócio</p>
+          </div>
+          {plan === 'pro' ? (
+            <div
+              className="flex items-center gap-2 cursor-pointer bg-primary/10 hover:bg-primary/20 transition-colors rounded-lg px-3 py-2"
+              onClick={() => navigate('/upgrade')}
+            >
+              <Crown className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold text-primary">Plano Profissional</span>
+            </div>
+          ) : (
+            <div
+              className="flex items-center gap-2 cursor-pointer bg-orange-500/10 hover:bg-orange-500/20 transition-colors rounded-lg px-3 py-2"
+              onClick={() => navigate('/upgrade')}
+            >
+              <Clock className="w-4 h-4 text-orange-500" />
+              <div className="text-right">
+                <span className="text-sm font-semibold text-orange-500">Plano Gratuito</span>
+                {isTrialActive && (
+                  <p className="text-xs text-orange-400">{trialRemainingHours}h restantes de teste</p>
+                )}
+              </div>
+            </div>
           )}
-        </div>
-      </div>
-    );
-  };
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
