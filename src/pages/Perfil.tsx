@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import Header from '@/components/Header';
+import AppLayout from '@/components/AppLayout';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
