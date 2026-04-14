@@ -1,12 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { calcShopeeCost } from './MarketplaceSection';
 import { Package, Layers, Percent, Tag, Lock, Edit } from 'lucide-react';
 import ProFeatureGate from './ProFeatureGate';
 import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
 import ResultPanel from './ResultPanel';
-import MarketplaceSection, { MarketplaceType, ShopeeAccountType } from './MarketplaceSection';
 import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPresets';
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
@@ -109,11 +107,6 @@ const CostCalculator: React.FC = () => {
   const [profitMargin, setProfitMargin] = useState(0);
   const [fixedProfit, setFixedProfit] = useState(0);
 
-  // Marketplace
-  const [marketplace, setMarketplace] = useState<MarketplaceType>('none');
-  const [shopeeAccountType, setShopeeAccountType] = useState<ShopeeAccountType>('cnpj');
-  const [commissionPercentage, setCommissionPercentage] = useState(0);
-  const [fixedFeePerItem, setFixedFeePerItem] = useState(0);
 
   // Handler para quantidade com validação
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
