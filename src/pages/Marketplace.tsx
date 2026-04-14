@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import AppLayout from '@/components/AppLayout';
 import MarketplaceSection, { MarketplaceType, ShopeeAccountType, calcShopeeCost } from '@/components/MarketplaceSection';
-import MarketplaceImpact from '@/components/MarketplaceImpact';
+
 import CurrencyInput from '@/components/CurrencyInput';
 import FormSection from '@/components/FormSection';
 import { Store, DollarSign, TrendingUp, Package } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+
 import { Input } from '@/components/ui/input';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import UpgradePlanModal from '@/components/UpgradePlanModal';
@@ -23,7 +23,8 @@ const formatCurrency = (value: number) => {
 
 const Marketplace = () => {
   const navigate = useNavigate();
-  const { isPro } = useUserPlan();
+  const { plan } = useUserPlan();
+  const isPro = plan === 'pro';
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Inputs
