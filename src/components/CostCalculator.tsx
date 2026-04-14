@@ -197,11 +197,6 @@ const CostCalculator: React.FC = () => {
     setProfitMargin(calculation.margin_percentage);
     setFixedProfit(calculation.fixed_profit || 0);
     
-    // Limpar marketplace
-    setMarketplace('none');
-    setShopeeAccountType('cnpj');
-    setCommissionPercentage(0);
-    setFixedFeePerItem(0);
     
     // Para duplicação: armazenar ID original e NÃO definir ID de edição
     if (mode === 'duplicate') {
@@ -233,10 +228,6 @@ const CostCalculator: React.FC = () => {
     setOperationalCostsData(DEFAULT_OPERATIONAL_COSTS_DATA);
     setProfitMargin(0);
     setFixedProfit(0);
-    setMarketplace('none');
-    setShopeeAccountType('cnpj');
-    setCommissionPercentage(0);
-    setFixedFeePerItem(0);
     setProductPreset('custom');
     toast.info('Edição cancelada');
   }, []);
@@ -284,10 +275,6 @@ const CostCalculator: React.FC = () => {
     });
     setProfitMargin(35);
     setFixedProfit(0);
-    setMarketplace('none');
-    setShopeeAccountType('cnpj');
-    setCommissionPercentage(0);
-    setFixedFeePerItem(0);
     setProductPreset('paper_bag');
   }, []);
 
@@ -336,8 +323,6 @@ const CostCalculator: React.FC = () => {
     const safeLotQuantity = Math.max(0, Math.floor(safeNumber(lotQuantity)));
     const safeProfitMargin = Math.min(safeNumber(profitMargin), 1000);
     const safeFixedProfit = safeNumber(fixedProfit);
-    const safeCommissionPercentage = Math.min(safeNumber(commissionPercentage), 100);
-    const safeFixedFeePerItem = safeNumber(fixedFeePerItem);
     
     // Custo operacional total vem do novo sistema avançado
     const operationalTotal = calculatedOperationalCosts.totalAppliedCost;
