@@ -1,8 +1,7 @@
 import React from 'react';
-import { Users, FileText, CheckCircle, XCircle, DollarSign } from 'lucide-react';
+import { Users, FileText, CheckCircle, XCircle, DollarSign, Crown, Clock } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import AppLayout from '@/components/AppLayout';
-import PlanBadge from '@/components/PlanBadge';
 import { useClients } from '@/hooks/useClients';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useUserPlan } from '@/hooks/useUserPlan';
@@ -11,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 const Gestao: React.FC = () => {
   const { clients } = useClients();
   const { quotes } = useQuotes();
-  const { plan } = useUserPlan();
+  const { plan, isTrialActive, trialRemainingHours } = useUserPlan();
   const navigate = useNavigate();
 
   const approvedQuotes = quotes.filter(q => q.status === 'approved');
@@ -36,7 +35,28 @@ const Gestao: React.FC = () => {
             <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
             <p className="text-sm text-muted-foreground">Visão geral do seu negócio</p>
           </div>
-          <PlanBadge plan={plan} onClick={() => navigate('/upgrade')} />
+          {plan === 'pro' ? (
+            <div
+              className="flex items-center gap-2 cursor-pointer bg-primary/10 hover:bg-primary/20 transition-colors rounded-lg px-3 py-2"
+              onClick={() => navigate('/upgrade')}
+            >
+              <Crown className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold text-primary">Plano Profissional</span>
+            </div>
+          ) : (
+            <div
+              className="flex items-center gap-2 cursor-pointer bg-orange-500/10 hover:bg-orange-500/20 transition-colors rounded-lg px-3 py-2"
+              onClick={() => navigate('/upgrade')}
+            >
+              <Clock className="w-4 h-4 text-orange-500" />
+              <div className="text-right">
+                <span className="text-sm font-semibold text-orange-500">Plano Gratuito</span>
+                {isTrialActive && (
+                  <p className="text-xs text-orange-400">{trialRemainingHours}h restantes de teste</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
