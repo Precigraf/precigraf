@@ -109,6 +109,7 @@ const PagamentoConfirmado = forwardRef<HTMLDivElement>((_, ref) => {
             )}
           </CardContent>
         </Card>
+      </main>
       </div>
     </AppLayout>
   );

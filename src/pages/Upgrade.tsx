@@ -146,6 +146,7 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
             </p>
           </CardContent>
         </Card>
+      </main>
       </div>
     </AppLayout>
   );
