@@ -5,6 +5,7 @@ import LogoIcon from '@/components/LogoIcon';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { Button } from '@/components/ui/button';
 import {
   Sidebar,

@@ -1,12 +1,15 @@
 import React from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
+import { useSystemColor } from '@/hooks/useSystemColor';
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+  useSystemColor();
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
