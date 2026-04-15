@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calculator, Users, FileText, Package, LogOut, Settings, Sun, Moon, Store } from 'lucide-react';
+import { LayoutDashboard, Calculator, Users, FileText, Package, LogOut, Settings, Sun, Moon, Store, Palette } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation, useNavigate } from 'react-router-dom';
 import LogoIcon from '@/components/LogoIcon';
@@ -26,6 +26,7 @@ const navItems = [
   { title: 'Clientes', url: '/clientes', icon: Users },
   { title: 'Orçamentos', url: '/orcamentos', icon: FileText },
   { title: 'Pedidos', url: '/pedidos', icon: Package },
+  { title: 'Personalização', url: '/personalizacao', icon: Palette },
 ];
 
 export function AppSidebar() {
