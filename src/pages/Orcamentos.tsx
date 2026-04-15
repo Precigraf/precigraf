@@ -10,6 +10,7 @@ import AppLayout from '@/components/AppLayout';
 import QuoteForm from '@/components/gestao/QuoteForm';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useClients } from '@/hooks/useClients';
+import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 
 const statusLabels: Record<string, string> = { pending: 'Pendente', approved: 'Aprovado', rejected: 'Recusado' };
 const statusColors: Record<string, string> = { pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30', approved: 'bg-green-500/10 text-green-600 border-green-500/30', rejected: 'bg-red-500/10 text-red-600 border-red-500/30' };
@@ -17,6 +18,7 @@ const statusColors: Record<string, string> = { pending: 'bg-yellow-500/10 text-y
 const Orcamentos: React.FC = () => {
   const { quotes, isLoading, createQuote, approveQuote, rejectQuote, deleteQuote } = useQuotes();
   const { clients } = useClients();
+  const { profile } = useCompanyProfile();
   const [formOpen, setFormOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -73,6 +75,24 @@ const Orcamentos: React.FC = () => {
           <div className="space-y-3">
             {filtered.map(quote => (
               <Card key={quote.id} className="p-4 bg-card border-border">
+                {/* Company header */}
+                {profile && (profile.company_name || profile.store_name || profile.logo_url) && (
+                  <div className="flex items-center gap-3 mb-3 pb-3 border-b border-border">
+                    {profile.logo_url && (
+                      <img src={profile.logo_url} alt="Logo" className="w-8 h-8 object-contain rounded" />
+                    )}
+                    <div className="text-xs text-muted-foreground">
+                      <p className="font-semibold text-foreground text-sm">{profile.store_name || profile.company_name}</p>
+                      {profile.company_document && <span>{profile.company_document}</span>}
+                      {profile.company_phone && <span> · {profile.company_phone}</span>}
+                      {profile.company_email && <span> · {profile.company_email}</span>}
+                      {profile.company_city && profile.company_state && (
+                        <span> · {profile.company_city}/{profile.company_state}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
