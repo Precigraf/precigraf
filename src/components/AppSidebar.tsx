@@ -1,10 +1,11 @@
 import { LayoutDashboard, Calculator, Users, FileText, Package, LogOut, Settings, Sun, Moon, Store, Palette } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import LogoIcon from '@/components/LogoIcon';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { Button } from '@/components/ui/button';
 import {
   Sidebar,
@@ -35,6 +36,7 @@ export function AppSidebar() {
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { profile } = useCompanyProfile();
 
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
   const userAvatar = user?.user_metadata?.avatar_url || '';
@@ -48,12 +50,18 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-border p-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center shrink-0">
-            <LogoIcon className="w-4 h-4 text-background" />
-          </div>
+          {profile?.logo_url ? (
+            <img src={profile.logo_url} alt="Logo" className="w-8 h-8 rounded-lg object-contain shrink-0" />
+          ) : (
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+              <LogoIcon className="w-4 h-4 text-primary-foreground" />
+            </div>
+          )}
           {!collapsed && (
             <div>
-              <h1 className="text-sm font-bold text-foreground leading-tight">PreciGraf</h1>
+              <h1 className="text-sm font-bold text-foreground leading-tight">
+                {profile?.store_name || 'PreciGraf'}
+              </h1>
               <p className="text-[10px] text-muted-foreground leading-tight">Sistema de Gestão</p>
             </div>
           )}
