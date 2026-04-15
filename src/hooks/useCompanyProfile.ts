@@ -67,7 +67,7 @@ export function useCompanyProfile() {
     if (uploadError) throw uploadError;
 
     const { data } = supabase.storage.from('armazenamento').getPublicUrl(path);
-    return data.publicUrl + '?t=' + Date.now();
+    return data.publicUrl;
   };
 
   return {
