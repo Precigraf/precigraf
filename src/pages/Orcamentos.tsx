@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Plus, Search, Check, X, Trash2, FileText, Eye, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,7 @@ const Orcamentos: React.FC = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewQuote, setViewQuote] = useState<any>(null);
-  const printRef = useRef<HTMLDivElement>(null);
+  
 
   const filtered = quotes.filter(q => {
     const matchSearch = (q.clients?.name || '').toLowerCase().includes(search.toLowerCase()) ||

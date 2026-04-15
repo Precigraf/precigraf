@@ -1,6 +1,6 @@
 import { LayoutDashboard, Calculator, Users, FileText, Package, LogOut, Settings, Sun, Moon, Store, Palette } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import LogoIcon from '@/components/LogoIcon';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
