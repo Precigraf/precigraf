@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Plus, Search, Check, X, Trash2, FileText } from 'lucide-react';
+import { Plus, Search, Check, X, Trash2, FileText, Eye, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AppLayout from '@/components/AppLayout';
 import QuoteForm from '@/components/gestao/QuoteForm';
 import { useQuotes } from '@/hooks/useQuotes';
