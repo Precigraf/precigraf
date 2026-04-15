@@ -300,40 +300,79 @@ export type Database = {
       }
       profiles: {
         Row: {
+          company_address: string | null
+          company_address_number: string | null
+          company_cep: string | null
+          company_city: string | null
+          company_document: string | null
+          company_email: string | null
+          company_name: string | null
+          company_neighborhood: string | null
+          company_phone: string | null
+          company_state: string | null
           created_at: string
           email: string | null
           id: string
+          logo_url: string | null
           monthly_edits_count: number
           monthly_edits_reset_at: string
           plan: string
           plan_id: string
           profile_image_url: string | null
+          store_name: string | null
+          system_color: string | null
           trial_ends_at: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          company_address?: string | null
+          company_address_number?: string | null
+          company_cep?: string | null
+          company_city?: string | null
+          company_document?: string | null
+          company_email?: string | null
+          company_name?: string | null
+          company_neighborhood?: string | null
+          company_phone?: string | null
+          company_state?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          logo_url?: string | null
           monthly_edits_count?: number
           monthly_edits_reset_at?: string
           plan?: string
           plan_id?: string
           profile_image_url?: string | null
+          store_name?: string | null
+          system_color?: string | null
           trial_ends_at?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          company_address?: string | null
+          company_address_number?: string | null
+          company_cep?: string | null
+          company_city?: string | null
+          company_document?: string | null
+          company_email?: string | null
+          company_name?: string | null
+          company_neighborhood?: string | null
+          company_phone?: string | null
+          company_state?: string | null
           created_at?: string
           email?: string | null
           id?: string
+          logo_url?: string | null
           monthly_edits_count?: number
           monthly_edits_reset_at?: string
           plan?: string
           plan_id?: string
           profile_image_url?: string | null
+          store_name?: string | null
+          system_color?: string | null
           trial_ends_at?: string | null
           updated_at?: string
           user_id?: string
