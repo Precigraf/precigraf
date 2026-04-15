@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Palette, Upload, Save, Store } from 'lucide-react';
+import { Palette, Upload, Save, Store, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,26 +80,39 @@ const Personalizacao: React.FC = () => {
                 <Upload className="w-5 h-5 text-primary" />
                 Logotipo da Empresa
               </CardTitle>
-              <CardDescription>Faça upload do logotipo (PNG, JPG — máx. 2MB)</CardDescription>
+              <CardDescription>Faça upload do logotipo (PNG, JPG, SVG — máx. 2MB)</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-6">
-                <div className="w-24 h-24 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden shrink-0">
+                <div className="w-24 h-24 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden shrink-0 relative">
                   {logoPreview ? (
                     <img src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
                   ) : (
                     <Store className="w-8 h-8 text-muted-foreground" />
                   )}
                 </div>
-                <div>
+                <div className="flex flex-col gap-2">
                   <label>
-                    <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleLogoUpload} />
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={handleLogoUpload} />
                     <Button variant="outline" asChild disabled={uploading}>
                       <span className="cursor-pointer">
                         {uploading ? 'Enviando...' : 'Escolher Arquivo'}
                       </span>
                     </Button>
                   </label>
+                  {logoPreview && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={async () => {
+                        await updateProfile.mutateAsync({ logo_url: null });
+                        setLogoPreview(null);
+                      }}
+                      disabled={updateProfile.isPending}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" /> Remover Logo
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
