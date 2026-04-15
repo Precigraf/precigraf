@@ -37,6 +37,8 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const [companyNeighborhood, setCompanyNeighborhood] = useState('');
   const [companyCity, setCompanyCity] = useState('');
   const [companyState, setCompanyState] = useState('');
+  const [companyCep, setCompanyCep] = useState('');
+  const [cepLoading, setCepLoading] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -49,8 +51,29 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
       setCompanyNeighborhood(profile.company_neighborhood || '');
       setCompanyCity(profile.company_city || '');
       setCompanyState(profile.company_state || '');
+      setCompanyCep(profile.company_cep || '');
     }
   }, [profile]);
+
+  const handleCepBlur = async () => {
+    const cep = companyCep.replace(/\D/g, '');
+    if (cep.length !== 8) return;
+    setCepLoading(true);
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        setCompanyAddress(data.logradouro || '');
+        setCompanyNeighborhood(data.bairro || '');
+        setCompanyCity(data.localidade || '');
+        setCompanyState(data.uf || '');
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setCepLoading(false);
+    }
+  };
 
   const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,6 +129,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
       company_neighborhood: companyNeighborhood || null,
       company_city: companyCity || null,
       company_state: companyState || null,
+      company_cep: companyCep || null,
     });
   };
 
@@ -179,6 +203,19 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
                     <div className="space-y-2">
                       <Label>Email</Label>
                       <Input value={companyEmail} onChange={e => setCompanyEmail(e.target.value)} placeholder="contato@empresa.com" maxLength={100} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>CEP</Label>
+                      <Input
+                        value={companyCep}
+                        onChange={e => setCompanyCep(e.target.value)}
+                        onBlur={handleCepBlur}
+                        placeholder="00000-000"
+                        maxLength={10}
+                      />
+                      {cepLoading && <p className="text-xs text-muted-foreground">Buscando...</p>}
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
