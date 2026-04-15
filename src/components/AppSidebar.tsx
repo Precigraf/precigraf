@@ -36,6 +36,7 @@ export function AppSidebar() {
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { profile } = useCompanyProfile();
 
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
   const userAvatar = user?.user_metadata?.avatar_url || '';
