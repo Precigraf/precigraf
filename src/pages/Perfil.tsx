@@ -63,7 +63,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   useEffect(() => {
     if (profile) {
       setCompanyName(profile.company_name || '');
-      setCompanyDocument(profile.company_document || '');
+      setCompanyCnpj(profile.company_document || '');
       setCompanyPhone(profile.company_phone || '');
       setCompanyEmail(profile.company_email || '');
       setCompanyAddress(profile.company_address || '');
