@@ -1,22 +1,26 @@
 import React, { useState, useEffect, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, Save, ArrowLeft, Eye, EyeOff, CheckCircle, Building2 } from 'lucide-react';
+import { User, Lock, Save, ArrowLeft, Eye, EyeOff, CheckCircle, Building2, Upload, Trash2, Store, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/components/AppLayout';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { maskCep, maskCpfCnpj, maskPhone, maskCnpj } from '@/lib/masks';
 
 const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile, isLoading: profileLoading, updateProfile } = useCompanyProfile();
+  const { profile, isLoading: profileLoading, updateProfile, uploadLogo } = useCompanyProfile();
 
   const currentName = user?.user_metadata?.name || '';
   const [name, setName] = useState(currentName);
@@ -32,13 +36,29 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const [companyDocument, setCompanyDocument] = useState('');
   const [companyPhone, setCompanyPhone] = useState('');
   const [companyEmail, setCompanyEmail] = useState('');
+  const [companyFullAddress, setCompanyFullAddress] = useState('');
+  const [companyCnpj, setCompanyCnpj] = useState('');
+  const [pixKey, setPixKey] = useState('');
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [companyOpen, setCompanyOpen] = useState(true);
+
+  // Legacy fields for CEP
+  const [companyCep, setCompanyCep] = useState('');
   const [companyAddress, setCompanyAddress] = useState('');
   const [companyAddressNumber, setCompanyAddressNumber] = useState('');
   const [companyNeighborhood, setCompanyNeighborhood] = useState('');
   const [companyCity, setCompanyCity] = useState('');
   const [companyState, setCompanyState] = useState('');
-  const [companyCep, setCompanyCep] = useState('');
-  const [cepLoading, setCepLoading] = useState(false);
+
+  // Store name & system color (moved from Personalização)
+  const [storeName, setStoreName] = useState('');
+  const [systemColor, setSystemColor] = useState('#6366f1');
+
+  const colorPresets = [
+    '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b',
+    '#22c55e', '#06b6d4', '#3b82f6', '#0ea5e9', '#14b8a6',
+  ];
 
   useEffect(() => {
     if (profile) {
@@ -52,13 +72,25 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
       setCompanyCity(profile.company_city || '');
       setCompanyState(profile.company_state || '');
       setCompanyCep(profile.company_cep || '');
+      setPixKey(profile.pix_key || '');
+      setCompanyFullAddress(profile.company_full_address || '');
+      setLogoPreview(profile.logo_url || null);
+      setStoreName(profile.store_name || '');
+      setSystemColor(profile.system_color || '#6366f1');
+      // Use company_document as CNPJ field too
+      setCompanyCnpj(profile.company_document || '');
     }
   }, [profile]);
+
+  const isCompanyConfigured = !!(profile?.company_name || profile?.logo_url || profile?.company_document);
+
+  const handleCepChange = (value: string) => {
+    setCompanyCep(maskCep(value));
+  };
 
   const handleCepBlur = async () => {
     const cep = companyCep.replace(/\D/g, '');
     if (cep.length !== 8) return;
-    setCepLoading(true);
     try {
       const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       const data = await res.json();
@@ -70,9 +102,31 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
       }
     } catch {
       // silently fail
-    } finally {
-      setCepLoading(false);
     }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'Arquivo muito grande', description: 'Máximo 2MB.', variant: 'destructive' });
+      return;
+    }
+    setUploading(true);
+    try {
+      const url = await uploadLogo(file);
+      setLogoPreview(url);
+      await updateProfile.mutateAsync({ logo_url: url });
+    } catch (err: any) {
+      toast({ title: 'Erro no upload', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    await updateProfile.mutateAsync({ logo_url: null });
+    setLogoPreview(null);
   };
 
   const handleUpdateName = async (e: React.FormEvent) => {
@@ -121,7 +175,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const handleSaveCompany = () => {
     updateProfile.mutate({
       company_name: companyName || null,
-      company_document: companyDocument || null,
+      company_document: companyCnpj || null,
       company_phone: companyPhone || null,
       company_email: companyEmail || null,
       company_address: companyAddress || null,
@@ -130,6 +184,11 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
       company_city: companyCity || null,
       company_state: companyState || null,
       company_cep: companyCep || null,
+      pix_key: pixKey || null,
+      company_full_address: companyFullAddress || null,
+      store_name: storeName || null,
+      system_color: systemColor,
+      logo_url: logoPreview || null,
     });
   };
 
@@ -177,76 +236,160 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
               </CardContent>
             </Card>
 
-            {/* Company Info */}
+            {/* Company Settings - Collapsible */}
             <Card className="bg-card border-border">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2"><Building2 className="w-5 h-5 text-primary" /> Dados da Empresa</CardTitle>
-                <CardDescription>Informações que aparecerão nos orçamentos</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Nome da Empresa</Label>
-                      <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Razão Social" maxLength={150} />
+              <Collapsible open={companyOpen} onOpenChange={setCompanyOpen}>
+                <CardHeader className="cursor-pointer" onClick={() => setCompanyOpen(!companyOpen)}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Building2 className="w-5 h-5 text-primary" /> Empresa
+                      </CardTitle>
+                      <CardDescription>Dados da empresa para orçamentos e pedidos</CardDescription>
                     </div>
-                    <div className="space-y-2">
-                      <Label>CPF/CNPJ</Label>
-                      <Input value={companyDocument} onChange={e => setCompanyDocument(e.target.value)} placeholder="00.000.000/0001-00" maxLength={20} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Celular</Label>
-                      <Input value={companyPhone} onChange={e => setCompanyPhone(e.target.value)} placeholder="(00) 00000-0000" maxLength={20} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Email</Label>
-                      <Input value={companyEmail} onChange={e => setCompanyEmail(e.target.value)} placeholder="contato@empresa.com" maxLength={100} />
+                    <div className="flex items-center gap-2">
+                      <Badge variant={isCompanyConfigured ? 'default' : 'secondary'} className={isCompanyConfigured ? 'bg-green-500/10 text-green-600 border-green-500/30' : ''}>
+                        {isCompanyConfigured ? 'Configurado' : 'Não configurado'}
+                      </Badge>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          {companyOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                        </Button>
+                      </CollapsibleTrigger>
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>CEP</Label>
-                      <Input
-                        value={companyCep}
-                        onChange={e => setCompanyCep(e.target.value)}
-                        onBlur={handleCepBlur}
-                        placeholder="00000-000"
-                        maxLength={10}
-                      />
-                      {cepLoading && <p className="text-xs text-muted-foreground">Buscando...</p>}
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent>
+                    <div className="space-y-5">
+                      {/* Logo Upload */}
+                      <div className="space-y-2">
+                        <Label>Logotipo da empresa</Label>
+                        <div className="flex items-center gap-4">
+                          <div className="w-24 h-16 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden shrink-0">
+                            {logoPreview ? (
+                              <img src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
+                            ) : (
+                              <Store className="w-8 h-8 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <label>
+                              <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={handleLogoUpload} />
+                              <Button variant="outline" size="sm" asChild disabled={uploading}>
+                                <span className="cursor-pointer">
+                                  <Upload className="w-4 h-4 mr-1" />
+                                  {uploading ? 'Enviando...' : 'Adicionar logotipo'}
+                                </span>
+                              </Button>
+                            </label>
+                            {logoPreview && (
+                              <Button variant="destructive" size="sm" onClick={handleRemoveLogo} disabled={updateProfile.isPending}>
+                                <Trash2 className="w-4 h-4 mr-1" /> Remover
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Recomendado: 400x200px, PNG/WebP, fundo transparente</p>
+                      </div>
+
+                      {/* Store Name */}
+                      <div className="space-y-2">
+                        <Label>Nome da empresa</Label>
+                        <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Ex: Print Gráfica" maxLength={150} />
+                      </div>
+
+                      {/* Phone */}
+                      <div className="space-y-2">
+                        <Label>Telefone</Label>
+                        <Input value={companyPhone} onChange={e => setCompanyPhone(maskPhone(e.target.value))} placeholder="Ex: (00) 00000-0000" maxLength={15} />
+                      </div>
+
+                      {/* Full Address */}
+                      <div className="space-y-2">
+                        <Label>Endereço completo</Label>
+                        <Textarea value={companyFullAddress} onChange={e => setCompanyFullAddress(e.target.value)} placeholder="Ex: Av. Paulista, 1000, Conj. 82, Bela Vista" rows={2} />
+                      </div>
+
+                      {/* CNPJ */}
+                      <div className="space-y-2">
+                        <Label>CNPJ</Label>
+                        <Input value={companyCnpj} onChange={e => setCompanyCnpj(maskCnpj(e.target.value))} placeholder="Ex: 98.765.432/0001-10" maxLength={18} />
+                      </div>
+
+                      {/* Email */}
+                      <div className="space-y-2">
+                        <Label>E-mail</Label>
+                        <Input type="email" value={companyEmail} onChange={e => setCompanyEmail(e.target.value)} placeholder="Ex: vendas@graficaprint.com.br" maxLength={100} />
+                      </div>
+
+                      {/* PIX Key */}
+                      <div className="space-y-2">
+                        <Label>Chave PIX (opcional)</Label>
+                        <Input value={pixKey} onChange={e => setPixKey(e.target.value)} placeholder="Ex: 98.765.432/0001-10 ou (85) 91234-5678" maxLength={100} />
+                        <p className="text-xs text-muted-foreground">Será exibido apenas no PDF de Pedidos (não aparece em Orçamentos)</p>
+                      </div>
+
+                      {/* CEP auto-fill section */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label>CEP</Label>
+                          <Input
+                            value={companyCep}
+                            onChange={e => handleCepChange(e.target.value)}
+                            onBlur={handleCepBlur}
+                            placeholder="00000-000"
+                            maxLength={9}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Cidade</Label>
+                          <Input value={companyCity} onChange={e => setCompanyCity(e.target.value)} placeholder="Cidade" maxLength={100} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Estado</Label>
+                          <Input value={companyState} onChange={e => setCompanyState(e.target.value)} placeholder="UF" maxLength={2} />
+                        </div>
+                      </div>
+
+                      {/* System Color */}
+                      <div className="space-y-2">
+                        <Label>Cor do sistema</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {colorPresets.map(color => (
+                            <button
+                              key={color}
+                              onClick={() => setSystemColor(color)}
+                              className={`w-8 h-8 rounded-full border-2 transition-all ${systemColor === color ? 'border-foreground scale-110' : 'border-transparent'}`}
+                              style={{ backgroundColor: color }}
+                            />
+                          ))}
+                          <input type="color" value={systemColor} onChange={e => setSystemColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
+                        </div>
+                      </div>
+
+                      {/* Store Name for sidebar */}
+                      <div className="space-y-2">
+                        <Label>Nome da loja (sidebar)</Label>
+                        <Input value={storeName} onChange={e => setStoreName(e.target.value)} placeholder="Ex: Gráfica Rápida" maxLength={100} />
+                      </div>
+
+                      {/* Info notice */}
+                      <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-border">
+                        <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                        <p className="text-xs text-muted-foreground">
+                          Todos os campos são opcionais. Apenas os campos preenchidos serão exibidos nos PDFs.
+                        </p>
+                      </div>
+
+                      <Button onClick={handleSaveCompany} disabled={updateProfile.isPending} className="w-full">
+                        <Save className="w-4 h-4 mr-2" />
+                        {updateProfile.isPending ? 'Salvando...' : 'Salvar Informações'}
+                      </Button>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="col-span-2 space-y-2">
-                      <Label>Endereço</Label>
-                      <Input value={companyAddress} onChange={e => setCompanyAddress(e.target.value)} placeholder="Rua / Avenida" maxLength={200} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Número</Label>
-                      <Input value={companyAddressNumber} onChange={e => setCompanyAddressNumber(e.target.value)} placeholder="Nº" maxLength={10} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Bairro</Label>
-                      <Input value={companyNeighborhood} onChange={e => setCompanyNeighborhood(e.target.value)} placeholder="Bairro" maxLength={100} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Cidade</Label>
-                      <Input value={companyCity} onChange={e => setCompanyCity(e.target.value)} placeholder="Cidade" maxLength={100} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Estado</Label>
-                      <Input value={companyState} onChange={e => setCompanyState(e.target.value)} placeholder="UF" maxLength={2} />
-                    </div>
-                  </div>
-                  <Button onClick={handleSaveCompany} disabled={updateProfile.isPending}>
-                    <Save className="w-4 h-4 mr-2" /> {updateProfile.isPending ? 'Salvando...' : 'Salvar Dados da Empresa'}
-                  </Button>
-                </div>
-              </CardContent>
+                  </CardContent>
+                </CollapsibleContent>
+              </Collapsible>
             </Card>
 
             {/* Update Password */}
