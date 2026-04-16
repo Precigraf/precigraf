@@ -182,6 +182,36 @@ export type Database = {
         }
         Relationships: []
       }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          description: string
+          expense_date: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          category?: string
+          created_at?: string
+          description: string
+          expense_date?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          description?: string
+          expense_date?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_status_history: {
         Row: {
           created_at: string
@@ -306,6 +336,7 @@ export type Database = {
           company_city: string | null
           company_document: string | null
           company_email: string | null
+          company_full_address: string | null
           company_name: string | null
           company_neighborhood: string | null
           company_phone: string | null
@@ -316,6 +347,7 @@ export type Database = {
           logo_url: string | null
           monthly_edits_count: number
           monthly_edits_reset_at: string
+          pix_key: string | null
           plan: string
           plan_id: string
           profile_image_url: string | null
@@ -332,6 +364,7 @@ export type Database = {
           company_city?: string | null
           company_document?: string | null
           company_email?: string | null
+          company_full_address?: string | null
           company_name?: string | null
           company_neighborhood?: string | null
           company_phone?: string | null
@@ -342,6 +375,7 @@ export type Database = {
           logo_url?: string | null
           monthly_edits_count?: number
           monthly_edits_reset_at?: string
+          pix_key?: string | null
           plan?: string
           plan_id?: string
           profile_image_url?: string | null
@@ -358,6 +392,7 @@ export type Database = {
           company_city?: string | null
           company_document?: string | null
           company_email?: string | null
+          company_full_address?: string | null
           company_name?: string | null
           company_neighborhood?: string | null
           company_phone?: string | null
@@ -368,6 +403,7 @@ export type Database = {
           logo_url?: string | null
           monthly_edits_count?: number
           monthly_edits_reset_at?: string
+          pix_key?: string | null
           plan?: string
           plan_id?: string
           profile_image_url?: string | null
