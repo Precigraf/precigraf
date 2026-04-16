@@ -84,7 +84,7 @@ const Pedidos: React.FC = () => {
     });
   };
 
-  const periodLabels: Record<PeriodFilter, string> = { all: 'Todo período', week: 'Última semana', month: 'Este mês' };
+  
 
   return (
     <AppLayout>

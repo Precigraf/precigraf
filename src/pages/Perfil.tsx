@@ -14,13 +14,13 @@ import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/components/AppLayout';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
-import { maskCep, maskCpfCnpj, maskPhone, maskCnpj } from '@/lib/masks';
+import { maskCep, maskPhone, maskCnpj } from '@/lib/masks';
 
 const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { profile, isLoading: profileLoading, updateProfile, uploadLogo } = useCompanyProfile();
+  const { profile, updateProfile, uploadLogo } = useCompanyProfile();
 
   const currentName = user?.user_metadata?.name || '';
   const [name, setName] = useState(currentName);
@@ -33,7 +33,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
 
   // Company fields
   const [companyName, setCompanyName] = useState('');
-  const [companyDocument, setCompanyDocument] = useState('');
+  
   const [companyPhone, setCompanyPhone] = useState('');
   const [companyEmail, setCompanyEmail] = useState('');
   const [companyFullAddress, setCompanyFullAddress] = useState('');
