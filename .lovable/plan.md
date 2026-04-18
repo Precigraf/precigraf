@@ -1,162 +1,101 @@
 
 
-# Plan: Módulo Completo de Gestão PreciGraf
+# Plano de Implementação
 
-## Overview
-Transform PreciGraf from a pricing calculator into a full management system with Clients, Quotes, Orders (Kanban), and Dashboard — all integrated with the existing calculator.
+Vou organizar as mudanças em 5 áreas distintas. Antes, preciso esclarecer um ponto crítico sobre orçamentos.
 
-## Database Schema (4 new tables + 1 migration)
+## 1. Dashboard — Painel "Meu Plano"
 
-### Table: `clients`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid PK | |
-| user_id | uuid NOT NULL | Owner |
-| name | text NOT NULL | |
-| email | text | |
-| whatsapp | text | |
-| cpf | text | |
-| cep | text | |
-| address | text | |
-| neighborhood | text | |
-| address_number | text | |
-| landmark | text | Ponto de referência |
-| city | text | |
-| state | text | |
-| notes | text | Observações |
-| created_at | timestamptz | DEFAULT now() |
-| updated_at | timestamptz | DEFAULT now() |
+**Arquivo:** `src/pages/Gestao.tsx`
 
-### Table: `quotes` (Orçamentos)
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid PK | |
-| user_id | uuid NOT NULL | |
-| client_id | uuid FK → clients | NOT NULL |
-| calculation_id | uuid FK → calculations | nullable, links to calculator |
-| description | text | |
-| total_value | numeric NOT NULL | |
-| unit_value | numeric | |
-| quantity | integer | |
-| status | text | 'pending' / 'approved' / 'rejected' |
-| raw_data | jsonb | Full calculator snapshot |
-| created_at / updated_at | timestamptz | |
+Novo card destacado abaixo do cabeçalho, antes das métricas:
+- Título "Meu Plano" + nome do plano (Teste Grátis / Pro)
+- Badge de status ("Período de Teste", "Plano Ativo", "Expirado")
+- Botão "Fazer Upgrade" no canto superior direito (oculto se já for Pro) → navega para `/upgrade`
+- Bloco com ícone calendário, "Teste expira em [data por extenso]" e "X dia(s) restantes"
+- Usa `useUserPlan()` (`trialEndsAt`, `trialRemainingHours`, `plan`, `isTrialActive`, `isTrialExpired`)
+- Data formatada com `date-fns` em pt-BR (ex: "19 de abril de 2026")
+- Dias restantes = `Math.ceil(trialRemainingHours / 24)`
 
-### Table: `orders` (Pedidos)
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid PK | |
-| user_id | uuid NOT NULL | |
-| client_id | uuid FK → clients | NOT NULL |
-| quote_id | uuid FK → quotes | NOT NULL |
-| status | text | Kanban column |
-| kanban_position | integer | Sort order within column |
-| created_at / updated_at | timestamptz | |
+Remove o badge atual de plano no cabeçalho (substituído por este painel).
 
-### Table: `order_status_history` (Log de movimentação)
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid PK | |
-| order_id | uuid FK → orders | NOT NULL |
-| user_id | uuid NOT NULL | |
-| old_status | text | |
-| new_status | text NOT NULL | |
-| created_at | timestamptz | DEFAULT now() |
+## 2. Marketplace
 
-### RLS Policies
-All 4 tables: `auth.uid() = user_id` for SELECT/INSERT/UPDATE/DELETE (authenticated only).
+**Arquivo:** `src/pages/Marketplace.tsx`
+- Remover input de **Quantidade**
+- Manter apenas **Preço base total do produto**
+- Recalcular `unitFinalPrice` e `totalFees` sem multiplicar por quantidade
 
-### Kanban Statuses (constants)
-```
-approved | creating_art | awaiting_client_approval | in_production | in_transit | delivered
-```
+## 3. Clientes
 
-## Navigation & Routing
+**Arquivo:** `src/pages/Clientes.tsx` (e card relacionado)
+- Adicionar botão **Visualizar** (ícone `Eye`) que abre Dialog com todos os campos cadastrados (nome, doc, contato, endereço, observações)
+- Coluna/campo WhatsApp: substituir texto puro por botão verde com ícone do WhatsApp (`MessageCircle` do lucide com cor `#25D366`) que abre `https://wa.me/{numero}` em nova aba
 
-Current header gets a nav bar with tabs:
-- **Calculadora** → `/` (existing)
-- **Gestão** → `/gestao` (dashboard)
-- **Clientes** → `/clientes`
-- **Orçamentos** → `/orcamentos`
-- **Pedidos** → `/pedidos` (Kanban)
+## 4. Configurações
 
-All protected routes.
+**Arquivo:** `src/pages/Perfil.tsx`
+- Seção **Meu Perfil**: remover bloco de avatar/foto de usuário
+- Seção **Empresa**: remover campos **Cor do sistema** e **Nome da loja (sidebar)**
+- Manter logo, dados da empresa, endereço, PIX, etc.
 
-## New Pages & Components
+**Arquivo:** `src/components/AppSidebar.tsx`
+- Como `store_name` deixa de ser editável, usar fallback fixo "Precigraf" (ou `company_name` se existir) no lugar
+- Manter exibição do logo
 
-### 1. `/clientes` — Client Management
-- **ClientsPage**: List with search/filter, add button
-- **ClientForm**: Modal/dialog with all fields (name, email, whatsapp, cpf, cep, address, etc.)
-- **ClientCard**: Row with actions (view, edit, delete, WhatsApp button → `https://wa.me/55{phone}`)
-- CEP auto-fill via ViaCEP API (`fetch https://viacep.com.br/ws/{cep}/json/`)
+**Arquivo:** `src/components/AppLayout.tsx`
+- Remover/desativar `useSystemColor` (cor dinâmica não será mais configurável)
 
-### 2. `/orcamentos` — Quotes Management
-- **QuotesPage**: List with status filters (pending/approved/rejected)
-- **QuoteForm**: Select client (dropdown of registered clients), link calculator values or manual entry, description field
-- **QuoteActions**: Approve (creates order automatically) / Reject buttons
-- Integration: "Gerar Orçamento" button on ResultPanel that opens QuoteForm pre-filled with current calculator values
+## 5. Tela de Orçamento — Reformulação completa
 
-### 3. `/pedidos` — Kanban Board
-- **OrdersKanban**: 7-column drag-and-drop board using `@dnd-kit/core` + `@dnd-kit/sortable`
-- **OrderCard**: Client name, value, description, date, status badge
-- Drag between columns updates status + logs to `order_status_history`
-- Realtime updates via Supabase Realtime on `orders` table
+Esta é a maior mudança. Plano resumido:
 
-### 4. `/gestao` — Dashboard
-- **DashboardPage**: Grid of metric cards + charts
-- Metrics: total clients, total quotes, approved/rejected quotes, orders in production, delivered orders
-- Advanced: total revenue, average ticket, conversion rate (approved/total quotes)
-- Uses aggregate queries on clients/quotes/orders tables
+**Novo arquivo:** `src/pages/OrcamentoEditor.tsx` (rota `/orcamentos/novo` e `/orcamentos/:id`)
 
-## Integration with Calculator
+Layout 2 colunas (lg:grid-cols-3, esquerda span-2):
 
-- **ResultPanel** gets a new "Gerar Orçamento" button (Pro feature)
-- Clicking opens QuoteForm pre-filled with: product name, values, quantity, raw_inputs
-- Quote stores a `raw_data` JSON snapshot of all calculator values
-- When viewing a quote, user can see all original calculator data
+**Painel Esquerdo:**
+- Cabeçalho: código `ORC-{n}` sequencial, badge status, data criação
+- Ações topo: "Converter para Pedido" | "Exportar PDF" | "Salvar"
+- **Cliente:** Combobox de busca (nome/documento) + botão limpar + botão "Novo Cliente" (abre `ClientForm`)
+- **Itens:** lista com nome/qtd × unit/total + botão remover + "+ Adicionar Item" (modal busca em `calculations` salvos como catálogo de produtos)
+- **Observações:** Textarea + DatePicker validade + Select status (Rascunho/Enviado/Aprovado/Recusado)
 
-## Implementation Order
+**Painel Direito (sticky):**
+- Subtotal (soma itens) + qtd itens
+- Desconto: input + toggle %/R$ (valor calculado em vermelho com sinal −)
+- Frete: input opcional (verde com +)
+- Total = Subtotal − Desconto + Frete (formato `R$ x.xxx,xx`)
 
-**Step 1**: Database migration (4 tables + RLS + realtime on orders)
-**Step 2**: Install `@dnd-kit/core` and `@dnd-kit/sortable` for Kanban
-**Step 3**: Create shared types and API hooks (`useClients`, `useQuotes`, `useOrders`)
-**Step 4**: Build Clients module (page + form + CRUD)
-**Step 5**: Build Quotes module (page + form + approve/reject flow)
-**Step 6**: Build Orders Kanban (drag-and-drop board + status history)
-**Step 7**: Build Dashboard (metrics + charts)
-**Step 8**: Update Header with navigation tabs
-**Step 9**: Update App.tsx with new routes
-**Step 10**: Add "Gerar Orçamento" integration to ResultPanel
+**Listagem `Orcamentos.tsx`:** mantém com botão "Novo Orçamento" → navega para `/orcamentos/novo`
 
-## Technical Details
+### Mudanças de banco necessárias
 
-- All modules are Pro features (gated by `useUserPlan`)
-- Kanban uses `@dnd-kit` for accessible drag-and-drop
-- CEP lookup via `fetch('https://viacep.com.br/ws/${cep}/json/')`
-- WhatsApp link: `https://wa.me/55${phone.replace(/\D/g, '')}`
-- Order auto-creation on quote approval uses a single transaction (insert order + update quote status)
-- Realtime subscription on `orders` table for live Kanban updates
-- All dates displayed with `toLocaleDateString('pt-BR')`
+Novas colunas em `quotes`:
+- `quote_number` int sequencial (com sequence por user via trigger)
+- `items` jsonb (array de itens)
+- `discount_value` numeric, `discount_type` text ('percent'|'fixed')
+- `shipping_value` numeric
+- `subtotal` numeric
+- `notes` text
+- `valid_until` date
 
-## Files to Create
-- `src/pages/Clientes.tsx`
-- `src/pages/Orcamentos.tsx`
-- `src/pages/Pedidos.tsx`
-- `src/pages/Gestao.tsx`
-- `src/components/gestao/ClientForm.tsx`
-- `src/components/gestao/ClientCard.tsx`
-- `src/components/gestao/QuoteForm.tsx`
-- `src/components/gestao/QuoteCard.tsx`
-- `src/components/gestao/OrderCard.tsx`
-- `src/components/gestao/KanbanBoard.tsx`
-- `src/components/gestao/KanbanColumn.tsx`
-- `src/components/gestao/DashboardMetrics.tsx`
-- `src/hooks/useClients.ts`
-- `src/hooks/useQuotes.ts`
-- `src/hooks/useOrders.ts`
+Novo trigger para gerar `quote_number` sequencial por `user_id`.
 
-## Files to Modify
-- `src/App.tsx` — add routes
-- `src/components/Header.tsx` — add navigation tabs
-- `src/components/ResultPanel.tsx` — add "Gerar Orçamento" button
+## Pergunta crítica antes de implementar
+
+<questions--ask_questions>
+</questions--ask_questions>
+
+### Catálogo de itens do orçamento
+
+O sistema atual não tem uma tabela `products` (catálogo). Os "produtos" hoje vêm de `calculations` (cálculos salvos pela calculadora). Para o botão **"+ Adicionar Item"** do novo editor de orçamento, qual fonte usar?
+
+**Opção A — Usar cálculos salvos como catálogo (recomendado, sem migração extra):** modal lista `calculations` do usuário; ao selecionar, importa nome, preço unitário e quantidade padrão; usuário pode ajustar qtd/valor inline.
+
+**Opção B — Criar tabela `products` nova:** catálogo independente com CRUD próprio (nome, preço, descrição). Adiciona uma página "Produtos" e migrações.
+
+**Opção C — Item livre (manual):** modal apenas com campos vazios (nome, qtd, valor unit), sem catálogo.
+
+Vou aguardar sua escolha entre A / B / C antes de iniciar a implementação do editor de orçamento. As outras 4 áreas (Dashboard, Marketplace, Clientes, Configurações) seguem o plano acima sem ambiguidade.
 
