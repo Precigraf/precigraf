@@ -6,7 +6,6 @@ import CurrencyInput from '@/components/CurrencyInput';
 import FormSection from '@/components/FormSection';
 import { Store, DollarSign, TrendingUp, Package } from 'lucide-react';
 
-import { Input } from '@/components/ui/input';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import UpgradePlanModal from '@/components/UpgradePlanModal';
 import { useNavigate } from 'react-router-dom';
@@ -29,7 +28,6 @@ const Marketplace = () => {
 
   // Inputs
   const [basePrice, setBasePrice] = useState(0);
-  const [quantity, setQuantity] = useState(1);
   const [marketplace, setMarketplace] = useState<MarketplaceType>('none');
   const [shopeeAccountType, setShopeeAccountType] = useState<ShopeeAccountType>('cnpj');
   const [commissionPercentage, setCommissionPercentage] = useState(0);
@@ -37,33 +35,30 @@ const Marketplace = () => {
 
   const calculations = useMemo(() => {
     const safeBase = safeNumber(basePrice);
-    const safeQty = Math.max(1, Math.floor(safeNumber(quantity)));
     const safeCommission = Math.min(safeNumber(commissionPercentage), 100);
     const safeFee = safeNumber(fixedFeePerItem);
 
-    let unitMarketplaceCommission = 0;
-    let unitMarketplaceFixedFees = 0;
+    let marketplaceCommission = 0;
+    let marketplaceFixedFees = 0;
 
     if (marketplace === 'shopee') {
       const shopee = calcShopeeCost(safeBase);
-      unitMarketplaceCommission = shopee.finalPrice - safeBase;
+      marketplaceCommission = shopee.finalPrice - safeBase;
     } else if (marketplace === 'custom') {
-      unitMarketplaceCommission = safeBase * (safeCommission / 100);
-      unitMarketplaceFixedFees = safeFee / safeQty;
+      marketplaceCommission = safeBase * (safeCommission / 100);
+      marketplaceFixedFees = safeFee;
     }
 
-    const totalFees = unitMarketplaceCommission + unitMarketplaceFixedFees;
+    const totalFees = marketplaceCommission + marketplaceFixedFees;
     const finalPrice = safeBase + totalFees;
 
     return {
-      unitFees: totalFees,
-      totalFees: totalFees * safeQty,
-      unitFinalPrice: finalPrice,
-      totalFinalPrice: finalPrice * safeQty,
-      commission: unitMarketplaceCommission * safeQty,
-      fixedFees: unitMarketplaceFixedFees * safeQty,
+      totalFees,
+      finalPrice,
+      commission: marketplaceCommission,
+      fixedFees: marketplaceFixedFees,
     };
-  }, [basePrice, quantity, marketplace, shopeeAccountType, commissionPercentage, fixedFeePerItem]);
+  }, [basePrice, marketplace, shopeeAccountType, commissionPercentage, fixedFeePerItem]);
 
   const hasMarketplace = marketplace !== 'none';
 
@@ -83,35 +78,18 @@ const Marketplace = () => {
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
           {/* Coluna Esquerda */}
           <div className="space-y-6">
-            {/* Preço Base e Quantidade */}
+            {/* Preço Base */}
             <FormSection
               title="Dados do Produto"
               icon={<Package className="w-5 h-5 text-primary" />}
-              subtitle="Informe o preço base e a quantidade"
+              subtitle="Informe o preço base total do produto"
             >
               <CurrencyInput
-                label="Preço Base (por unidade)"
+                label="Preço Base Total do Produto"
                 value={basePrice}
                 onChange={setBasePrice}
-                tooltip="Preço de venda por unidade antes das taxas do marketplace"
+                tooltip="Preço de venda total antes das taxas do marketplace"
               />
-              <div>
-                <label className="text-sm font-medium text-foreground mb-1 block">
-                  Quantidade
-                </label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={999999}
-                  value={quantity || ''}
-                  onChange={(e) => {
-                    const v = parseInt(e.target.value, 10);
-                    if (!isNaN(v) && v >= 0) setQuantity(Math.min(v, 999999));
-                    else if (e.target.value === '') setQuantity(0);
-                  }}
-                  className="h-10"
-                />
-              </div>
             </FormSection>
 
             {/* Seleção de Marketplace */}
@@ -126,7 +104,7 @@ const Marketplace = () => {
               onFixedFeeChange={setFixedFeePerItem}
               profitValue={0}
               unitBasePrice={basePrice}
-              lotQuantity={quantity}
+              lotQuantity={1}
               isPro={isPro}
               onShowUpgrade={() => setShowUpgradeModal(true)}
             />
@@ -152,24 +130,8 @@ const Marketplace = () => {
                     Preço Final com Taxas
                   </span>
                   <div className="text-4xl font-bold text-background mt-1">
-                    {formatCurrency(calculations.totalFinalPrice)}
+                    {formatCurrency(calculations.finalPrice)}
                   </div>
-                  <div className="text-sm text-background/80 mt-1">
-                    para {Math.max(1, quantity)} unidades
-                  </div>
-                </div>
-              </div>
-
-              {/* Preço por Unidade */}
-              <div className="bg-success/10 border border-success/30 rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-5 h-5 text-success" />
-                    <span className="text-sm font-medium text-foreground">Preço por Unidade</span>
-                  </div>
-                  <span className="text-2xl font-bold text-success">
-                    {formatCurrency(calculations.unitFinalPrice)}
-                  </span>
                 </div>
               </div>
 
@@ -180,7 +142,7 @@ const Marketplace = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Preço Base</span>
                       <span className="text-sm font-semibold text-foreground">
-                        {formatCurrency(basePrice * Math.max(1, quantity))}
+                        {formatCurrency(basePrice)}
                       </span>
                     </div>
                   </div>
@@ -191,14 +153,9 @@ const Marketplace = () => {
                         <Store className="w-4 h-4 text-warning" />
                         <span className="text-sm text-warning">Total de Taxas</span>
                       </div>
-                      <div className="text-right">
-                        <div className="text-sm font-semibold text-warning">
-                          +{formatCurrency(calculations.totalFees)}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatCurrency(calculations.unitFees)}/un
-                        </div>
-                      </div>
+                      <span className="text-sm font-semibold text-warning">
+                        +{formatCurrency(calculations.totalFees)}
+                      </span>
                     </div>
                   </div>
 
