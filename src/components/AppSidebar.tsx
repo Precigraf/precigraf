@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calculator, Users, FileText, Package, LogOut, Settings, Sun, Moon, Store } from 'lucide-react';
+import { LayoutDashboard, Calculator, Users, FileText, Package, LogOut, Settings, Sun, Moon, Store, Box } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useNavigate } from 'react-router-dom';
 import LogoIcon from '@/components/LogoIcon';
@@ -25,6 +25,7 @@ const navItems = [
   { title: 'Calculadora', url: '/', icon: Calculator },
   { title: 'Marketplace', url: '/marketplace', icon: Store },
   { title: 'Clientes', url: '/clientes', icon: Users },
+  { title: 'Produtos', url: '/produtos', icon: Box },
   { title: 'Orçamentos', url: '/orcamentos', icon: FileText },
   { title: 'Pedidos', url: '/pedidos', icon: Package },
 ];

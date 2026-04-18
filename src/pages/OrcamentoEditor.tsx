@@ -16,7 +16,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import AppLayout from '@/components/AppLayout';
 import ClientForm from '@/components/gestao/ClientForm';
-import { useClients, type Client } from '@/hooks/useClients';
+import { useClients } from '@/hooks/useClients';
 import { useProducts, type Product } from '@/hooks/useProducts';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';

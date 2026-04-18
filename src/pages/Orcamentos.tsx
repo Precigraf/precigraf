@@ -1,26 +1,30 @@
 import React, { useState } from 'react';
-import { Plus, Search, Check, X, Trash2, FileText, Eye, FileDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Search, Trash2, FileText, Eye, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AppLayout from '@/components/AppLayout';
-import QuoteForm from '@/components/gestao/QuoteForm';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useClients } from '@/hooks/useClients';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 
-const statusLabels: Record<string, string> = { pending: 'Pendente', approved: 'Aprovado', rejected: 'Recusado' };
-const statusColors: Record<string, string> = { pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30', approved: 'bg-green-500/10 text-green-600 border-green-500/30', rejected: 'bg-red-500/10 text-red-600 border-red-500/30' };
+const statusLabels: Record<string, string> = { draft: 'Rascunho', pending: 'Enviado', approved: 'Aprovado', rejected: 'Recusado' };
+const statusColors: Record<string, string> = {
+  draft: 'bg-muted text-muted-foreground border-border',
+  pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30',
+  approved: 'bg-green-500/10 text-green-600 border-green-500/30',
+  rejected: 'bg-red-500/10 text-red-600 border-red-500/30',
+};
 
 const Orcamentos: React.FC = () => {
-  const { quotes, isLoading, createQuote, approveQuote, rejectQuote, deleteQuote } = useQuotes();
+  const navigate = useNavigate();
+  const { quotes, isLoading, deleteQuote } = useQuotes();
   const { clients } = useClients();
   const { profile } = useCompanyProfile();
-  const [formOpen, setFormOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [viewQuote, setViewQuote] = useState<any>(null);
