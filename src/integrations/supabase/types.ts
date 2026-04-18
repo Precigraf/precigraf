@@ -328,6 +328,39 @@ export type Database = {
         }
         Relationships: []
       }
+      products: {
+        Row: {
+          created_at: string
+          default_quantity: number
+          description: string | null
+          id: string
+          name: string
+          unit_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_quantity?: number
+          description?: string | null
+          id?: string
+          name: string
+          unit_price?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          default_quantity?: number
+          description?: string | null
+          id?: string
+          name?: string
+          unit_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           company_address: string | null
@@ -429,45 +462,69 @@ export type Database = {
           client_id: string
           created_at: string
           description: string | null
+          discount_type: string | null
+          discount_value: number | null
           id: string
+          items: Json | null
+          notes: string | null
           product_name: string | null
           quantity: number | null
+          quote_number: number | null
           raw_data: Json | null
+          shipping_value: number | null
           status: string
+          subtotal: number | null
           total_value: number
           unit_value: number | null
           updated_at: string
           user_id: string
+          valid_until: string | null
         }
         Insert: {
           calculation_id?: string | null
           client_id: string
           created_at?: string
           description?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
           id?: string
+          items?: Json | null
+          notes?: string | null
           product_name?: string | null
           quantity?: number | null
+          quote_number?: number | null
           raw_data?: Json | null
+          shipping_value?: number | null
           status?: string
+          subtotal?: number | null
           total_value: number
           unit_value?: number | null
           updated_at?: string
           user_id: string
+          valid_until?: string | null
         }
         Update: {
           calculation_id?: string | null
           client_id?: string
           created_at?: string
           description?: string | null
+          discount_type?: string | null
+          discount_value?: number | null
           id?: string
+          items?: Json | null
+          notes?: string | null
           product_name?: string | null
           quantity?: number | null
+          quote_number?: number | null
           raw_data?: Json | null
+          shipping_value?: number | null
           status?: string
+          subtotal?: number | null
           total_value?: number
           unit_value?: number | null
           updated_at?: string
           user_id?: string
+          valid_until?: string | null
         }
         Relationships: [
           {
