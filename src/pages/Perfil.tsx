@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/components/AppLayout';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { maskCep, maskPhone, maskCnpj } from '@/lib/masks';
 
@@ -55,10 +55,6 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const [storeName, setStoreName] = useState('');
   const [systemColor, setSystemColor] = useState('#6366f1');
 
-  const colorPresets = [
-    '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b',
-    '#22c55e', '#06b6d4', '#3b82f6', '#0ea5e9', '#14b8a6',
-  ];
 
   useEffect(() => {
     if (profile) {
