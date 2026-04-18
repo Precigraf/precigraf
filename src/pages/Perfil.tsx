@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/components/AppLayout';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { maskCep, maskPhone, maskCnpj } from '@/lib/masks';
 
@@ -55,10 +55,6 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const [storeName, setStoreName] = useState('');
   const [systemColor, setSystemColor] = useState('#6366f1');
 
-  const colorPresets = [
-    '#6366f1', '#8b5cf6', '#ec4899', '#ef4444', '#f59e0b',
-    '#22c55e', '#06b6d4', '#3b82f6', '#0ea5e9', '#14b8a6',
-  ];
 
   useEffect(() => {
     if (profile) {
@@ -204,17 +200,8 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
             {/* Profile Info */}
             <Card className="bg-card border-border">
               <CardHeader>
-                <div className="flex items-center gap-4">
-                  <Avatar className="w-16 h-16 border-2 border-primary/20">
-                    <AvatarFallback className="bg-primary/10 text-primary text-xl">
-                      {currentName?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <CardTitle className="text-xl">Meu Perfil</CardTitle>
-                    <CardDescription>{user?.email}</CardDescription>
-                  </div>
-                </div>
+                <CardTitle className="text-xl">Meu Perfil</CardTitle>
+                <CardDescription>{user?.email}</CardDescription>
               </CardHeader>
             </Card>
 
@@ -350,28 +337,6 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
                           <Label>Estado</Label>
                           <Input value={companyState} onChange={e => setCompanyState(e.target.value)} placeholder="UF" maxLength={2} />
                         </div>
-                      </div>
-
-                      {/* System Color */}
-                      <div className="space-y-2">
-                        <Label>Cor do sistema</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {colorPresets.map(color => (
-                            <button
-                              key={color}
-                              onClick={() => setSystemColor(color)}
-                              className={`w-8 h-8 rounded-full border-2 transition-all ${systemColor === color ? 'border-foreground scale-110' : 'border-transparent'}`}
-                              style={{ backgroundColor: color }}
-                            />
-                          ))}
-                          <input type="color" value={systemColor} onChange={e => setSystemColor(e.target.value)} className="w-8 h-8 rounded cursor-pointer border-0" />
-                        </div>
-                      </div>
-
-                      {/* Store Name for sidebar */}
-                      <div className="space-y-2">
-                        <Label>Nome da loja (sidebar)</Label>
-                        <Input value={storeName} onChange={e => setStoreName(e.target.value)} placeholder="Ex: Gráfica Rápida" maxLength={100} />
                       </div>
 
                       {/* Info notice */}

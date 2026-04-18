@@ -1,6 +1,10 @@
 import React from 'react';
-import { Users, FileText, CheckCircle, XCircle, DollarSign, Crown, Clock } from 'lucide-react';
+import { Users, FileText, CheckCircle, XCircle, DollarSign, Calendar, Crown, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import AppLayout from '@/components/AppLayout';
 import { useClients } from '@/hooks/useClients';
 import { useQuotes } from '@/hooks/useQuotes';
@@ -10,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 const Gestao: React.FC = () => {
   const { clients } = useClients();
   const { quotes } = useQuotes();
-  const { plan, isTrialActive, trialRemainingHours } = useUserPlan();
+  const { plan, isTrialActive, isTrialExpired, trialEndsAt, trialRemainingHours } = useUserPlan();
   const navigate = useNavigate();
 
   const approvedQuotes = quotes.filter(q => q.status === 'approved');
@@ -18,6 +22,12 @@ const Gestao: React.FC = () => {
   const totalRevenue = approvedQuotes.reduce((sum, q) => sum + q.total_value, 0);
 
   const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  const isPro = plan === 'pro';
+  const planName = isPro ? 'Plano Profissional' : 'Teste Grátis';
+  const statusLabel = isPro ? 'Plano Ativo' : isTrialActive ? 'Período de Teste' : 'Expirado';
+  const statusVariant = isPro ? 'default' : isTrialActive ? 'secondary' : 'destructive';
+  const remainingDays = Math.max(0, Math.ceil(trialRemainingHours / 24));
 
   const metrics = [
     { label: 'Faturamento', value: formatCurrency(totalRevenue), icon: DollarSign, color: 'text-green-500' },
@@ -30,34 +40,50 @@ const Gestao: React.FC = () => {
   return (
     <AppLayout>
       <div className="container mx-auto px-4 py-6 max-w-5xl">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Visão geral do seu negócio</p>
-          </div>
-          {plan === 'pro' ? (
-            <div
-              className="flex items-center gap-2 cursor-pointer bg-primary/10 hover:bg-primary/20 transition-colors rounded-lg px-3 py-2"
-              onClick={() => navigate('/upgrade')}
-            >
-              <Crown className="w-4 h-4 text-primary" />
-              <span className="text-sm font-semibold text-primary">Plano Profissional</span>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">Visão geral do seu negócio</p>
+        </div>
+
+        {/* Painel "Meu Plano" */}
+        <Card className="mb-6 p-5 bg-card border-border">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${isPro ? 'bg-primary/10' : 'bg-orange-500/10'}`}>
+                {isPro ? <Crown className="w-5 h-5 text-primary" /> : <Sparkles className="w-5 h-5 text-orange-500" />}
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs text-muted-foreground uppercase tracking-wide">Meu Plano</div>
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  <h2 className="text-lg font-bold text-foreground">{planName}</h2>
+                  <Badge variant={statusVariant as any} className={isTrialActive ? 'bg-orange-500/15 text-orange-600 border-orange-500/30' : ''}>
+                    {statusLabel}
+                  </Badge>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div
-              className="flex items-center gap-2 cursor-pointer bg-orange-500/10 hover:bg-orange-500/20 transition-colors rounded-lg px-3 py-2"
-              onClick={() => navigate('/upgrade')}
-            >
-              <Clock className="w-4 h-4 text-orange-500" />
-              <div className="text-right">
-                <span className="text-sm font-semibold text-orange-500">Plano Gratuito</span>
-                {isTrialActive && (
-                  <p className="text-xs text-orange-400">{trialRemainingHours}h restantes de teste</p>
-                )}
+            {!isPro && (
+              <Button onClick={() => navigate('/upgrade')} className="shrink-0">
+                <Crown className="w-4 h-4 mr-2" /> Fazer Upgrade
+              </Button>
+            )}
+          </div>
+
+          {!isPro && trialEndsAt && (
+            <div className="mt-4 flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+              <Calendar className="w-5 h-5 text-orange-500 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-muted-foreground">Teste expira em</div>
+                <div className="text-sm font-semibold text-foreground">
+                  {format(trialEndsAt, "d 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                </div>
+              </div>
+              <div className={`text-sm font-bold shrink-0 ${isTrialExpired ? 'text-destructive' : 'text-orange-500'}`}>
+                {remainingDays} {remainingDays === 1 ? 'dia restante' : 'dias restantes'}
               </div>
             </div>
           )}
-        </div>
+        </Card>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {metrics.map(m => (

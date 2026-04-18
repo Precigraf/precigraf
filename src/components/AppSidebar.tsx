@@ -59,7 +59,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div>
               <h1 className="text-sm font-bold text-foreground leading-tight">
-                {profile?.store_name || 'PreciGraf'}
+                {profile?.company_name || 'Precigraf'}
               </h1>
               <p className="text-[10px] text-muted-foreground leading-tight">Sistema de Gestão</p>
             </div>
