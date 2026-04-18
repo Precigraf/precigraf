@@ -13,6 +13,8 @@ import Perfil from "./pages/Perfil";
 import Upgrade from "./pages/Upgrade";
 import Clientes from "./pages/Clientes";
 import Orcamentos from "./pages/Orcamentos";
+import OrcamentoEditor from "./pages/OrcamentoEditor";
+import Produtos from "./pages/Produtos";
 import Pedidos from "./pages/Pedidos";
 import Gestao from "./pages/Gestao";
 import PagamentoConfirmado from "./pages/PagamentoConfirmado";
@@ -37,6 +39,9 @@ const App = () => (
               <Route path="/upgrade" element={<ProtectedRoute><Upgrade /></ProtectedRoute>} />
               <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />
               <Route path="/orcamentos" element={<ProtectedRoute><Orcamentos /></ProtectedRoute>} />
+              <Route path="/orcamentos/novo" element={<ProtectedRoute><OrcamentoEditor /></ProtectedRoute>} />
+              <Route path="/orcamentos/:id" element={<ProtectedRoute><OrcamentoEditor /></ProtectedRoute>} />
+              <Route path="/produtos" element={<ProtectedRoute><Produtos /></ProtectedRoute>} />
               <Route path="/pedidos" element={<ProtectedRoute><Pedidos /></ProtectedRoute>} />
               <Route path="/gestao" element={<ProtectedRoute><Gestao /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
