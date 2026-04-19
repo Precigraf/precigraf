@@ -32,8 +32,8 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
 
       const { data, error } = await supabase.functions.invoke('create-stripe-checkout');
       if (error || !data?.url) {
-        console.error('Checkout error:', error);
-        toast.error('Erro ao iniciar checkout. Tente novamente.');
+        console.error('Checkout error:', error, data);
+        toast.error(data?.error || 'Erro ao iniciar checkout. Tente novamente.');
         setIsLoading(false);
         return;
       }
