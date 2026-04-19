@@ -69,8 +69,8 @@ const CostCalculator: React.FC = () => {
     trialRemainingHours,
     canCreateCalculation,
     canSaveCalculation,
+    featuresUnlocked,
   } = useUserPlan();
-  const { featuresUnlocked } = useUserPlan();
   // During trial OR Pro: all features unlocked
   const isPro = featuresUnlocked;
   const isBlocked = !canCreateCalculation;

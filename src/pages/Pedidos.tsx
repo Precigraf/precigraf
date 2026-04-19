@@ -1,11 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { DollarSign, TrendingDown, TrendingUp, Clock, Plus, Trash2, Calendar } from 'lucide-react';
+import { DollarSign, TrendingDown, TrendingUp, Clock, Trash2, Calendar } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import AppLayout from '@/components/AppLayout';
 import KanbanBoard from '@/components/gestao/KanbanBoard';
@@ -16,10 +13,8 @@ type PeriodFilter = 'all' | 'week' | 'month';
 
 const Pedidos: React.FC = () => {
   const { orders } = useOrders();
-  const { expenses, createExpense, deleteExpense } = useExpenses();
+  const { expenses, deleteExpense } = useExpenses();
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('month');
-  const [expenseOpen, setExpenseOpen] = useState(false);
-  const [newExpense, setNewExpense] = useState({ description: '', amount: '', category: 'operational' });
 
   const formatCurrency = (v: number) =>
     v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -67,22 +62,6 @@ const Pedidos: React.FC = () => {
     { label: 'Lucro', value: formatCurrency(lucro), icon: TrendingUp, color: lucro >= 0 ? 'text-emerald-500' : 'text-red-500' },
     { label: 'A Receber', value: formatCurrency(aReceber), icon: Clock, color: 'text-yellow-500' },
   ];
-
-  const handleCreateExpense = () => {
-    const amount = parseFloat(newExpense.amount.replace(',', '.'));
-    if (!newExpense.description.trim() || isNaN(amount) || amount <= 0) return;
-    createExpense.mutate({
-      description: newExpense.description.trim(),
-      amount,
-      expense_date: new Date().toISOString().split('T')[0],
-      category: newExpense.category,
-    }, {
-      onSuccess: () => {
-        setNewExpense({ description: '', amount: '', category: 'operational' });
-        setExpenseOpen(false);
-      },
-    });
-  };
 
   
 
