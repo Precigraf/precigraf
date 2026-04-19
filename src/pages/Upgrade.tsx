@@ -1,6 +1,6 @@
 import React, { forwardRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Crown, Check, Zap, Infinity, Loader2 } from 'lucide-react';
+import { ArrowLeft, Crown, Check, Zap, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/components/AppLayout';
@@ -15,47 +15,30 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
     'Cálculos ilimitados',
     'Exportação para PDF e Excel',
     'Histórico completo',
+    'Gestão de clientes, orçamentos e pedidos',
     'Suporte prioritário',
-    'Acesso vitalício (sem mensalidade)',
     'Todas as atualizações futuras',
   ];
 
   const handleUpgrade = async () => {
     setIsLoading(true);
-
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
       if (!session) {
-        toast.error('Você precisa estar logado para fazer upgrade');
+        toast.error('Você precisa estar logado para assinar');
         navigate('/auth');
         return;
       }
 
-      // Generate secure CSRF token
-      const csrfToken = crypto.randomUUID();
-      
-      // Store pending payment in database (secure, not localStorage)
-      const { error: insertError } = await supabase
-        .from('pending_payments')
-        .insert({
-          user_id: session.user.id,
-          csrf_token: csrfToken,
-        });
-
-      if (insertError) {
-        console.error('Error creating pending payment:', insertError);
-        toast.error('Erro ao iniciar pagamento. Tente novamente.');
+      const { data, error } = await supabase.functions.invoke('create-stripe-checkout');
+      if (error || !data?.url) {
+        console.error('Checkout error:', error);
+        toast.error('Erro ao iniciar checkout. Tente novamente.');
         setIsLoading(false);
         return;
       }
 
-      // Store CSRF token in sessionStorage (more secure than localStorage, cleared on tab close)
-      sessionStorage.setItem('payment_csrf_token', csrfToken);
-
-      // Open InfinitePay checkout in new tab, redirect current page to confirmation
-      window.open('https://checkout.infinitepay.io/israel-shaina-wanderley/7IjWa2wTYf', '_blank');
-      navigate('/pagamento-confirmado');
+      window.location.href = data.url;
     } catch (error) {
       console.error('Error starting checkout:', error);
       toast.error('Erro inesperado. Tente novamente.');
@@ -67,7 +50,6 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
     <AppLayout>
       <div ref={ref}>
       <main className="container mx-auto px-4 py-8 max-w-2xl">
-        {/* Back button */}
         <Button
           variant="ghost"
           onClick={() => navigate(-1)}
@@ -81,9 +63,9 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             <Crown className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Acesso Vitalício PreciGraf</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Plano Pro PreciGraf</h1>
           <p className="text-muted-foreground">
-            Pague uma vez, use para sempre!
+            Assinatura mensal — cancele quando quiser
           </p>
         </div>
 
@@ -110,15 +92,12 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
             </ul>
 
             <div className="text-center p-6 bg-primary/5 border border-primary/20 rounded-lg mb-6">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Infinity className="w-5 h-5 text-primary" />
-                <p className="text-sm font-medium text-primary">Pagamento único</p>
-              </div>
+              <p className="text-sm font-medium text-primary mb-2">Assinatura mensal</p>
               <p className="text-4xl font-bold text-foreground">
-                R$ 29,90
+                R$ 15,90<span className="text-lg font-normal text-muted-foreground">/mês</span>
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Sem mensalidade, sem recorrência
+                Cancele a qualquer momento
               </p>
             </div>
 
@@ -136,13 +115,13 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
               ) : (
                 <>
                   <Crown className="w-5 h-5" />
-                  Desbloquear acesso vitalício
+                  Assinar plano Pro
                 </>
               )}
             </Button>
 
             <p className="text-center text-xs text-muted-foreground mt-4">
-              Pagamento seguro via InfinitePay
+              Pagamento seguro via Stripe
             </p>
           </CardContent>
         </Card>
