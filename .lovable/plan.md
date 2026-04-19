@@ -1,101 +1,29 @@
 
+## Objetivo
+Remover as notificações/bloqueios de "recurso exclusivo Pro" dentro da Calculadora e do Marketplace, já que durante o teste de 2 dias todos os recursos ficam liberados. O `TrialBanner` (teste ativo/expirado) permanece — ele é o aviso oficial do sistema de trial.
 
-# Plano de Implementação
+## Mudanças
 
-Vou organizar as mudanças em 5 áreas distintas. Antes, preciso esclarecer um ponto crítico sobre orçamentos.
+### 1. `src/components/CostCalculator.tsx`
+- Remover o wrapper `<ProFeatureGate>` em volta de `<AdvancedOperationalCosts>` (linhas 614-626) — renderizar `AdvancedOperationalCosts` diretamente.
+- Remover o banner "Sistema bloqueado — Você atingiu o limite de N cálculos" (linhas 459-483). O bloqueio por limite de cálculos durante o trial deixa de ser necessário enquanto features estão liberadas; o `TrialBanner` cobre o caso de expiração.
+- Remover import de `ProFeatureGate` e do ícone `Lock` (se não usado em outro lugar do arquivo).
+- Manter `UpgradePlanModal` apenas como destino de "Garantir acesso" do `TrialBanner`.
 
-## 1. Dashboard — Painel "Meu Plano"
+### 2. `src/components/MarketplaceSection.tsx`
+- Remover totalmente o bloco `if (!isPro) { ... }` (linhas 185-213) que renderiza o overlay "Recurso exclusivo do Plano Pro". O componente passa a renderizar a versão completa para todos os usuários.
+- Remover imports não utilizados após a limpeza (`Lock`, `Sparkles`, `Badge`, `Button` se não forem mais usados em outro ponto do arquivo — verificar antes de remover).
 
-**Arquivo:** `src/pages/Gestao.tsx`
+### 3. `src/pages/Marketplace.tsx`
+- Remover `isPro`/`onShowUpgrade` passados para `<MarketplaceSection>` (props ficam opcionais, sem efeito).
+- Manter `UpgradePlanModal` removido, ou mantê-lo desativado — proposta: remover o modal e o estado `showUpgradeModal` desta página, já que não há mais gatilho.
 
-Novo card destacado abaixo do cabeçalho, antes das métricas:
-- Título "Meu Plano" + nome do plano (Teste Grátis / Pro)
-- Badge de status ("Período de Teste", "Plano Ativo", "Expirado")
-- Botão "Fazer Upgrade" no canto superior direito (oculto se já for Pro) → navega para `/upgrade`
-- Bloco com ícone calendário, "Teste expira em [data por extenso]" e "X dia(s) restantes"
-- Usa `useUserPlan()` (`trialEndsAt`, `trialRemainingHours`, `plan`, `isTrialActive`, `isTrialExpired`)
-- Data formatada com `date-fns` em pt-BR (ex: "19 de abril de 2026")
-- Dias restantes = `Math.ceil(trialRemainingHours / 24)`
+### 4. Não alterar
+- `useUserPlan.tsx`: lógica de trial/featuresUnlocked permanece igual.
+- `TrialBanner.tsx`: continua exibindo "teste ativo" e "teste expirado" — esta é a única notificação de plano que o usuário ainda verá nessas páginas.
+- Páginas de Gestão/CRM (`Clientes`, `Orçamentos`, `Pedidos`, `Gestao`) não foram mencionadas e usam o mesmo `featuresUnlocked` via `ProtectedRoute`/banners próprios — fora do escopo desta tarefa.
 
-Remove o badge atual de plano no cabeçalho (substituído por este painel).
-
-## 2. Marketplace
-
-**Arquivo:** `src/pages/Marketplace.tsx`
-- Remover input de **Quantidade**
-- Manter apenas **Preço base total do produto**
-- Recalcular `unitFinalPrice` e `totalFees` sem multiplicar por quantidade
-
-## 3. Clientes
-
-**Arquivo:** `src/pages/Clientes.tsx` (e card relacionado)
-- Adicionar botão **Visualizar** (ícone `Eye`) que abre Dialog com todos os campos cadastrados (nome, doc, contato, endereço, observações)
-- Coluna/campo WhatsApp: substituir texto puro por botão verde com ícone do WhatsApp (`MessageCircle` do lucide com cor `#25D366`) que abre `https://wa.me/{numero}` em nova aba
-
-## 4. Configurações
-
-**Arquivo:** `src/pages/Perfil.tsx`
-- Seção **Meu Perfil**: remover bloco de avatar/foto de usuário
-- Seção **Empresa**: remover campos **Cor do sistema** e **Nome da loja (sidebar)**
-- Manter logo, dados da empresa, endereço, PIX, etc.
-
-**Arquivo:** `src/components/AppSidebar.tsx`
-- Como `store_name` deixa de ser editável, usar fallback fixo "Precigraf" (ou `company_name` se existir) no lugar
-- Manter exibição do logo
-
-**Arquivo:** `src/components/AppLayout.tsx`
-- Remover/desativar `useSystemColor` (cor dinâmica não será mais configurável)
-
-## 5. Tela de Orçamento — Reformulação completa
-
-Esta é a maior mudança. Plano resumido:
-
-**Novo arquivo:** `src/pages/OrcamentoEditor.tsx` (rota `/orcamentos/novo` e `/orcamentos/:id`)
-
-Layout 2 colunas (lg:grid-cols-3, esquerda span-2):
-
-**Painel Esquerdo:**
-- Cabeçalho: código `ORC-{n}` sequencial, badge status, data criação
-- Ações topo: "Converter para Pedido" | "Exportar PDF" | "Salvar"
-- **Cliente:** Combobox de busca (nome/documento) + botão limpar + botão "Novo Cliente" (abre `ClientForm`)
-- **Itens:** lista com nome/qtd × unit/total + botão remover + "+ Adicionar Item" (modal busca em `calculations` salvos como catálogo de produtos)
-- **Observações:** Textarea + DatePicker validade + Select status (Rascunho/Enviado/Aprovado/Recusado)
-
-**Painel Direito (sticky):**
-- Subtotal (soma itens) + qtd itens
-- Desconto: input + toggle %/R$ (valor calculado em vermelho com sinal −)
-- Frete: input opcional (verde com +)
-- Total = Subtotal − Desconto + Frete (formato `R$ x.xxx,xx`)
-
-**Listagem `Orcamentos.tsx`:** mantém com botão "Novo Orçamento" → navega para `/orcamentos/novo`
-
-### Mudanças de banco necessárias
-
-Novas colunas em `quotes`:
-- `quote_number` int sequencial (com sequence por user via trigger)
-- `items` jsonb (array de itens)
-- `discount_value` numeric, `discount_type` text ('percent'|'fixed')
-- `shipping_value` numeric
-- `subtotal` numeric
-- `notes` text
-- `valid_until` date
-
-Novo trigger para gerar `quote_number` sequencial por `user_id`.
-
-## Pergunta crítica antes de implementar
-
-<questions--ask_questions>
-</questions--ask_questions>
-
-### Catálogo de itens do orçamento
-
-O sistema atual não tem uma tabela `products` (catálogo). Os "produtos" hoje vêm de `calculations` (cálculos salvos pela calculadora). Para o botão **"+ Adicionar Item"** do novo editor de orçamento, qual fonte usar?
-
-**Opção A — Usar cálculos salvos como catálogo (recomendado, sem migração extra):** modal lista `calculations` do usuário; ao selecionar, importa nome, preço unitário e quantidade padrão; usuário pode ajustar qtd/valor inline.
-
-**Opção B — Criar tabela `products` nova:** catálogo independente com CRUD próprio (nome, preço, descrição). Adiciona uma página "Produtos" e migrações.
-
-**Opção C — Item livre (manual):** modal apenas com campos vazios (nome, qtd, valor unit), sem catálogo.
-
-Vou aguardar sua escolha entre A / B / C antes de iniciar a implementação do editor de orçamento. As outras 4 áreas (Dashboard, Marketplace, Clientes, Configurações) seguem o plano acima sem ambiguidade.
-
+## Resultado esperado
+- Calculadora: sem cadeado em "Custos Operacionais", sem banner "Sistema bloqueado".
+- Marketplace: simulação totalmente acessível, sem overlay de upgrade.
+- O único aviso de plano que aparece nessas duas páginas é o `TrialBanner` (tempo restante do teste, ou aviso de expiração após os 2 dias).
