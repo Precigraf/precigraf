@@ -46,8 +46,8 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-border p-4">
-        <div className="flex items-center gap-2">
+      <SidebarHeader className={collapsed ? 'border-b border-border p-2' : 'border-b border-border p-4'}>
+        <div className={`flex items-center gap-2 ${collapsed ? 'justify-center' : ''}`}>
           {profile?.logo_url ? (
             <img src={profile.logo_url} alt="Logo" className="w-8 h-8 rounded-lg object-contain shrink-0" />
           ) : (
