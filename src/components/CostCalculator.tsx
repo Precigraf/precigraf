@@ -442,7 +442,6 @@ const CostCalculator: React.FC = () => {
       )}
 
       <div className={`grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 ${isBlocked ? 'pointer-events-none opacity-60' : ''}`}>
-        {/* Banner de Trial */}
         {/* Coluna Esquerda - Formulário */}
         <div className="space-y-6">
           {/* Banner de Modo Edição */}
