@@ -61,11 +61,39 @@ Deno.serve(async (req) => {
       .single();
 
     let customerId = profile?.stripe_customer_id ?? undefined;
+
+    if (customerId) {
+      try {
+        const existingCustomer = await stripe.customers.retrieve(customerId);
+        if ('deleted' in existingCustomer && existingCustomer.deleted) {
+          customerId = undefined;
+        }
+      } catch (error) {
+        const stripeError = error as Stripe.StripeRawError;
+        if (stripeError.code === 'resource_missing') {
+          customerId = undefined;
+        } else {
+          throw error;
+        }
+      }
+    }
+
     if (!customerId) {
       const existing = await stripe.customers.list({ email: userEmail, limit: 1 });
       if (existing.data.length > 0) {
         customerId = existing.data[0].id;
+      } else {
+        const createdCustomer = await stripe.customers.create({
+          email: userEmail,
+          metadata: { user_id: userId },
+        });
+        customerId = createdCustomer.id;
       }
+
+      await admin
+        .from('profiles')
+        .update({ stripe_customer_id: customerId, updated_at: new Date().toISOString() })
+        .eq('user_id', userId);
     }
 
     const origin = req.headers.get('origin') || 'https://precigraf.com.br';
@@ -73,7 +101,7 @@ Deno.serve(async (req) => {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,
-      customer_email: customerId ? undefined : userEmail,
+      customer_email: undefined,
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${origin}/pagamento-confirmado?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/upgrade`,
