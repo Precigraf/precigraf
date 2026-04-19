@@ -110,43 +110,6 @@ const Pedidos: React.FC = () => {
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <TrendingDown className="w-4 h-4 text-red-500" /> Despesas
             </h2>
-            <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <Plus className="w-4 h-4 mr-1" /> Nova Despesa
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-sm bg-card">
-                <DialogHeader>
-                  <DialogTitle>Registrar Despesa</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Descrição</Label>
-                    <Input value={newExpense.description} onChange={e => setNewExpense(p => ({ ...p, description: e.target.value }))} placeholder="Ex: Tinta, Energia" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Valor (R$)</Label>
-                    <Input value={newExpense.amount} onChange={e => setNewExpense(p => ({ ...p, amount: e.target.value }))} placeholder="0,00" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Categoria</Label>
-                    <Select value={newExpense.category} onValueChange={v => setNewExpense(p => ({ ...p, category: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="operational">Operacional</SelectItem>
-                        <SelectItem value="material">Material</SelectItem>
-                        <SelectItem value="fixed">Custo Fixo</SelectItem>
-                        <SelectItem value="other">Outros</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button onClick={handleCreateExpense} disabled={createExpense.isPending} className="w-full">
-                    {createExpense.isPending ? 'Salvando...' : 'Registrar'}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
           </div>
           {filteredExpenses.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">Nenhuma despesa registrada.</p>
