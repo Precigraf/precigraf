@@ -330,31 +330,55 @@ export type Database = {
       }
       products: {
         Row: {
+          cost: number
           created_at: string
           default_quantity: number
           description: string | null
+          finish: string | null
           id: string
+          is_active: boolean
+          material: string | null
           name: string
+          price_tiers: Json
+          print_type: string | null
+          production_time: string | null
+          size: string | null
           unit_price: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          cost?: number
           created_at?: string
           default_quantity?: number
           description?: string | null
+          finish?: string | null
           id?: string
+          is_active?: boolean
+          material?: string | null
           name: string
+          price_tiers?: Json
+          print_type?: string | null
+          production_time?: string | null
+          size?: string | null
           unit_price?: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          cost?: number
           created_at?: string
           default_quantity?: number
           description?: string | null
+          finish?: string | null
           id?: string
+          is_active?: boolean
+          material?: string | null
           name?: string
+          price_tiers?: Json
+          print_type?: string | null
+          production_time?: string | null
+          size?: string | null
           unit_price?: number
           updated_at?: string
           user_id?: string
