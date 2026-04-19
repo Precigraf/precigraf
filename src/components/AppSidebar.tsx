@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import LogoIcon from '@/components/LogoIcon';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { Button } from '@/components/ui/button';
 import {
@@ -39,7 +38,6 @@ export function AppSidebar() {
   const { profile } = useCompanyProfile();
 
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
-  const userAvatar = user?.user_metadata?.avatar_url || '';
 
   const handleLogout = async () => {
     await signOut();
@@ -124,20 +122,10 @@ export function AppSidebar() {
           )}
         </div>
 
-        {user && (
-          <div className="flex items-center gap-2">
-            <Avatar className="w-7 h-7 border border-border shrink-0">
-              <AvatarImage src={userAvatar} alt="Foto de perfil" />
-              <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                {userName.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            {!collapsed && (
-              <div className="truncate">
-                <p className="text-xs font-medium text-foreground truncate">{userName}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
-              </div>
-            )}
+        {user && !collapsed && (
+          <div className="truncate">
+            <p className="text-xs font-medium text-foreground truncate">{userName}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
           </div>
         )}
       </SidebarFooter>

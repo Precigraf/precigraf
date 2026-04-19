@@ -1,19 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { DollarSign, TrendingDown, TrendingUp, Clock, Trash2, Calendar } from 'lucide-react';
+import { DollarSign, TrendingDown, TrendingUp, Clock, Calendar } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import AppLayout from '@/components/AppLayout';
 import KanbanBoard from '@/components/gestao/KanbanBoard';
 import { useOrders } from '@/hooks/useOrders';
-import { useExpenses } from '@/hooks/useExpenses';
 
 type PeriodFilter = 'all' | 'week' | 'month';
 
 const Pedidos: React.FC = () => {
   const { orders } = useOrders();
-  const { expenses, deleteExpense } = useExpenses();
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('month');
 
   const formatCurrency = (v: number) =>
@@ -39,12 +35,6 @@ const Pedidos: React.FC = () => {
     return orders.filter(o => new Date(o.created_at) >= start);
   }, [orders, periodFilter]);
 
-  const filteredExpenses = useMemo(() => {
-    const start = getDateRange(periodFilter);
-    if (!start) return expenses;
-    return expenses.filter(e => new Date(e.expense_date) >= start);
-  }, [expenses, periodFilter]);
-
   const faturamento = filteredOrders
     .filter(o => o.status === 'delivered')
     .reduce((sum, o) => sum + (o.quotes?.total_value ?? 0), 0);
@@ -53,7 +43,7 @@ const Pedidos: React.FC = () => {
     .filter(o => o.status !== 'delivered')
     .reduce((sum, o) => sum + (o.quotes?.total_value ?? 0), 0);
 
-  const despesas = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const despesas = 0;
   const lucro = faturamento - despesas;
 
   const kpis = [
@@ -103,49 +93,6 @@ const Pedidos: React.FC = () => {
             </Card>
           ))}
         </div>
-
-        {/* Expenses Section */}
-        <Card className="p-4 bg-card border-border mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <TrendingDown className="w-4 h-4 text-red-500" /> Despesas
-            </h2>
-          </div>
-          {filteredExpenses.length === 0 ? (
-            <p className="text-xs text-muted-foreground text-center py-4">Nenhuma despesa registrada.</p>
-          ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {filteredExpenses.map(exp => (
-                <div key={exp.id} className="flex items-center justify-between p-2 rounded-lg bg-secondary/50">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{exp.description}</p>
-                    <p className="text-xs text-muted-foreground">{new Date(exp.expense_date).toLocaleDateString('pt-BR')}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-red-500">-{formatCurrency(exp.amount)}</span>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive">
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-card">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Excluir despesa?</AlertDialogTitle>
-                          <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteExpense.mutate(exp.id)} className="bg-destructive text-destructive-foreground">Excluir</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </Card>
 
         <KanbanBoard />
       </div>
