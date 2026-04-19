@@ -232,29 +232,88 @@ const OrcamentoEditor: React.FC = () => {
     }
   };
 
-  const handleConvertToOrder = async () => {
+  const openConvertModal = () => {
     if (!quoteId) {
       toast({ title: 'Salve o orçamento primeiro', variant: 'destructive' });
       return;
     }
-    if (!user) return;
+    setConvertModalOpen(true);
+  };
+
+  const handleConvertConfirm = async (data: ConvertToOrderData) => {
+    if (!quoteId || !user) return;
+    setConverting(true);
     try {
-      await supabase.from('quotes').update({ status: 'approved' }).eq('id', quoteId);
-      const { error } = await supabase.from('orders').insert({
-        user_id: user.id,
-        client_id: clientId,
-        quote_id: quoteId,
+      // 1. Update or create client with form data
+      let finalClientId = data.clientId;
+      if (finalClientId) {
+        await supabase.from('clients').update(data.formData).eq('id', finalClientId);
+      } else {
+        const { data: newClient, error: clientError } = await supabase
+          .from('clients')
+          .insert({ ...data.formData, name: data.formData.name!, user_id: user.id })
+          .select()
+          .single();
+        if (clientError) throw clientError;
+        finalClientId = newClient.id;
+      }
+
+      // 2. Update quote → approved + linked to client
+      await supabase.from('quotes').update({
         status: 'approved',
+        client_id: finalClientId,
+      }).eq('id', quoteId);
+
+      // 3. Create order
+      const { error: orderError } = await supabase.from('orders').insert({
+        user_id: user.id,
+        client_id: finalClientId,
+        quote_id: quoteId,
+        status: data.status,
         kanban_position: 0,
       });
-      if (error) throw error;
+      if (orderError) throw orderError;
+
+      // 4. Register received amount as a positive expense entry? No → just toast.
       setStatus('approved');
-      toast({ title: 'Convertido em pedido!', description: 'O pedido foi criado e está disponível em Pedidos.' });
+      setClientId(finalClientId);
+      setConvertModalOpen(false);
+      toast({
+        title: 'Convertido em pedido!',
+        description: `Recebido: ${formatCurrency(data.amountReceived)} · A receber: ${formatCurrency(Math.max(0, total - data.amountReceived))}`,
+      });
       qc.invalidateQueries({ queryKey: ['quotes'] });
       qc.invalidateQueries({ queryKey: ['orders'] });
+      qc.invalidateQueries({ queryKey: ['clients'] });
     } catch (e: any) {
       toast({ title: 'Erro ao converter', description: e.message, variant: 'destructive' });
+    } finally {
+      setConverting(false);
     }
+  };
+
+  const handleSendWhatsApp = () => {
+    if (!selectedClient?.whatsapp) {
+      toast({ title: 'Cliente sem WhatsApp', description: 'Cadastre um número de WhatsApp para o cliente.', variant: 'destructive' });
+      return;
+    }
+    const phone = selectedClient.whatsapp.replace(/\D/g, '');
+    const code = quoteNumber ? `ORC-${quoteNumber}` : 'Orçamento';
+    const lines = [
+      `Olá ${selectedClient.name}! Segue seu orçamento *${code}*:`,
+      '',
+      ...items.map(i => `• ${i.name} — ${i.quantity}x ${formatCurrency(i.unit_value)} = ${formatCurrency(i.quantity * i.unit_value)}`),
+      '',
+      `Subtotal: ${formatCurrency(subtotal)}`,
+      discountAmount > 0 ? `Desconto: -${formatCurrency(discountAmount)}` : '',
+      shippingAmount > 0 ? `Frete: +${formatCurrency(shippingAmount)}` : '',
+      `*Total: ${formatCurrency(total)}*`,
+      validUntil ? `\nVálido até: ${format(validUntil, 'dd/MM/yyyy')}` : '',
+      notes ? `\nObservações: ${notes}` : '',
+      profile?.company_name ? `\n— ${profile.company_name}` : '',
+    ].filter(Boolean).join('\n');
+    const url = `https://wa.me/55${phone}?text=${encodeURIComponent(lines)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleExportPDF = () => {
