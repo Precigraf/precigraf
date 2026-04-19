@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, FileDown, Package as PackageIcon, Plus, Trash2, X, UserPlus, CalendarIcon, Search } from 'lucide-react';
+import { ArrowLeft, Save, FileDown, Package as PackageIcon, Plus, Trash2, X, UserPlus, CalendarIcon, Search, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import AppLayout from '@/components/AppLayout';
 import ClientForm from '@/components/gestao/ClientForm';
+import ConvertToOrderModal, { type ConvertToOrderData } from '@/components/gestao/ConvertToOrderModal';
 import { useClients } from '@/hooks/useClients';
 import { useProducts, type Product } from '@/hooks/useProducts';
 import { supabase } from '@/integrations/supabase/client';
@@ -82,6 +83,9 @@ const OrcamentoEditor: React.FC = () => {
   const [discountValue, setDiscountValue] = useState('0');
   const [discountType, setDiscountType] = useState<'fixed' | 'percent'>('fixed');
   const [shippingValue, setShippingValue] = useState('0');
+
+  const [convertModalOpen, setConvertModalOpen] = useState(false);
+  const [converting, setConverting] = useState(false);
 
   // Load existing quote
   useEffect(() => {
