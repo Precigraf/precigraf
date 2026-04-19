@@ -409,6 +409,11 @@ export type Database = {
           plan_id: string
           profile_image_url: string | null
           store_name: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_canceled_at: string | null
+          subscription_current_period_end: string | null
+          subscription_status: string | null
           system_color: string | null
           trial_ends_at: string | null
           updated_at: string
@@ -437,6 +442,11 @@ export type Database = {
           plan_id?: string
           profile_image_url?: string | null
           store_name?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_canceled_at?: string | null
+          subscription_current_period_end?: string | null
+          subscription_status?: string | null
           system_color?: string | null
           trial_ends_at?: string | null
           updated_at?: string
@@ -465,6 +475,11 @@ export type Database = {
           plan_id?: string
           profile_image_url?: string | null
           store_name?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_canceled_at?: string | null
+          subscription_current_period_end?: string | null
+          subscription_status?: string | null
           system_color?: string | null
           trial_ends_at?: string | null
           updated_at?: string
@@ -739,6 +754,16 @@ export type Database = {
       }
     }
     Functions: {
+      activate_monthly_subscription: {
+        Args: {
+          p_current_period_end: string
+          p_status: string
+          p_stripe_customer_id: string
+          p_stripe_subscription_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       check_device_fingerprint: {
         Args: {
           p_fingerprint_hash: string
@@ -790,6 +815,15 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      update_subscription_status: {
+        Args: {
+          p_canceled_at?: string
+          p_current_period_end: string
+          p_status: string
+          p_stripe_subscription_id: string
+        }
+        Returns: Json
       }
       validate_user_plan: {
         Args: { p_feature: string; p_user_id: string }
