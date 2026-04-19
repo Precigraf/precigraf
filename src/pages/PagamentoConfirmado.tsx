@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, Loader2, XCircle, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,54 +10,54 @@ import { useAuth } from '@/contexts/AuthContext';
 const PagamentoConfirmado = forwardRef<HTMLDivElement>((_, ref) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    const confirmPayment = async () => {
-      if (!user) {
+    if (!user) return;
+
+    // Stripe redirects with ?session_id=cs_... — webhook ativa o plano.
+    // Aqui só verificamos se o profile já está pro_monthly (poll por até ~15s).
+    let attempts = 0;
+    const maxAttempts = 8;
+
+    const check = async () => {
+      attempts++;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('subscription_status, plan_id, subscription_plans:plan_id(name)')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
         setStatus('error');
-        setMessage('Você precisa estar logado.');
+        setMessage('Erro ao verificar assinatura.');
         return;
       }
 
-      const csrfToken = sessionStorage.getItem('payment_csrf_token');
-      if (!csrfToken) {
-        setStatus('error');
-        setMessage('Token de pagamento não encontrado. Faça o upgrade novamente.');
+      const planName = (data?.subscription_plans as { name?: string } | null)?.name;
+      const isPro = planName === 'pro_monthly' || planName === 'lifetime';
+
+      if (isPro) {
+        setStatus('success');
+        setMessage('Sua assinatura Pro está ativa!');
         return;
       }
 
-      try {
-        const { data, error } = await supabase.rpc('verify_and_complete_payment', {
-          p_csrf_token: csrfToken,
-        });
-
-        if (error) {
-          console.error('Payment verification error:', error);
-          setStatus('error');
-          setMessage('Erro ao verificar pagamento. Tente novamente.');
-          return;
-        }
-
-        const result = data as Record<string, unknown> | null;
-        if (result?.success) {
-          sessionStorage.removeItem('payment_csrf_token');
-          setStatus('success');
-          setMessage((result.message as string) || 'Plano ativado com sucesso!');
-        } else {
-          setStatus('error');
-          setMessage((result?.error as string) || 'Erro ao processar pagamento.');
-        }
-      } catch (err) {
-        console.error('Payment confirmation error:', err);
+      if (attempts >= maxAttempts) {
         setStatus('error');
-        setMessage('Erro inesperado. Tente novamente.');
+        setMessage('Não conseguimos confirmar o pagamento ainda. Aguarde alguns segundos e atualize a página.');
+        return;
       }
+
+      setTimeout(check, 2000);
     };
 
-    confirmPayment();
+    check();
   }, [user]);
+
+  const sessionId = searchParams.get('session_id');
 
   return (
     <AppLayout>
@@ -69,7 +69,9 @@ const PagamentoConfirmado = forwardRef<HTMLDivElement>((_, ref) => {
               <>
                 <Loader2 className="w-16 h-16 text-primary animate-spin" />
                 <h2 className="text-xl font-semibold text-foreground">Confirmando pagamento...</h2>
-                <p className="text-muted-foreground">Aguarde enquanto ativamos seu plano.</p>
+                <p className="text-muted-foreground">
+                  {sessionId ? 'Aguarde enquanto ativamos sua assinatura.' : 'Aguarde um instante.'}
+                </p>
               </>
             )}
 
@@ -95,11 +97,11 @@ const PagamentoConfirmado = forwardRef<HTMLDivElement>((_, ref) => {
                 <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
                   <XCircle className="w-10 h-10 text-destructive" />
                 </div>
-                <h2 className="text-xl font-semibold text-foreground">Erro no Pagamento</h2>
+                <h2 className="text-xl font-semibold text-foreground">Atenção</h2>
                 <p className="text-muted-foreground">{message}</p>
                 <div className="flex flex-col gap-2 mt-4 w-full">
-                  <Button onClick={() => navigate('/upgrade')} className="w-full">
-                    Tentar novamente
+                  <Button onClick={() => window.location.reload()} className="w-full">
+                    Atualizar
                   </Button>
                   <Button variant="outline" onClick={() => navigate('/')} className="w-full">
                     Voltar para a calculadora
