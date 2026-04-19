@@ -647,6 +647,16 @@ const OrcamentoEditor: React.FC = () => {
           initialData={null}
           isLoading={createClient.isPending}
         />
+
+        {/* Convert to order */}
+        <ConvertToOrderModal
+          open={convertModalOpen}
+          onOpenChange={setConvertModalOpen}
+          totalValue={total}
+          initialClientId={clientId}
+          onConfirm={handleConvertConfirm}
+          isLoading={converting}
+        />
       </div>
     </AppLayout>
   );
