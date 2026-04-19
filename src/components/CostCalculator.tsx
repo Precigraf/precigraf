@@ -70,8 +70,10 @@ const CostCalculator: React.FC = () => {
     canCreateCalculation,
     canSaveCalculation,
   } = useUserPlan();
-  const isPro = plan === 'pro';
-  const isBlocked = !canCreateCalculation || (!isPro && calculationsCount >= maxCalculations);
+  const { featuresUnlocked } = useUserPlan();
+  // During trial OR Pro: all features unlocked
+  const isPro = featuresUnlocked;
+  const isBlocked = !canCreateCalculation;
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Estado de edição

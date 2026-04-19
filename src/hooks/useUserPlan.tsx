@@ -25,6 +25,8 @@ interface UserPlanData {
   isTrialExpired: boolean;
   trialRemainingHours: number;
   canCreateCalculation: boolean;
+  /** True for paid Pro users OR users in active trial (full feature access). */
+  featuresUnlocked: boolean;
 }
 
 const FREE_PLAN_LIMIT = 2;
@@ -137,12 +139,15 @@ export const useUserPlan = (): UserPlanData => {
   // Can create calculation: Pro users always can, trial users can, expired trial users cannot
   const canCreateCalculation = plan === 'pro' || isTrialActive;
 
+  // Full feature access: paid Pro users OR users still in trial
+  const featuresUnlocked = plan === 'pro' || isTrialActive;
+
   return {
     plan,
     planStatus,
     calculationsCount,
     canSaveCalculation,
-    canExport,
+    canExport: canExport || isTrialActive,
     maxCalculations,
     loading,
     refetch: fetchData,
@@ -151,5 +156,6 @@ export const useUserPlan = (): UserPlanData => {
     isTrialExpired,
     trialRemainingHours,
     canCreateCalculation,
+    featuresUnlocked,
   };
 };

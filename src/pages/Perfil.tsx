@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/components/AppLayout';
 
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
-import { maskCep, maskPhone, maskCnpj } from '@/lib/masks';
+import { maskCep, maskPhone, maskCpfCnpj } from '@/lib/masks';
 
 const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const { user } = useAuth();
@@ -298,10 +298,10 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
                         <Textarea value={companyFullAddress} onChange={e => setCompanyFullAddress(e.target.value)} placeholder="Ex: Av. Paulista, 1000, Conj. 82, Bela Vista" rows={2} />
                       </div>
 
-                      {/* CNPJ */}
+                      {/* CPF/CNPJ */}
                       <div className="space-y-2">
-                        <Label>CNPJ</Label>
-                        <Input value={companyCnpj} onChange={e => setCompanyCnpj(maskCnpj(e.target.value))} placeholder="Ex: 98.765.432/0001-10" maxLength={18} />
+                        <Label>CPF/CNPJ</Label>
+                        <Input value={companyCnpj} onChange={e => setCompanyCnpj(maskCpfCnpj(e.target.value))} placeholder="Ex: 000.000.000-00 ou 00.000.000/0000-00" maxLength={18} />
                       </div>
 
                       {/* Email */}
