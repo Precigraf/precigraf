@@ -79,8 +79,8 @@ export const useUserPlan = (): UserPlanData => {
       
       if (subscriptionPlan) {
         // Use subscription_plans table data
-        const isLifetime = subscriptionPlan.name === 'lifetime';
-        setPlan(isLifetime ? 'pro' : 'free');
+        const isPro = subscriptionPlan.name === 'lifetime' || subscriptionPlan.name === 'pro_monthly';
+        setPlan(isPro ? 'pro' : 'free');
         setMaxCalculations(subscriptionPlan.max_calculations);
         setCanExport(subscriptionPlan.can_export);
       } else {

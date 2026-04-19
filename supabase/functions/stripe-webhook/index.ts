@@ -37,6 +37,15 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
 
+  const toIso = (ts: number | null | undefined): string | null => {
+    if (!ts || typeof ts !== 'number' || !Number.isFinite(ts)) return null;
+    try {
+      return new Date(ts * 1000).toISOString();
+    } catch {
+      return null;
+    }
+  };
+
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -47,12 +56,13 @@ Deno.serve(async (req) => {
         if (!userId || !subscriptionId) break;
 
         const sub = await stripe.subscriptions.retrieve(subscriptionId);
+        const periodEnd = toIso(sub.current_period_end) ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         await admin.rpc('activate_monthly_subscription', {
           p_user_id: userId,
           p_stripe_customer_id: customerId,
           p_stripe_subscription_id: subscriptionId,
           p_status: sub.status,
-          p_current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+          p_current_period_end: periodEnd,
         });
         break;
       }
@@ -60,11 +70,12 @@ Deno.serve(async (req) => {
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription;
+        const periodEnd = toIso(sub.current_period_end) ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         await admin.rpc('update_subscription_status', {
           p_stripe_subscription_id: sub.id,
           p_status: sub.status,
-          p_current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-          p_canceled_at: sub.canceled_at ? new Date(sub.canceled_at * 1000).toISOString() : null,
+          p_current_period_end: periodEnd,
+          p_canceled_at: toIso(sub.canceled_at),
         });
         break;
       }
@@ -74,10 +85,11 @@ Deno.serve(async (req) => {
         const subId = invoice.subscription as string;
         if (subId) {
           const sub = await stripe.subscriptions.retrieve(subId);
+          const periodEnd = toIso(sub.current_period_end) ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
           await admin.rpc('update_subscription_status', {
             p_stripe_subscription_id: sub.id,
             p_status: sub.status,
-            p_current_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+            p_current_period_end: periodEnd,
             p_canceled_at: null,
           });
         }
