@@ -105,8 +105,6 @@ const Marketplace = () => {
               profitValue={0}
               unitBasePrice={basePrice}
               lotQuantity={1}
-              isPro={isPro}
-              onShowUpgrade={() => setShowUpgradeModal(true)}
             />
           </div>
 

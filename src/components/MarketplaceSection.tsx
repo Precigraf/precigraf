@@ -1,5 +1,5 @@
 import React from 'react';
-import { Store, AlertTriangle, Info, Lock, Sparkles, ShoppingCart } from 'lucide-react';
+import { Store, AlertTriangle, Info, ShoppingCart } from 'lucide-react';
 import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import TooltipLabel from './TooltipLabel';
@@ -181,36 +181,6 @@ const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({
     const parsed = parseFloat(e.target.value);
     onCommissionChange(!isNaN(parsed) ? Math.min(Math.max(0, parsed), 100) : 0);
   };
-
-  // ── Plano Free ───────────────────────────────────────────────────────────────
-  if (!isPro) {
-    return (
-      <div className="relative overflow-hidden" onClick={handleUpgradeClick}>
-        <div className="absolute inset-0 bg-background/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center gap-2 cursor-pointer rounded-xl">
-          <Lock className="w-5 h-5 text-muted-foreground" />
-          <Badge variant="outline" className="text-xs bg-background/80">
-            <Sparkles className="w-3 h-3 mr-1" />
-            Recurso exclusivo do Plano Pro
-          </Badge>
-          <Button size="sm" onClick={handleUpgradeClick} className="mt-2 text-xs pointer-events-auto">
-            Fazer upgrade
-          </Button>
-        </div>
-        <div className="opacity-40 pointer-events-none select-none filter grayscale">
-          <FormSection title="Marketplace" icon={<Store className="w-5 h-5 text-primary" />}>
-            <div className="col-span-full">
-              <TooltipLabel label="Onde você vai vender?" tooltip="Cada marketplace cobra taxas diferentes." />
-              <Select value="none" disabled>
-                <SelectTrigger className="input-currency mt-2">
-                  <SelectValue placeholder="Selecione o marketplace" />
-                </SelectTrigger>
-              </Select>
-            </div>
-          </FormSection>
-        </div>
-      </div>
-    );
-  }
 
   // ── Versão completa ───────────────────────────────────────────────────────────
   return (

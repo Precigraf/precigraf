@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { Package, Layers, Percent, Tag, Lock, Edit } from 'lucide-react';
-import ProFeatureGate from './ProFeatureGate';
+import { Package, Layers, Percent, Tag, Edit } from 'lucide-react';
 import FormSection from './FormSection';
 import CurrencyInput from './CurrencyInput';
 import MarginSlider from './MarginSlider';
@@ -456,32 +455,6 @@ const CostCalculator: React.FC = () => {
           />
         </div>
 
-        {/* Banner de bloqueio quando limite atingido (durante trial) */}
-        {!canCreateCalculation && !isTrialExpired && (
-          <div className="lg:col-span-2 w-full bg-destructive/10 border border-destructive/30 rounded-xl p-4 pointer-events-auto relative z-50">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <div className="flex items-start gap-3 flex-1">
-                <Lock className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                <div className="text-left flex-1">
-                  <p className="text-base font-semibold text-destructive">Sistema bloqueado</p>
-                  <p className="text-sm text-muted-foreground leading-snug">
-                    Você atingiu o limite de {maxCalculations} cálculos do plano gratuito. Faça upgrade para continuar.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowUpgradeModal(true);
-                }}
-                className="w-full sm:w-auto px-4 py-3 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors pointer-events-auto cursor-pointer z-50 relative"
-              >
-                Fazer upgrade
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Coluna Esquerda - Formulário */}
         <div className="space-y-6">
           {/* Banner de Modo Edição */}
@@ -611,19 +584,12 @@ const CostCalculator: React.FC = () => {
             />
           </FormSection>
 
-          {/* Seção 4: Custos Operacionais Avançados (PRO) */}
-          <ProFeatureGate
-            isPro={isPro}
-            onUpgrade={() => setShowUpgradeModal(true)}
-            featureName="Custos Operacionais"
-            message="Disponível apenas no Plano Pro"
-          >
-            <AdvancedOperationalCosts
-              data={operationalCostsData}
-              onDataChange={setOperationalCostsData}
-              disabled={false}
-            />
-          </ProFeatureGate>
+          {/* Seção 4: Custos Operacionais Avançados */}
+          <AdvancedOperationalCosts
+            data={operationalCostsData}
+            onDataChange={setOperationalCostsData}
+            disabled={false}
+          />
 
           {/* Seção 5: Margem de Lucro */}
           <FormSection
