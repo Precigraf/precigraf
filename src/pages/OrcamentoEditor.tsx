@@ -319,15 +319,23 @@ const OrcamentoEditor: React.FC = () => {
   const handleExportPDF = () => {
     const w = window.open('', '_blank');
     if (!w) return;
+    const companyInfo = profile ? [
+      profile.company_name,
+      profile.company_document,
+      profile.company_phone,
+      profile.company_email,
+      profile.company_cep,
+      [profile.company_city, profile.company_state].filter(Boolean).join(' - '),
+    ].filter(Boolean) : [];
     const companyHeader = profile ? `
-      <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e5e7eb;">
-        ${profile.logo_url ? `<img src="${profile.logo_url}" style="width:60px;height:60px;object-fit:contain;" />` : ''}
-        <div>
-          <h2 style="margin:0;font-size:18px;">${profile.company_name || ''}</h2>
-          <p style="margin:4px 0 0;font-size:12px;color:#666;">
-            ${[profile.company_document, profile.company_phone, profile.company_email].filter(Boolean).join(' · ')}
-          </p>
-          ${profile.company_full_address ? `<p style="margin:2px 0 0;font-size:12px;color:#666;">${profile.company_full_address}</p>` : ''}
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e5e7eb;">
+        ${profile.logo_url ? `<img src="${profile.logo_url}" style="width:64px;height:64px;object-fit:contain;" />` : ''}
+        <div style="flex:1;">
+          ${companyInfo[0] ? `<h2 style="margin:0;font-size:18px;">${companyInfo[0]}</h2>` : ''}
+          <div style="margin-top:4px;font-size:12px;color:#666;line-height:1.5;">
+            ${companyInfo.slice(1).map(v => `<div>${v}</div>`).join('')}
+            ${profile.company_full_address ? `<div>${profile.company_full_address}</div>` : ''}
+          </div>
         </div>
       </div>` : '';
 
@@ -403,7 +411,10 @@ const OrcamentoEditor: React.FC = () => {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={handleConvertToOrder} disabled={!canConvert}>
+            <Button variant="outline" onClick={handleSendWhatsApp} disabled={!quoteId || !selectedClient?.whatsapp} className="text-green-600 border-green-600/40 hover:bg-green-500/10 hover:text-green-700">
+              <MessageCircle className="w-4 h-4 mr-2" /> Enviar WhatsApp
+            </Button>
+            <Button variant="outline" onClick={openConvertModal} disabled={!canConvert}>
               <PackageIcon className="w-4 h-4 mr-2" /> Converter para Pedido
             </Button>
             <Button variant="outline" onClick={handleExportPDF} disabled={!quoteId}>
