@@ -3,13 +3,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+export interface PriceTier {
+  quantity: number;
+  price: number;
+  cost: number;
+}
+
 export interface Product {
   id: string;
   user_id: string;
   name: string;
   description: string | null;
   unit_price: number;
+  cost: number;
   default_quantity: number;
+  size: string | null;
+  print_type: string | null;
+  material: string | null;
+  finish: string | null;
+  production_time: string | null;
+  is_active: boolean;
+  price_tiers: PriceTier[];
   created_at: string;
   updated_at: string;
 }
@@ -29,7 +43,10 @@ export function useProducts() {
         .select('*')
         .order('name', { ascending: true });
       if (error) throw error;
-      return data as Product[];
+      return (data ?? []).map((p: any) => ({
+        ...p,
+        price_tiers: Array.isArray(p.price_tiers) ? p.price_tiers : [],
+      })) as Product[];
     },
     enabled: !!user,
   });
@@ -39,11 +56,11 @@ export function useProducts() {
       if (!user) throw new Error('Not authenticated');
       const { data, error } = await supabase
         .from('products')
-        .insert({ ...input, user_id: user.id })
+        .insert({ ...input, price_tiers: input.price_tiers as any, user_id: user.id })
         .select()
         .single();
       if (error) throw error;
-      return data as Product;
+      return data as unknown as Product;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] });
@@ -54,9 +71,11 @@ export function useProducts() {
 
   const updateProduct = useMutation({
     mutationFn: async ({ id, ...rest }: Partial<Product> & { id: string }) => {
-      const { data, error } = await supabase.from('products').update(rest).eq('id', id).select().single();
+      const payload: any = { ...rest };
+      if (rest.price_tiers) payload.price_tiers = rest.price_tiers as any;
+      const { data, error } = await supabase.from('products').update(payload).eq('id', id).select().single();
       if (error) throw error;
-      return data as Product;
+      return data as unknown as Product;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['products'] });

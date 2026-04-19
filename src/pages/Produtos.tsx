@@ -3,11 +3,10 @@ import { Plus, Search, Edit2, Trash2, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import AppLayout from '@/components/AppLayout';
+import ProductForm from '@/components/gestao/ProductForm';
 import { useProducts, type Product } from '@/hooks/useProducts';
 
 const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -17,33 +16,13 @@ const Produtos: React.FC = () => {
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [unitPrice, setUnitPrice] = useState('');
-  const [defaultQuantity, setDefaultQuantity] = useState('1');
 
   const filtered = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
 
-  const openNew = () => {
-    setEditing(null);
-    setName(''); setDescription(''); setUnitPrice(''); setDefaultQuantity('1');
-    setOpen(true);
-  };
-  const openEdit = (p: Product) => {
-    setEditing(p);
-    setName(p.name); setDescription(p.description || ''); setUnitPrice(String(p.unit_price)); setDefaultQuantity(String(p.default_quantity));
-    setOpen(true);
-  };
+  const openNew = () => { setEditing(null); setOpen(true); };
+  const openEdit = (p: Product) => { setEditing(p); setOpen(true); };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const payload = {
-      name: name.trim(),
-      description: description.trim() || null,
-      unit_price: parseFloat(unitPrice) || 0,
-      default_quantity: Math.max(1, parseInt(defaultQuantity) || 1),
-    };
-    if (!payload.name) return;
+  const handleSubmit = (payload: any) => {
     if (editing) {
       updateProduct.mutate({ id: editing.id, ...payload }, { onSuccess: () => setOpen(false) });
     } else {
@@ -81,10 +60,14 @@ const Produtos: React.FC = () => {
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     <Package className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-foreground truncate">{p.name}</h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-foreground truncate">{p.name}</h3>
+                        {!p.is_active && <Badge variant="outline" className="text-xs">Inativo</Badge>}
+                      </div>
                       {p.description && <p className="text-sm text-muted-foreground line-clamp-1">{p.description}</p>}
                       <div className="text-sm text-muted-foreground mt-1">
                         <span className="text-foreground font-medium">{formatCurrency(p.unit_price)}</span> · qtd. padrão: {p.default_quantity}
+                        {p.size && <> · {p.size}</>}
                       </div>
                     </div>
                   </div>
@@ -116,39 +99,13 @@ const Produtos: React.FC = () => {
           </div>
         )}
 
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-md bg-card">
-            <DialogHeader>
-              <DialogTitle>{editing ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label>Nome *</Label>
-                <Input value={name} onChange={e => setName(e.target.value)} required maxLength={150} placeholder="Ex: Cartão de Visita 4x4" />
-              </div>
-              <div>
-                <Label>Descrição</Label>
-                <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} maxLength={500} placeholder="Detalhes do produto" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Preço Unitário (R$) *</Label>
-                  <Input type="number" step="0.01" min="0" value={unitPrice} onChange={e => setUnitPrice(e.target.value)} required />
-                </div>
-                <div>
-                  <Label>Qtd. Padrão</Label>
-                  <Input type="number" min="1" value={defaultQuantity} onChange={e => setDefaultQuantity(e.target.value)} />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={createProduct.isPending || updateProduct.isPending}>
-                  {editing ? 'Salvar' : 'Criar Produto'}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <ProductForm
+          open={open}
+          onOpenChange={setOpen}
+          onSubmit={handleSubmit}
+          initialData={editing}
+          isLoading={createProduct.isPending || updateProduct.isPending}
+        />
       </div>
     </AppLayout>
   );

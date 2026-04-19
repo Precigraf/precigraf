@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import type { Client } from '@/hooks/useClients';
+import { maskCep, maskCpfCnpj } from '@/lib/masks';
 
 interface ClientFormProps {
   open: boolean;
@@ -103,13 +104,13 @@ const ClientForm: React.FC<ClientFormProps> = ({ open, onOpenChange, onSubmit, i
             </div>
           </div>
           <div>
-            <Label htmlFor="cpf">CPF</Label>
-            <Input id="cpf" value={form.cpf} onChange={e => update('cpf', e.target.value)} placeholder="000.000.000-00" maxLength={14} />
+            <Label htmlFor="cpf">CPF/CNPJ</Label>
+            <Input id="cpf" value={form.cpf} onChange={e => update('cpf', maskCpfCnpj(e.target.value))} placeholder="000.000.000-00" maxLength={18} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="cep">CEP</Label>
-              <Input id="cep" value={form.cep} onChange={e => { update('cep', e.target.value); }} onBlur={() => handleCepLookup(form.cep)} placeholder="00000-000" maxLength={9} />
+              <Input id="cep" value={form.cep} onChange={e => update('cep', maskCep(e.target.value))} onBlur={() => handleCepLookup(form.cep)} placeholder="00000-000" maxLength={9} />
             </div>
             <div>
               <Label htmlFor="state">Estado</Label>

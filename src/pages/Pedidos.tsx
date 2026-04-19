@@ -1,11 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { DollarSign, TrendingDown, TrendingUp, Clock, Plus, Trash2, Calendar } from 'lucide-react';
+import { DollarSign, TrendingDown, TrendingUp, Clock, Trash2, Calendar } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import AppLayout from '@/components/AppLayout';
 import KanbanBoard from '@/components/gestao/KanbanBoard';
@@ -16,10 +13,8 @@ type PeriodFilter = 'all' | 'week' | 'month';
 
 const Pedidos: React.FC = () => {
   const { orders } = useOrders();
-  const { expenses, createExpense, deleteExpense } = useExpenses();
+  const { expenses, deleteExpense } = useExpenses();
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('month');
-  const [expenseOpen, setExpenseOpen] = useState(false);
-  const [newExpense, setNewExpense] = useState({ description: '', amount: '', category: 'operational' });
 
   const formatCurrency = (v: number) =>
     v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -68,22 +63,6 @@ const Pedidos: React.FC = () => {
     { label: 'A Receber', value: formatCurrency(aReceber), icon: Clock, color: 'text-yellow-500' },
   ];
 
-  const handleCreateExpense = () => {
-    const amount = parseFloat(newExpense.amount.replace(',', '.'));
-    if (!newExpense.description.trim() || isNaN(amount) || amount <= 0) return;
-    createExpense.mutate({
-      description: newExpense.description.trim(),
-      amount,
-      expense_date: new Date().toISOString().split('T')[0],
-      category: newExpense.category,
-    }, {
-      onSuccess: () => {
-        setNewExpense({ description: '', amount: '', category: 'operational' });
-        setExpenseOpen(false);
-      },
-    });
-  };
-
   
 
   return (
@@ -131,43 +110,6 @@ const Pedidos: React.FC = () => {
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <TrendingDown className="w-4 h-4 text-red-500" /> Despesas
             </h2>
-            <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" variant="outline">
-                  <Plus className="w-4 h-4 mr-1" /> Nova Despesa
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-sm bg-card">
-                <DialogHeader>
-                  <DialogTitle>Registrar Despesa</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Descrição</Label>
-                    <Input value={newExpense.description} onChange={e => setNewExpense(p => ({ ...p, description: e.target.value }))} placeholder="Ex: Tinta, Energia" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Valor (R$)</Label>
-                    <Input value={newExpense.amount} onChange={e => setNewExpense(p => ({ ...p, amount: e.target.value }))} placeholder="0,00" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Categoria</Label>
-                    <Select value={newExpense.category} onValueChange={v => setNewExpense(p => ({ ...p, category: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="operational">Operacional</SelectItem>
-                        <SelectItem value="material">Material</SelectItem>
-                        <SelectItem value="fixed">Custo Fixo</SelectItem>
-                        <SelectItem value="other">Outros</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button onClick={handleCreateExpense} disabled={createExpense.isPending} className="w-full">
-                    {createExpense.isPending ? 'Salvando...' : 'Registrar'}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
           </div>
           {filteredExpenses.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">Nenhuma despesa registrada.</p>

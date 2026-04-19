@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, FileDown, Package as PackageIcon, Plus, Trash2, X, UserPlus, CalendarIcon, Search } from 'lucide-react';
+import { ArrowLeft, Save, FileDown, Package as PackageIcon, Plus, Trash2, X, UserPlus, CalendarIcon, Search, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import AppLayout from '@/components/AppLayout';
 import ClientForm from '@/components/gestao/ClientForm';
+import ConvertToOrderModal, { type ConvertToOrderData } from '@/components/gestao/ConvertToOrderModal';
 import { useClients } from '@/hooks/useClients';
 import { useProducts, type Product } from '@/hooks/useProducts';
 import { supabase } from '@/integrations/supabase/client';
@@ -82,6 +83,9 @@ const OrcamentoEditor: React.FC = () => {
   const [discountValue, setDiscountValue] = useState('0');
   const [discountType, setDiscountType] = useState<'fixed' | 'percent'>('fixed');
   const [shippingValue, setShippingValue] = useState('0');
+
+  const [convertModalOpen, setConvertModalOpen] = useState(false);
+  const [converting, setConverting] = useState(false);
 
   // Load existing quote
   useEffect(() => {
@@ -228,43 +232,110 @@ const OrcamentoEditor: React.FC = () => {
     }
   };
 
-  const handleConvertToOrder = async () => {
+  const openConvertModal = () => {
     if (!quoteId) {
       toast({ title: 'Salve o orçamento primeiro', variant: 'destructive' });
       return;
     }
-    if (!user) return;
+    setConvertModalOpen(true);
+  };
+
+  const handleConvertConfirm = async (data: ConvertToOrderData) => {
+    if (!quoteId || !user) return;
+    setConverting(true);
     try {
-      await supabase.from('quotes').update({ status: 'approved' }).eq('id', quoteId);
-      const { error } = await supabase.from('orders').insert({
-        user_id: user.id,
-        client_id: clientId,
-        quote_id: quoteId,
+      // 1. Update or create client with form data
+      let finalClientId = data.clientId;
+      if (finalClientId) {
+        await supabase.from('clients').update(data.formData).eq('id', finalClientId);
+      } else {
+        const { data: newClient, error: clientError } = await supabase
+          .from('clients')
+          .insert({ ...data.formData, name: data.formData.name!, user_id: user.id })
+          .select()
+          .single();
+        if (clientError) throw clientError;
+        finalClientId = newClient.id;
+      }
+
+      // 2. Update quote → approved + linked to client
+      await supabase.from('quotes').update({
         status: 'approved',
+        client_id: finalClientId,
+      }).eq('id', quoteId);
+
+      // 3. Create order
+      const { error: orderError } = await supabase.from('orders').insert({
+        user_id: user.id,
+        client_id: finalClientId,
+        quote_id: quoteId,
+        status: data.status,
         kanban_position: 0,
       });
-      if (error) throw error;
+      if (orderError) throw orderError;
+
+      // 4. Register received amount as a positive expense entry? No → just toast.
       setStatus('approved');
-      toast({ title: 'Convertido em pedido!', description: 'O pedido foi criado e está disponível em Pedidos.' });
+      setClientId(finalClientId);
+      setConvertModalOpen(false);
+      toast({
+        title: 'Convertido em pedido!',
+        description: `Recebido: ${formatCurrency(data.amountReceived)} · A receber: ${formatCurrency(Math.max(0, total - data.amountReceived))}`,
+      });
       qc.invalidateQueries({ queryKey: ['quotes'] });
       qc.invalidateQueries({ queryKey: ['orders'] });
+      qc.invalidateQueries({ queryKey: ['clients'] });
     } catch (e: any) {
       toast({ title: 'Erro ao converter', description: e.message, variant: 'destructive' });
+    } finally {
+      setConverting(false);
     }
+  };
+
+  const handleSendWhatsApp = () => {
+    if (!selectedClient?.whatsapp) {
+      toast({ title: 'Cliente sem WhatsApp', description: 'Cadastre um número de WhatsApp para o cliente.', variant: 'destructive' });
+      return;
+    }
+    const phone = selectedClient.whatsapp.replace(/\D/g, '');
+    const code = quoteNumber ? `ORC-${quoteNumber}` : 'Orçamento';
+    const lines = [
+      `Olá ${selectedClient.name}! Segue seu orçamento *${code}*:`,
+      '',
+      ...items.map(i => `• ${i.name} — ${i.quantity}x ${formatCurrency(i.unit_value)} = ${formatCurrency(i.quantity * i.unit_value)}`),
+      '',
+      `Subtotal: ${formatCurrency(subtotal)}`,
+      discountAmount > 0 ? `Desconto: -${formatCurrency(discountAmount)}` : '',
+      shippingAmount > 0 ? `Frete: +${formatCurrency(shippingAmount)}` : '',
+      `*Total: ${formatCurrency(total)}*`,
+      validUntil ? `\nVálido até: ${format(validUntil, 'dd/MM/yyyy')}` : '',
+      notes ? `\nObservações: ${notes}` : '',
+      profile?.company_name ? `\n— ${profile.company_name}` : '',
+    ].filter(Boolean).join('\n');
+    const url = `https://wa.me/55${phone}?text=${encodeURIComponent(lines)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const handleExportPDF = () => {
     const w = window.open('', '_blank');
     if (!w) return;
+    const companyInfo = profile ? [
+      profile.company_name,
+      profile.company_document,
+      profile.company_phone,
+      profile.company_email,
+      profile.company_cep,
+      [profile.company_city, profile.company_state].filter(Boolean).join(' - '),
+    ].filter(Boolean) : [];
     const companyHeader = profile ? `
-      <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e5e7eb;">
-        ${profile.logo_url ? `<img src="${profile.logo_url}" style="width:60px;height:60px;object-fit:contain;" />` : ''}
-        <div>
-          <h2 style="margin:0;font-size:18px;">${profile.company_name || ''}</h2>
-          <p style="margin:4px 0 0;font-size:12px;color:#666;">
-            ${[profile.company_document, profile.company_phone, profile.company_email].filter(Boolean).join(' · ')}
-          </p>
-          ${profile.company_full_address ? `<p style="margin:2px 0 0;font-size:12px;color:#666;">${profile.company_full_address}</p>` : ''}
+      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e5e7eb;">
+        ${profile.logo_url ? `<img src="${profile.logo_url}" style="width:64px;height:64px;object-fit:contain;" />` : ''}
+        <div style="flex:1;">
+          ${companyInfo[0] ? `<h2 style="margin:0;font-size:18px;">${companyInfo[0]}</h2>` : ''}
+          <div style="margin-top:4px;font-size:12px;color:#666;line-height:1.5;">
+            ${companyInfo.slice(1).map(v => `<div>${v}</div>`).join('')}
+            ${profile.company_full_address ? `<div>${profile.company_full_address}</div>` : ''}
+          </div>
         </div>
       </div>` : '';
 
@@ -340,7 +411,10 @@ const OrcamentoEditor: React.FC = () => {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={handleConvertToOrder} disabled={!canConvert}>
+            <Button variant="outline" onClick={handleSendWhatsApp} disabled={!quoteId || !selectedClient?.whatsapp} className="text-green-600 border-green-600/40 hover:bg-green-500/10 hover:text-green-700">
+              <MessageCircle className="w-4 h-4 mr-2" /> Enviar WhatsApp
+            </Button>
+            <Button variant="outline" onClick={openConvertModal} disabled={!canConvert}>
               <PackageIcon className="w-4 h-4 mr-2" /> Converter para Pedido
             </Button>
             <Button variant="outline" onClick={handleExportPDF} disabled={!quoteId}>
@@ -572,6 +646,16 @@ const OrcamentoEditor: React.FC = () => {
           onSubmit={handleClientCreated}
           initialData={null}
           isLoading={createClient.isPending}
+        />
+
+        {/* Convert to order */}
+        <ConvertToOrderModal
+          open={convertModalOpen}
+          onOpenChange={setConvertModalOpen}
+          totalValue={total}
+          initialClientId={clientId}
+          onConfirm={handleConvertConfirm}
+          isLoading={converting}
         />
       </div>
     </AppLayout>
