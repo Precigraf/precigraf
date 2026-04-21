@@ -20,8 +20,6 @@ import Gestao from "./pages/Gestao";
 import Financeiro from "./pages/Financeiro";
 import PagamentoConfirmado from "./pages/PagamentoConfirmado";
 import Marketplace from "./pages/Marketplace";
-import Admin from "./pages/Admin";
-import AdminRoute from "./components/AdminRoute";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
