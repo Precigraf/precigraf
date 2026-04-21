@@ -49,18 +49,12 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className={collapsed ? 'border-b border-border p-2' : 'border-b border-border p-4'}>
         <div className={`flex items-center gap-2 ${collapsed ? 'justify-center' : ''}`}>
-          {profile?.logo_url ? (
-            <img src={profile.logo_url} alt="Logo" className="w-8 h-8 rounded-lg object-contain shrink-0" />
-          ) : (
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-              <LogoIcon className="w-4 h-4 text-primary-foreground" />
-            </div>
-          )}
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
+            <LogoIcon className="w-4 h-4 text-primary-foreground" />
+          </div>
           {!collapsed && (
             <div>
-              <h1 className="text-sm font-bold text-foreground leading-tight">
-                {profile?.company_name || 'Precigraf'}
-              </h1>
+              <h1 className="text-sm font-bold text-foreground leading-tight">Precigraf</h1>
               <p className="text-[10px] text-muted-foreground leading-tight">Sistema de Gestão</p>
             </div>
           )}
