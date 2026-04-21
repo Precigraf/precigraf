@@ -249,32 +249,44 @@ export type Database = {
       }
       orders: {
         Row: {
+          amount_pending: number
+          amount_received: number
           client_id: string
           created_at: string
           id: string
           kanban_position: number
           quote_id: string
           status: string
+          total_cost: number
+          total_revenue: number
           updated_at: string
           user_id: string
         }
         Insert: {
+          amount_pending?: number
+          amount_received?: number
           client_id: string
           created_at?: string
           id?: string
           kanban_position?: number
           quote_id: string
           status?: string
+          total_cost?: number
+          total_revenue?: number
           updated_at?: string
           user_id: string
         }
         Update: {
+          amount_pending?: number
+          amount_received?: number
           client_id?: string
           created_at?: string
           id?: string
           kanban_position?: number
           quote_id?: string
           status?: string
+          total_cost?: number
+          total_revenue?: number
           updated_at?: string
           user_id?: string
         }

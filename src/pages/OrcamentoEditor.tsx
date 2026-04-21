@@ -140,12 +140,24 @@ const OrcamentoEditor: React.FC = () => {
   const total = Math.max(0, subtotal - discountAmount + shippingAmount);
 
   const addProduct = (p: Product) => {
+    // Check price_tiers for matching tier
+    const tiers = Array.isArray(p.price_tiers) ? (p.price_tiers as any[]) : [];
+    const matchingTier = tiers.find((t: any) => t.quantity === p.default_quantity);
+    
+    let qty = p.default_quantity;
+    let unitVal = p.unit_price;
+    
+    if (matchingTier && matchingTier.price) {
+      // Use price tier: price is total for that qty, so unit = price / qty
+      unitVal = matchingTier.price / qty;
+    }
+    
     setItems(prev => [...prev, {
       id: crypto.randomUUID(),
       product_id: p.id,
       name: p.name,
-      quantity: p.default_quantity,
-      unit_value: p.unit_price,
+      quantity: qty,
+      unit_value: unitVal,
     }]);
     setProductPickerOpen(false);
     setProductSearch('');
@@ -264,13 +276,34 @@ const OrcamentoEditor: React.FC = () => {
         client_id: finalClientId,
       }).eq('id', quoteId);
 
-      // 3. Create order
+      // 3. Calculate costs from product data
+      let orderTotalRevenue = total;
+      let orderTotalCost = 0;
+      
+      for (const item of items) {
+        if (item.product_id) {
+          const product = products.find(p => p.id === item.product_id);
+          if (product) {
+            // Check price_tiers for cost at this quantity
+            const tiers = Array.isArray(product.price_tiers) ? (product.price_tiers as any[]) : [];
+            const matchingTier = tiers.find((t: any) => t.quantity === item.quantity);
+            const costPerUnit = matchingTier?.cost ? matchingTier.cost / item.quantity : product.cost / Math.max(1, product.default_quantity);
+            orderTotalCost += costPerUnit * item.quantity;
+          }
+        }
+      }
+
+      // 4. Create order with financial data
       const { error: orderError } = await supabase.from('orders').insert({
         user_id: user.id,
         client_id: finalClientId,
         quote_id: quoteId,
         status: data.status,
         kanban_position: 0,
+        total_revenue: orderTotalRevenue,
+        total_cost: orderTotalCost,
+        amount_received: data.amountReceived,
+        amount_pending: Math.max(0, orderTotalRevenue - data.amountReceived),
       });
       if (orderError) throw orderError;
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Trash2, FileText, Edit2 } from 'lucide-react';
+import { Plus, Search, Trash2, FileText, Edit2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -94,7 +94,10 @@ const Orcamentos: React.FC = () => {
                     <div className="flex flex-col items-end gap-2 shrink-0">
                       <span className="text-lg font-bold text-foreground">{formatCurrency(quote.total_value)}</span>
                       <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                        <Button size="sm" variant="outline" onClick={() => navigate(`/orcamentos/${quote.id}`)} title="Editar / Visualizar">
+                        <Button size="sm" variant="outline" onClick={() => navigate(`/orcamentos/${quote.id}?view=true`)} title="Visualizar">
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => navigate(`/orcamentos/${quote.id}`)} title="Editar">
                           <Edit2 className="w-4 h-4" />
                         </Button>
                         <AlertDialog>
