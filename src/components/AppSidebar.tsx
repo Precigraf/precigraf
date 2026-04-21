@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import LogoIcon from '@/components/LogoIcon';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+
 import { Button } from '@/components/ui/button';
 import {
   Sidebar,
@@ -36,7 +36,7 @@ export function AppSidebar() {
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { profile } = useCompanyProfile();
+  
 
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
 
