@@ -1,32 +1,27 @@
 import React, { useState, useMemo } from 'react';
-import { DollarSign, TrendingDown, TrendingUp, Clock, Calendar } from 'lucide-react';
+import { DollarSign, TrendingDown, TrendingUp, Clock } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/components/AppLayout';
+import PeriodFilter, { type PeriodKey, getDateRange } from '@/components/PeriodFilter';
 import { useOrders } from '@/hooks/useOrders';
-
-type PeriodFilter = 'all' | 'week' | 'month' | 'year';
 
 const formatCurrency = (v: number) => (Number.isFinite(v) ? v : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const Financeiro: React.FC = () => {
   const { orders } = useOrders();
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('month');
-
-  const getDateRange = (period: PeriodFilter) => {
-    const now = new Date();
-    if (period === 'week') { const s = new Date(now); s.setDate(now.getDate() - 7); return s; }
-    if (period === 'month') return new Date(now.getFullYear(), now.getMonth(), 1);
-    if (period === 'year') return new Date(now.getFullYear(), 0, 1);
-    return null;
-  };
+  const [period, setPeriod] = useState<PeriodKey>('current_month');
+  const [customStart, setCustomStart] = useState<Date | undefined>();
+  const [customEnd, setCustomEnd] = useState<Date | undefined>();
 
   const filteredOrders = useMemo(() => {
-    const start = getDateRange(periodFilter);
+    const { start, end } = getDateRange(period, customStart, customEnd);
     if (!start) return orders;
-    return orders.filter(o => new Date(o.created_at) >= start);
-  }, [orders, periodFilter]);
+    return orders.filter(o => {
+      const d = new Date(o.created_at);
+      return d >= start && (!end || d <= end);
+    });
+  }, [orders, period, customStart, customEnd]);
 
   const totalFaturamento = filteredOrders.reduce((s, o) => s + (Number((o as any).total_revenue) || 0), 0);
   const totalDespesas = filteredOrders.reduce((s, o) => s + (Number((o as any).total_cost) || 0), 0);
@@ -43,23 +38,19 @@ const Financeiro: React.FC = () => {
   return (
     <AppLayout>
       <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Financeiro</h1>
             <p className="text-sm text-muted-foreground">Controle financeiro dos pedidos</p>
           </div>
-          <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as PeriodFilter)}>
-            <SelectTrigger className="w-40">
-              <Calendar className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todo período</SelectItem>
-              <SelectItem value="week">Última semana</SelectItem>
-              <SelectItem value="month">Este mês</SelectItem>
-              <SelectItem value="year">Este ano</SelectItem>
-            </SelectContent>
-          </Select>
+          <PeriodFilter
+            value={period}
+            onChange={setPeriod}
+            customStart={customStart}
+            customEnd={customEnd}
+            onCustomStartChange={setCustomStart}
+            onCustomEndChange={setCustomEnd}
+          />
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">

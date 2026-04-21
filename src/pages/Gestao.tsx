@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Users, FileText, CheckCircle, XCircle, DollarSign, Calendar, Crown, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -11,15 +10,9 @@ import AppLayout from '@/components/AppLayout';
 import { useClients } from '@/hooks/useClients';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useUserPlan } from '@/hooks/useUserPlan';
-import { useRevenueChart, type ChartPeriod } from '@/hooks/useRevenueChart';
+import { useRevenueChart } from '@/hooks/useRevenueChart';
 import { useNavigate } from 'react-router-dom';
-
-const PERIOD_LABELS: Record<ChartPeriod, string> = {
-  daily: 'Diário (30 dias)',
-  weekly: 'Semanal (12 sem)',
-  monthly: 'Mensal (12 meses)',
-  yearly: 'Anual (5 anos)',
-};
+import PeriodFilter, { type PeriodKey, getDateRange } from '@/components/PeriodFilter';
 
 const formatCurrency = (v: number) => (Number.isFinite(v) ? v : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -42,8 +35,13 @@ const Gestao: React.FC = () => {
   const { quotes } = useQuotes();
   const { plan, isTrialActive, isTrialExpired, trialEndsAt, trialRemainingHours } = useUserPlan();
   const navigate = useNavigate();
-  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>('monthly');
-  const { chartData, totals } = useRevenueChart(chartPeriod);
+
+  const [period, setPeriod] = useState<PeriodKey>('current_month');
+  const [customStart, setCustomStart] = useState<Date | undefined>();
+  const [customEnd, setCustomEnd] = useState<Date | undefined>();
+
+  const range = useMemo(() => getDateRange(period, customStart, customEnd), [period, customStart, customEnd]);
+  const { chartData, totals } = useRevenueChart(range.start, range.end);
 
   const approvedQuotes = quotes.filter(q => q.status === 'approved');
   const rejectedQuotes = quotes.filter(q => q.status === 'rejected');
@@ -127,21 +125,19 @@ const Gestao: React.FC = () => {
 
         {/* Gráfico de faturamento */}
         <Card className="p-5 bg-card border-border">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <div>
               <h2 className="text-lg font-bold text-foreground">Desempenho Financeiro</h2>
               <p className="text-xs text-muted-foreground">Faturamento, despesas e lucro no período</p>
             </div>
-            <Select value={chartPeriod} onValueChange={(v) => setChartPeriod(v as ChartPeriod)}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(PERIOD_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <PeriodFilter
+              value={period}
+              onChange={setPeriod}
+              customStart={customStart}
+              customEnd={customEnd}
+              onCustomStartChange={setCustomStart}
+              onCustomEndChange={setCustomEnd}
+            />
           </div>
 
           {/* Summary cards */}
