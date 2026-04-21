@@ -36,6 +36,7 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
+  const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
   
 
@@ -81,6 +82,20 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              {isAdmin && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to="/admin"
+                      className="flex items-center gap-3 px-3 py-2 rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+                      activeClassName="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                    >
+                      <Shield className="h-4 w-4 shrink-0" />
+                      {!collapsed && <span className="text-sm font-medium">Admin</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
