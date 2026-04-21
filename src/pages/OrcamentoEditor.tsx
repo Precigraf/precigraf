@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, FileDown, Package as PackageIcon, Plus, Trash2, X, UserPlus, CalendarIcon, Search, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
@@ -349,70 +351,170 @@ const OrcamentoEditor: React.FC = () => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const handleExportPDF = () => {
-    const w = window.open('', '_blank');
-    if (!w) return;
-    const companyInfo = profile ? [
-      profile.company_name,
-      profile.company_document,
-      profile.company_phone,
-      profile.company_email,
-      profile.company_cep,
-      [profile.company_city, profile.company_state].filter(Boolean).join(' - '),
-    ].filter(Boolean) : [];
-    const companyHeader = profile ? `
-      <div style="display:flex;align-items:flex-start;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e5e7eb;">
-        ${profile.logo_url ? `<img src="${profile.logo_url}" style="width:64px;height:64px;object-fit:contain;" />` : ''}
-        <div style="flex:1;">
-          ${companyInfo[0] ? `<h2 style="margin:0;font-size:18px;">${companyInfo[0]}</h2>` : ''}
-          <div style="margin-top:4px;font-size:12px;color:#666;line-height:1.5;">
-            ${companyInfo.slice(1).map(v => `<div>${v}</div>`).join('')}
-            ${profile.company_full_address ? `<div>${profile.company_full_address}</div>` : ''}
-          </div>
-        </div>
-      </div>` : '';
+  const handleExportPDF = async () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 14;
 
-    const itemsHtml = items.map(i => `
-      <tr>
-        <td>${i.name}</td>
-        <td style="text-align:center;">${i.quantity}</td>
-        <td style="text-align:right;">${formatCurrency(i.unit_value)}</td>
-        <td style="text-align:right;font-weight:600;">${formatCurrency(i.quantity * i.unit_value)}</td>
-      </tr>`).join('');
+    // Load logo if available
+    if (profile?.logo_url) {
+      try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject();
+          img.src = profile.logo_url!;
+        });
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.getContext('2d')!.drawImage(img, 0, 0);
+        const logoData = canvas.toDataURL('image/png');
+        doc.addImage(logoData, 'PNG', 14, y, 18, 18);
+        // Company info next to logo
+        const infoX = 36;
+        if (profile.company_name) {
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text(profile.company_name, infoX, y + 6);
+        }
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        const infoLines = [profile.company_document, profile.company_phone, profile.company_email, profile.company_full_address].filter(Boolean) as string[];
+        infoLines.forEach((line, i) => doc.text(line, infoX, y + 12 + i * 4));
+        y += Math.max(22, 12 + infoLines.length * 4 + 4);
+      } catch {
+        // Logo failed to load, render text-only header
+        if (profile.company_name) {
+          doc.setFontSize(14);
+          doc.setFont('helvetica', 'bold');
+          doc.text(profile.company_name, 14, y + 6);
+          y += 10;
+        }
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        const infoLines = [profile.company_document, profile.company_phone, profile.company_email, profile.company_full_address].filter(Boolean) as string[];
+        infoLines.forEach((line, i) => doc.text(line, 14, y + i * 4));
+        y += infoLines.length * 4 + 4;
+      }
+    } else if (profile?.company_name) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(profile.company_name, 14, y + 6);
+      y += 10;
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 100, 100);
+      const infoLines = [profile.company_document, profile.company_phone, profile.company_email, profile.company_full_address].filter(Boolean) as string[];
+      infoLines.forEach((line, i) => doc.text(line, 14, y + i * 4));
+      y += infoLines.length * 4 + 4;
+    }
 
-    w.document.write(`
-      <html><head><title>Orçamento ORC-${quoteNumber || ''}</title>
-      <style>
-        body { font-family: Arial, sans-serif; padding: 40px; color: #222; }
-        table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-        th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #e5e7eb; font-size:13px; }
-        th { background: #f9fafb; font-size: 11px; text-transform: uppercase; color: #666; }
-        .summary { margin-top: 24px; margin-left: auto; width: 280px; }
-        .summary-row { display:flex; justify-content:space-between; padding:6px 0; font-size:13px; }
-        .total-row { border-top: 2px solid #222; margin-top:8px; padding-top:8px; font-size:18px; font-weight:bold; }
-      </style></head><body>
-      ${companyHeader}
-      <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px;">
-        <h1 style="font-size:22px;margin:0;">Orçamento ORC-${quoteNumber || '—'}</h1>
-        <span style="font-size:13px;color:#666;">${new Date(createdAt).toLocaleDateString('pt-BR')}</span>
-      </div>
-      <p style="color:#666;font-size:13px;margin:4px 0 16px;">Cliente: <strong>${selectedClient?.name || '—'}</strong></p>
-      <table>
-        <thead><tr><th>Item</th><th style="text-align:center;">Qtd</th><th style="text-align:right;">Unit.</th><th style="text-align:right;">Total</th></tr></thead>
-        <tbody>${itemsHtml}</tbody>
-      </table>
-      <div class="summary">
-        <div class="summary-row"><span>Subtotal</span><span>${formatCurrency(subtotal)}</span></div>
-        ${discountAmount > 0 ? `<div class="summary-row" style="color:#dc2626;"><span>Desconto</span><span>−${formatCurrency(discountAmount)}</span></div>` : ''}
-        ${shippingAmount > 0 ? `<div class="summary-row" style="color:#16a34a;"><span>Frete</span><span>+${formatCurrency(shippingAmount)}</span></div>` : ''}
-        <div class="summary-row total-row"><span>Total</span><span>${formatCurrency(total)}</span></div>
-      </div>
-      ${notes ? `<div style="margin-top:24px;padding:12px;background:#f9fafb;border-radius:6px;font-size:13px;"><strong>Observações:</strong><br/>${notes.replace(/\n/g, '<br/>')}</div>` : ''}
-      ${validUntil ? `<p style="margin-top:16px;font-size:12px;color:#666;">Validade: ${format(validUntil, "dd/MM/yyyy")}</p>` : ''}
-      <script>setTimeout(() => { window.print(); }, 300);</script>
-      </body></html>
-    `);
-    w.document.close();
+    // Divider
+    doc.setDrawColor(200);
+    doc.line(14, y, pageWidth - 14, y);
+    y += 8;
+
+    // Title + date
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Orçamento ORC-${quoteNumber || '—'}`, 14, y);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text(new Date(createdAt).toLocaleDateString('pt-BR'), pageWidth - 14, y, { align: 'right' });
+    y += 8;
+
+    // Client
+    doc.setFontSize(11);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`Cliente: ${selectedClient?.name || '—'}`, 14, y);
+    y += 10;
+
+    // Items table
+    const tableBody = items.map(i => [
+      i.name,
+      String(i.quantity),
+      formatCurrency(i.unit_value),
+      formatCurrency(i.quantity * i.unit_value),
+    ]);
+
+    autoTable(doc, {
+      startY: y,
+      head: [['Item', 'Qtd', 'Unitário', 'Total']],
+      body: tableBody,
+      theme: 'striped',
+      headStyles: { fillColor: [240, 240, 240], textColor: [80, 80, 80], fontStyle: 'bold', fontSize: 9 },
+      styles: { fontSize: 10, cellPadding: 4 },
+      columnStyles: {
+        0: { cellWidth: 'auto' },
+        1: { halign: 'center', cellWidth: 25 },
+        2: { halign: 'right', cellWidth: 35 },
+        3: { halign: 'right', cellWidth: 35 },
+      },
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 10;
+
+    // Summary
+    const summaryX = pageWidth - 14;
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Subtotal:', summaryX - 60, y);
+    doc.text(formatCurrency(subtotal), summaryX, y, { align: 'right' });
+    y += 6;
+
+    if (discountAmount > 0) {
+      doc.setTextColor(220, 38, 38);
+      doc.text('Desconto:', summaryX - 60, y);
+      doc.text(`−${formatCurrency(discountAmount)}`, summaryX, y, { align: 'right' });
+      y += 6;
+    }
+
+    if (shippingAmount > 0) {
+      doc.setTextColor(22, 163, 74);
+      doc.text('Frete:', summaryX - 60, y);
+      doc.text(`+${formatCurrency(shippingAmount)}`, summaryX, y, { align: 'right' });
+      y += 6;
+    }
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    y += 2;
+    doc.text('Total:', summaryX - 60, y);
+    doc.text(formatCurrency(total), summaryX, y, { align: 'right' });
+    y += 10;
+
+    // Notes
+    if (notes) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(60, 60, 60);
+      doc.setFillColor(249, 250, 251);
+      const splitNotes = doc.splitTextToSize(notes, pageWidth - 38);
+      const notesHeight = splitNotes.length * 5 + 10;
+      doc.roundedRect(14, y, pageWidth - 28, notesHeight, 2, 2, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.text('Observações:', 18, y + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.text(splitNotes, 18, y + 12);
+      y += notesHeight + 6;
+    }
+
+    // Validity
+    if (validUntil) {
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Validade: ${format(validUntil, 'dd/MM/yyyy')}`, 14, y);
+    }
+
+    doc.save(`orcamento-ORC-${quoteNumber || 'novo'}.pdf`);
   };
 
   if (loading) {
