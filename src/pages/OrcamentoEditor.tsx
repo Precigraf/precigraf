@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save, FileDown, Package as PackageIcon, Plus, Trash2, X, UserPlus, CalendarIcon, Search, MessageCircle } from 'lucide-react';
 import { format } from 'date-fns';
