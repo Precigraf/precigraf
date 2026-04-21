@@ -22,6 +22,10 @@ export interface Order {
   quote_id: string;
   status: string;
   kanban_position: number;
+  total_revenue: number;
+  total_cost: number;
+  amount_received: number;
+  amount_pending: number;
   created_at: string;
   updated_at: string;
   clients?: { name: string } | null;
@@ -99,6 +103,28 @@ export function useOrders() {
     },
   });
 
+  const updatePaymentReceived = useMutation({
+    mutationFn: async ({ orderId, additionalAmount }: { orderId: string; additionalAmount: number }) => {
+      // Get current order
+      const order = ordersQuery.data?.find(o => o.id === orderId);
+      if (!order) throw new Error('Order not found');
+      const newReceived = (Number(order.amount_received) || 0) + additionalAmount;
+      const newPending = Math.max(0, (Number(order.total_revenue) || 0) - newReceived);
+      const { error } = await supabase
+        .from('orders')
+        .update({ amount_received: newReceived, amount_pending: newPending })
+        .eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast({ title: 'Pagamento registrado!' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Erro ao registrar pagamento', description: error.message, variant: 'destructive' });
+    },
+  });
+
   const getOrderHistory = async (orderId: string) => {
     const { data, error } = await supabase
       .from('order_status_history')
@@ -114,6 +140,7 @@ export function useOrders() {
     isLoading: ordersQuery.isLoading,
     updateOrderStatus,
     updateOrderPosition,
+    updatePaymentReceived,
     getOrderHistory,
   };
 }

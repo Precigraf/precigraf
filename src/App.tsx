@@ -17,6 +17,7 @@ import OrcamentoEditor from "./pages/OrcamentoEditor";
 import Produtos from "./pages/Produtos";
 import Pedidos from "./pages/Pedidos";
 import Gestao from "./pages/Gestao";
+import Financeiro from "./pages/Financeiro";
 import PagamentoConfirmado from "./pages/PagamentoConfirmado";
 import Marketplace from "./pages/Marketplace";
 import NotFound from "./pages/NotFound";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/produtos" element={<ProtectedRoute><Produtos /></ProtectedRoute>} />
               <Route path="/pedidos" element={<ProtectedRoute><Pedidos /></ProtectedRoute>} />
               <Route path="/gestao" element={<ProtectedRoute><Gestao /></ProtectedRoute>} />
+              <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
               <Route path="/pagamento-confirmado" element={<ProtectedRoute><PagamentoConfirmado /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
