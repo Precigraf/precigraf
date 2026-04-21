@@ -337,7 +337,7 @@ const LogsTab: React.FC = () => {
             <SelectValue placeholder="Filtrar por tipo..." />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os eventos</SelectItem>
+            <SelectItem value="all">Todos os eventos</SelectItem>
             {eventTypes.filter(Boolean).map(t => (
               <SelectItem key={t} value={t}>{t}</SelectItem>
             ))}
