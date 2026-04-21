@@ -1,36 +1,31 @@
 
 
-## Plano: Remover Admin + Corrigir Frete no Lucro
+## Exportar PDF de Orçamento como Download Direto
 
-### 1. Remover página de Admin
+### Problema
+Ao exportar o PDF do orçamento, o sistema abre uma nova aba no navegador e chama `window.print()`. Isso força o usuário a interagir com o diálogo de impressão do navegador.
 
-Remover todos os arquivos e referências ao módulo admin:
+### Solução
+Substituir a lógica de `window.open` + `window.print()` por geração direta com **jsPDF** (já instalado no projeto), gerando um arquivo `.pdf` que é baixado automaticamente via `doc.save()`.
 
-**Arquivos a deletar:**
-- `src/pages/Admin.tsx`
-- `src/components/AdminRoute.tsx`
-- `src/hooks/useIsAdmin.ts`
+### Alteração
 
-**Arquivos a editar:**
-- `src/App.tsx` — remover import de `Admin`, `AdminRoute` e a rota `/admin`
-- `src/components/AppSidebar.tsx` — remover import de `useIsAdmin`, remover o link "Admin" condicional e a variavel `isAdmin`
+**Arquivo:** `src/pages/OrcamentoEditor.tsx`
 
-A edge function `admin-actions` e a migração SQL do role admin permanecem no banco (sem efeito colateral).
+Reescrever a função `handleExportPDF` (linhas 352-416) para:
 
----
+1. Criar um documento `jsPDF`
+2. Renderizar o cabeçalho da empresa (nome, documento, telefone, e-mail, endereço) — e logo se disponível (usando `doc.addImage`)
+3. Renderizar título "Orçamento ORC-XXXX" + data
+4. Renderizar nome do cliente
+5. Renderizar tabela de itens (usando `jspdf-autotable`, já importado em `exportUtils.ts`)
+6. Renderizar resumo: Subtotal, Desconto, Frete, Total
+7. Renderizar observações (se houver)
+8. Renderizar validade (se houver)
+9. Chamar `doc.save('orcamento-ORC-XXXX.pdf')` para download direto
 
-### 2. Frete como despesa (não inflacionar lucro)
+A logo será carregada como imagem base64 via canvas antes de inserir no PDF (necessário para jsPDF com URLs externas).
 
-**Problema atual:** Ao converter orçamento em pedido (`OrcamentoEditor.tsx` linha 280), `total_revenue = total` onde `total = subtotal - desconto + frete`. O frete entra no faturamento e infla o lucro.
-
-**Solução:** Incluir o valor do frete no `total_cost` do pedido, de forma que:
-- `total_revenue = total` (permanece — é o valor que o cliente paga)
-- `total_cost = custos dos produtos + frete`
-- `lucro = total_revenue - total_cost` (frete se anula: entra na receita e sai na despesa)
-
-**Arquivo:** `src/pages/OrcamentoEditor.tsx` (linha ~304)
-- Alterar: `total_cost: orderTotalCost` → `total_cost: orderTotalCost + shippingAmount`
-- O `shippingAmount` já está disponível no escopo como variável local
-
-Nenhuma alteração necessária em Financeiro, Pedidos ou Dashboard — todos já calculam lucro como `total_revenue - total_cost`, então a correção se propaga automaticamente.
+### Escopo
+Apenas o arquivo `src/pages/OrcamentoEditor.tsx` será alterado. Os imports de `jsPDF` e `autoTable` serão adicionados.
 
