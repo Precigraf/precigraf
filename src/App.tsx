@@ -50,7 +50,7 @@ const App = () => (
               <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
               <Route path="/pagamento-confirmado" element={<ProtectedRoute><PagamentoConfirmado /></ProtectedRoute>} />
-              <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>

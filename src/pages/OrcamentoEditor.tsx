@@ -301,7 +301,7 @@ const OrcamentoEditor: React.FC = () => {
         status: data.status,
         kanban_position: 0,
         total_revenue: orderTotalRevenue,
-        total_cost: orderTotalCost,
+        total_cost: orderTotalCost + shippingAmount,
         amount_received: data.amountReceived,
         amount_pending: Math.max(0, orderTotalRevenue - data.amountReceived),
       });
