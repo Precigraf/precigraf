@@ -332,12 +332,12 @@ const LogsTab: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex gap-2 items-center">
-        <Select value={eventFilter} onValueChange={v => { setEventFilter(v); setPage(1); }}>
+        <Select value={eventFilter || 'all'} onValueChange={v => { setEventFilter(v === 'all' ? '' : v); setPage(1); }}>
           <SelectTrigger className="w-[220px] h-9 text-xs">
             <SelectValue placeholder="Filtrar por tipo..." />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todos os eventos</SelectItem>
+            <SelectItem value="all">Todos os eventos</SelectItem>
             {eventTypes.filter(Boolean).map(t => (
               <SelectItem key={t} value={t}>{t}</SelectItem>
             ))}
