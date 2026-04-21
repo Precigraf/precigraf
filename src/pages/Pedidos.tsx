@@ -1,35 +1,25 @@
 import React, { useState, useMemo } from 'react';
-import { Package, CheckCircle, Settings2, Truck, Calendar } from 'lucide-react';
+import { Package, CheckCircle, Settings2, Truck } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/components/AppLayout';
 import KanbanBoard from '@/components/gestao/KanbanBoard';
+import PeriodFilter, { type PeriodKey, getDateRange } from '@/components/PeriodFilter';
 import { useOrders } from '@/hooks/useOrders';
-
-type PeriodFilter = 'all' | 'week' | 'month';
 
 const Pedidos: React.FC = () => {
   const { orders } = useOrders();
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('month');
-
-  const getDateRange = (period: PeriodFilter) => {
-    const now = new Date();
-    if (period === 'week') {
-      const start = new Date(now);
-      start.setDate(now.getDate() - 7);
-      return start;
-    }
-    if (period === 'month') {
-      return new Date(now.getFullYear(), now.getMonth(), 1);
-    }
-    return null;
-  };
+  const [period, setPeriod] = useState<PeriodKey>('current_month');
+  const [customStart, setCustomStart] = useState<Date | undefined>();
+  const [customEnd, setCustomEnd] = useState<Date | undefined>();
 
   const filteredOrders = useMemo(() => {
-    const start = getDateRange(periodFilter);
+    const { start, end } = getDateRange(period, customStart, customEnd);
     if (!start) return orders;
-    return orders.filter(o => new Date(o.created_at) >= start);
-  }, [orders, periodFilter]);
+    return orders.filter(o => {
+      const d = new Date(o.created_at);
+      return d >= start && (!end || d <= end);
+    });
+  }, [orders, period, customStart, customEnd]);
 
   const totalPedidos = filteredOrders.length;
   const aprovados = filteredOrders.filter(o => o.status === 'approved').length;
@@ -46,24 +36,19 @@ const Pedidos: React.FC = () => {
   return (
     <AppLayout>
       <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Pedidos</h1>
             <p className="text-sm text-muted-foreground">Arraste os pedidos entre as colunas para atualizar o status</p>
           </div>
-          <div className="flex items-center gap-2">
-            <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as PeriodFilter)}>
-              <SelectTrigger className="w-40">
-                <Calendar className="w-4 h-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todo período</SelectItem>
-                <SelectItem value="week">Última semana</SelectItem>
-                <SelectItem value="month">Este mês</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <PeriodFilter
+            value={period}
+            onChange={setPeriod}
+            customStart={customStart}
+            customEnd={customEnd}
+            onCustomStartChange={setCustomStart}
+            onCustomEndChange={setCustomEnd}
+          />
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">

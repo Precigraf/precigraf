@@ -1,11 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { startOfWeek, format, subDays, subWeeks, subMonths, subYears, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns';
+import { startOfWeek, format, differenceInDays, eachDayOfInterval, eachWeekOfInterval, eachMonthOfInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useMemo } from 'react';
-
-export type ChartPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 interface RevenueDataPoint {
   label: string;
@@ -14,7 +12,7 @@ interface RevenueDataPoint {
   lucro: number;
 }
 
-export function useRevenueChart(period: ChartPeriod) {
+export function useRevenueChart(rangeStart: Date | null, rangeEnd: Date | null) {
   const { user } = useAuth();
 
   const ordersQuery = useQuery({
@@ -35,51 +33,44 @@ export function useRevenueChart(period: ChartPeriod) {
     if (orders.length === 0) return [];
 
     const now = new Date();
+    const start = rangeStart ?? (orders.length > 0 ? new Date(orders[0].created_at) : now);
+    const end = rangeEnd ?? now;
+
+    const filteredOrders = orders.filter(o => {
+      const d = new Date(o.created_at);
+      return d >= start && d <= end;
+    });
+
+    const spanDays = differenceInDays(end, start);
+
     let intervals: Date[];
     let formatLabel: (d: Date) => string;
     let getKey: (d: Date) => string;
-    let rangeStart: Date;
 
-    switch (period) {
-      case 'daily':
-        rangeStart = subDays(now, 30);
-        intervals = eachDayOfInterval({ start: rangeStart, end: now });
-        formatLabel = (d) => format(d, 'dd/MM', { locale: ptBR });
-        getKey = (d) => format(d, 'yyyy-MM-dd');
-        break;
-      case 'weekly':
-        rangeStart = subWeeks(now, 12);
-        intervals = eachWeekOfInterval({ start: rangeStart, end: now }, { weekStartsOn: 1 });
-        formatLabel = (d) => format(d, "dd/MM", { locale: ptBR });
-        getKey = (d) => format(startOfWeek(d, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-        break;
-      case 'monthly':
-        rangeStart = subMonths(now, 12);
-        intervals = eachMonthOfInterval({ start: rangeStart, end: now });
-        formatLabel = (d) => format(d, 'MMM/yy', { locale: ptBR });
-        getKey = (d) => format(d, 'yyyy-MM');
-        break;
-      case 'yearly':
-        rangeStart = subYears(now, 5);
-        intervals = [];
-        for (let y = rangeStart.getFullYear(); y <= now.getFullYear(); y++) {
-          intervals.push(new Date(y, 0, 1));
-        }
-        formatLabel = (d) => format(d, 'yyyy');
-        getKey = (d) => format(d, 'yyyy');
-        break;
+    if (spanDays <= 31) {
+      intervals = eachDayOfInterval({ start, end });
+      formatLabel = (d) => format(d, 'dd/MM', { locale: ptBR });
+      getKey = (d) => format(d, 'yyyy-MM-dd');
+    } else if (spanDays <= 120) {
+      intervals = eachWeekOfInterval({ start, end }, { weekStartsOn: 1 });
+      formatLabel = (d) => format(d, 'dd/MM', { locale: ptBR });
+      getKey = (d) => format(startOfWeek(d, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    } else {
+      intervals = eachMonthOfInterval({ start, end });
+      formatLabel = (d) => format(d, 'MMM/yy', { locale: ptBR });
+      getKey = (d) => format(d, 'yyyy-MM');
     }
 
-    // Group orders by period key
     const grouped: Record<string, { revenue: number; cost: number }> = {};
-    for (const order of orders) {
+    for (const order of filteredOrders) {
       const date = new Date(order.created_at);
       let key: string;
-      switch (period) {
-        case 'daily': key = format(date, 'yyyy-MM-dd'); break;
-        case 'weekly': key = format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd'); break;
-        case 'monthly': key = format(date, 'yyyy-MM'); break;
-        case 'yearly': key = format(date, 'yyyy'); break;
+      if (spanDays <= 31) {
+        key = format(date, 'yyyy-MM-dd');
+      } else if (spanDays <= 120) {
+        key = format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+      } else {
+        key = format(date, 'yyyy-MM');
       }
       if (!grouped[key]) grouped[key] = { revenue: 0, cost: 0 };
       grouped[key].revenue += Number(order.total_revenue) || 0;
@@ -96,21 +87,27 @@ export function useRevenueChart(period: ChartPeriod) {
         lucro: g.revenue - g.cost,
       };
     });
-  }, [ordersQuery.data, period]);
+  }, [ordersQuery.data, rangeStart, rangeEnd]);
 
-  // Summary totals
   const totals = useMemo(() => {
     const orders = ordersQuery.data ?? [];
-    const faturamento = orders.reduce((s, o) => s + (Number(o.total_revenue) || 0), 0);
-    const despesas = orders.reduce((s, o) => s + (Number(o.total_cost) || 0), 0);
-    const aReceber = orders.reduce((s, o) => s + (Number(o.amount_received) || 0), 0);
+    const start = rangeStart;
+    const end = rangeEnd ?? new Date();
+    const filtered = start ? orders.filter(o => {
+      const d = new Date(o.created_at);
+      return d >= start && d <= end;
+    }) : orders;
+
+    const faturamento = filtered.reduce((s, o) => s + (Number(o.total_revenue) || 0), 0);
+    const despesas = filtered.reduce((s, o) => s + (Number(o.total_cost) || 0), 0);
+    const aReceber = filtered.reduce((s, o) => s + (Number(o.amount_received) || 0), 0);
     return {
       faturamento,
       despesas,
       lucro: faturamento - despesas,
       aReceber: faturamento - aReceber,
     };
-  }, [ordersQuery.data]);
+  }, [ordersQuery.data, rangeStart, rangeEnd]);
 
   return { chartData, totals, isLoading: ordersQuery.isLoading };
 }
