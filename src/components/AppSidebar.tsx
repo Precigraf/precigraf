@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calculator, Users, FileText, Package, LogOut, Settings, Sun, Moon, Store, Box } from 'lucide-react';
+import { LayoutDashboard, Calculator, Users, FileText, Package, LogOut, Settings, Sun, Moon, Store, Box, Wallet } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useNavigate } from 'react-router-dom';
 import LogoIcon from '@/components/LogoIcon';
@@ -21,12 +21,13 @@ import {
 
 const navItems = [
   { title: 'Dashboard', url: '/gestao', icon: LayoutDashboard },
-  { title: 'Calculadora', url: '/', icon: Calculator },
-  { title: 'Marketplace', url: '/marketplace', icon: Store },
-  { title: 'Clientes', url: '/clientes', icon: Users },
   { title: 'Produtos', url: '/produtos', icon: Box },
+  { title: 'Clientes', url: '/clientes', icon: Users },
   { title: 'Orçamentos', url: '/orcamentos', icon: FileText },
   { title: 'Pedidos', url: '/pedidos', icon: Package },
+  { title: 'Financeiro', url: '/financeiro', icon: Wallet },
+  { title: 'Calculadora', url: '/', icon: Calculator },
+  { title: 'Marketplace', url: '/marketplace', icon: Store },
 ];
 
 export function AppSidebar() {

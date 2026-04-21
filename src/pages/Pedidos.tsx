@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { DollarSign, TrendingDown, TrendingUp, Clock, Calendar } from 'lucide-react';
+import { Package, CheckCircle, Settings2, Truck, Calendar } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/components/AppLayout';
@@ -12,9 +12,6 @@ const Pedidos: React.FC = () => {
   const { orders } = useOrders();
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('month');
 
-  const formatCurrency = (v: number) =>
-    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
   const getDateRange = (period: PeriodFilter) => {
     const now = new Date();
     if (period === 'week') {
@@ -23,10 +20,9 @@ const Pedidos: React.FC = () => {
       return start;
     }
     if (period === 'month') {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      return start;
+      return new Date(now.getFullYear(), now.getMonth(), 1);
     }
-    return null; // all
+    return null;
   };
 
   const filteredOrders = useMemo(() => {
@@ -35,25 +31,17 @@ const Pedidos: React.FC = () => {
     return orders.filter(o => new Date(o.created_at) >= start);
   }, [orders, periodFilter]);
 
-  const faturamento = filteredOrders
-    .filter(o => o.status === 'delivered')
-    .reduce((sum, o) => sum + (o.quotes?.total_value ?? 0), 0);
-
-  const aReceber = filteredOrders
-    .filter(o => o.status !== 'delivered')
-    .reduce((sum, o) => sum + (o.quotes?.total_value ?? 0), 0);
-
-  const despesas = 0;
-  const lucro = faturamento - despesas;
+  const totalPedidos = filteredOrders.length;
+  const aprovados = filteredOrders.filter(o => o.status === 'approved').length;
+  const emProducao = filteredOrders.filter(o => o.status === 'in_production').length;
+  const entregues = filteredOrders.filter(o => o.status === 'delivered').length;
 
   const kpis = [
-    { label: 'Faturamento', value: formatCurrency(faturamento), icon: DollarSign, color: 'text-green-500' },
-    { label: 'Despesas', value: formatCurrency(despesas), icon: TrendingDown, color: 'text-red-500' },
-    { label: 'Lucro', value: formatCurrency(lucro), icon: TrendingUp, color: lucro >= 0 ? 'text-emerald-500' : 'text-red-500' },
-    { label: 'A Receber', value: formatCurrency(aReceber), icon: Clock, color: 'text-yellow-500' },
+    { label: 'Pedidos', value: totalPedidos, icon: Package, color: 'text-blue-500' },
+    { label: 'Aprovados', value: aprovados, icon: CheckCircle, color: 'text-green-500' },
+    { label: 'Em Produção', value: emProducao, icon: Settings2, color: 'text-orange-500' },
+    { label: 'Entregues', value: entregues, icon: Truck, color: 'text-emerald-500' },
   ];
-
-  
 
   return (
     <AppLayout>
