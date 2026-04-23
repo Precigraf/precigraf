@@ -1,31 +1,56 @@
 
 
-## Exportar PDF de Orçamento como Download Direto
+## 1. Categorias de Produtos
+
+### Migração SQL
+Criar tabela `product_categories`:
+- `id` UUID PK
+- `user_id` UUID NOT NULL (ref auth.users, ON DELETE CASCADE)
+- `name` TEXT NOT NULL
+- `created_at` TIMESTAMPTZ DEFAULT now()
+- UNIQUE(user_id, name)
+- RLS: usuario so ve/edita suas categorias
+
+Adicionar coluna `category_id` UUID nullable na tabela `products` com FK para `product_categories(id)` ON DELETE SET NULL.
+
+### Hook `src/hooks/useCategories.ts`
+- CRUD para categorias (list, create, delete)
+- Usa `supabase.from('product_categories')`
+
+### Componente de gerenciamento de categorias
+- Dialog com lista de categorias existentes + input para criar nova
+- Botao de excluir categoria (com confirmacao)
+
+### Pagina Produtos (`src/pages/Produtos.tsx`)
+- Botao "Criar Categoria" ao lado de "+ Novo Produto"
+- Abre dialog de gerenciamento de categorias
+- Filtro por categoria acima da lista de produtos
+- Badge com nome da categoria em cada card de produto
+
+### Formulario de Produto (`src/components/gestao/ProductForm.tsx`)
+- Adicionar Select para vincular produto a uma categoria (opcional)
+
+### Hook `useProducts`
+- Incluir `category_id` no tipo `Product` e nas queries
+
+---
+
+## 2. Corrigir formatacao do Desconto no PDF
 
 ### Problema
-Ao exportar o PDF do orçamento, o sistema abre uma nova aba no navegador e chama `window.print()`. Isso força o usuário a interagir com o diálogo de impressão do navegador.
+O caractere `−` (Unicode U+2212) nao e suportado pela fonte Helvetica do jsPDF, renderizando como `"` no PDF.
 
-### Solução
-Substituir a lógica de `window.open` + `window.print()` por geração direta com **jsPDF** (já instalado no projeto), gerando um arquivo `.pdf` que é baixado automaticamente via `doc.save()`.
+### Correcao
+**Arquivo:** `src/pages/OrcamentoEditor.tsx` (linha 475)
 
-### Alteração
+Substituir:
+```
+`−${formatCurrency(discountAmount)}`
+```
+Por:
+```
+`-${formatCurrency(discountAmount)}`
+```
 
-**Arquivo:** `src/pages/OrcamentoEditor.tsx`
-
-Reescrever a função `handleExportPDF` (linhas 352-416) para:
-
-1. Criar um documento `jsPDF`
-2. Renderizar o cabeçalho da empresa (nome, documento, telefone, e-mail, endereço) — e logo se disponível (usando `doc.addImage`)
-3. Renderizar título "Orçamento ORC-XXXX" + data
-4. Renderizar nome do cliente
-5. Renderizar tabela de itens (usando `jspdf-autotable`, já importado em `exportUtils.ts`)
-6. Renderizar resumo: Subtotal, Desconto, Frete, Total
-7. Renderizar observações (se houver)
-8. Renderizar validade (se houver)
-9. Chamar `doc.save('orcamento-ORC-XXXX.pdf')` para download direto
-
-A logo será carregada como imagem base64 via canvas antes de inserir no PDF (necessário para jsPDF com URLs externas).
-
-### Escopo
-Apenas o arquivo `src/pages/OrcamentoEditor.tsx` será alterado. Os imports de `jsPDF` e `autoTable` serão adicionados.
+Mesma correcao na linha 482 do Frete (trocar `+` Unicode se houver) — verificar que usa ASCII padrao.
 
