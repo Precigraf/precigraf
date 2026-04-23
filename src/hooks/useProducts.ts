@@ -13,6 +13,7 @@ export interface Product {
   id: string;
   user_id: string;
   name: string;
+  category_id: string | null;
   description: string | null;
   unit_price: number;
   cost: number;

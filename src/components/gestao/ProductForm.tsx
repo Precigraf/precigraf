@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCategories } from '@/hooks/useCategories';
 import type { Product, ProductInput } from '@/hooks/useProducts';
 
 interface ProductFormProps {
@@ -16,6 +18,7 @@ interface ProductFormProps {
 }
 
 const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit, initialData, isLoading }) => {
+  const { categories } = useCategories();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [size, setSize] = useState('');
@@ -27,6 +30,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
   const [price, setPrice] = useState('');
   const [cost, setCost] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -42,10 +46,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       setPrice(String(tier?.price ?? initialData.unit_price ?? ''));
       setCost(String(tier?.cost ?? initialData.cost ?? ''));
       setIsActive(initialData.is_active ?? true);
+      setCategoryId(initialData.category_id ?? null);
     } else {
       setName(''); setDescription(''); setSize(''); setPrintType('');
       setMaterial(''); setFinish(''); setProductionTime('');
       setQuantity(''); setPrice(''); setCost(''); setIsActive(true);
+      setCategoryId(null);
     }
   }, [initialData, open]);
 
@@ -68,6 +74,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       default_quantity: qty,
       is_active: isActive,
       price_tiers: [{ quantity: qty, price: priceNum, cost: costNum }],
+      category_id: categoryId,
     });
   };
 
@@ -88,6 +95,23 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
             <Label>Descrição</Label>
             <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} maxLength={500} placeholder="Descrição livre do produto (tamanho, especificações, etc.)" />
           </div>
+
+          {categories.length > 0 && (
+            <div className="space-y-2">
+              <Label>Categoria</Label>
+              <Select value={categoryId ?? 'none'} onValueChange={v => setCategoryId(v === 'none' ? null : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sem categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem categoria</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
