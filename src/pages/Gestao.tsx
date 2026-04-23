@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Users, FileText, CheckCircle, XCircle, DollarSign, Calendar, Crown, Sparkles } from 'lucide-react';
+import { Users, FileText, CheckCircle, XCircle, DollarSign, Calendar, Crown, Sparkles, AlertTriangle, Boxes } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { useClients } from '@/hooks/useClients';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import { useRevenueChart } from '@/hooks/useRevenueChart';
+import { useInventory } from '@/hooks/useInventory';
 import { useNavigate } from 'react-router-dom';
 import PeriodFilter, { type PeriodKey, getDateRange } from '@/components/PeriodFilter';
 
@@ -33,6 +34,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 const Gestao: React.FC = () => {
   const { clients } = useClients();
   const { quotes } = useQuotes();
+  const { lowStockMaterials } = useInventory();
   const { plan, isTrialActive, isTrialExpired, trialEndsAt, trialRemainingHours } = useUserPlan();
   const navigate = useNavigate();
 

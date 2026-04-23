@@ -26,6 +26,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { fetchMaterialsForProducts } from '@/hooks/useProductMaterials';
 
 interface QuoteItem {
   id: string;
@@ -296,7 +297,7 @@ const OrcamentoEditor: React.FC = () => {
       }
 
       // 4. Create order with financial data
-      const { error: orderError } = await supabase.from('orders').insert({
+      const { data: createdOrder, error: orderError } = await supabase.from('orders').insert({
         user_id: user.id,
         client_id: finalClientId,
         quote_id: quoteId,
@@ -306,16 +307,68 @@ const OrcamentoEditor: React.FC = () => {
         total_cost: orderTotalCost + shippingAmount,
         amount_received: data.amountReceived,
         amount_pending: Math.max(0, orderTotalRevenue - data.amountReceived),
-      });
+      }).select().single();
       if (orderError) throw orderError;
 
-      // 4. Register received amount as a positive expense entry? No → just toast.
+      // 5. Inventory deduction: fetch product_materials for all products in the order
+      const productIds = items.filter(i => i.product_id).map(i => i.product_id!) as string[];
+      let lowStockWarnings: string[] = [];
+      if (productIds.length > 0 && createdOrder) {
+        try {
+          const allMaterials = await fetchMaterialsForProducts(productIds);
+          const movementsToInsert: any[] = [];
+          // pre-compute current stock to detect low after deduction
+          const stockDelta = new Map<string, number>(); // material_id -> total qty consumed
+          for (const item of items) {
+            if (!item.product_id) continue;
+            const prodMats = allMaterials.filter(m => m.product_id === item.product_id);
+            for (const pm of prodMats) {
+              const consumed = item.quantity * pm.quantity_per_unit;
+              stockDelta.set(pm.material_id, (stockDelta.get(pm.material_id) || 0) + consumed);
+              movementsToInsert.push({
+                user_id: user.id,
+                material_id: pm.material_id,
+                movement_type: 'out',
+                quantity: -consumed,
+                reference_type: 'order',
+                reference_id: createdOrder.id,
+                notes: `Pedido ${item.name}`,
+              });
+            }
+          }
+          if (movementsToInsert.length > 0) {
+            const { error: mvErr } = await supabase.from('inventory_movements').insert(movementsToInsert);
+            if (mvErr) throw mvErr;
+            // Check low stock
+            const { data: matsAfter } = await supabase
+              .from('inventory_materials')
+              .select('name, current_stock, min_stock')
+              .in('id', Array.from(stockDelta.keys()));
+            (matsAfter || []).forEach(m => {
+              if (m.min_stock > 0 && m.current_stock <= m.min_stock) {
+                lowStockWarnings.push(m.name);
+              }
+            });
+            qc.invalidateQueries({ queryKey: ['inventory_materials'] });
+            qc.invalidateQueries({ queryKey: ['inventory_movements'] });
+          }
+        } catch (invErr: any) {
+          // Non-blocking: log but don't fail the order
+          console.warn('Falha ao abater estoque:', invErr.message);
+        }
+      }
+
+      // 6. Update local state and notify
       setStatus('approved');
       setClientId(finalClientId);
       setConvertModalOpen(false);
+      const baseDesc = `Recebido: ${formatCurrency(data.amountReceived)} · A receber: ${formatCurrency(Math.max(0, total - data.amountReceived))}`;
+      const desc = lowStockWarnings.length > 0
+        ? `${baseDesc}\n⚠️ Estoque baixo: ${lowStockWarnings.join(', ')}`
+        : baseDesc;
       toast({
         title: 'Convertido em pedido!',
-        description: `Recebido: ${formatCurrency(data.amountReceived)} · A receber: ${formatCurrency(Math.max(0, total - data.amountReceived))}`,
+        description: desc,
       });
       qc.invalidateQueries({ queryKey: ['quotes'] });
       qc.invalidateQueries({ queryKey: ['orders'] });
