@@ -212,6 +212,89 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_materials: {
+        Row: {
+          created_at: string
+          current_stock: number
+          id: string
+          min_stock: number
+          name: string
+          notes: string | null
+          unit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_stock?: number
+          id?: string
+          min_stock?: number
+          name: string
+          notes?: string | null
+          unit?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_stock?: number
+          id?: string
+          min_stock?: number
+          name?: string
+          notes?: string | null
+          unit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      inventory_movements: {
+        Row: {
+          created_at: string
+          id: string
+          material_id: string
+          movement_type: string
+          notes: string | null
+          quantity: number
+          reference_id: string | null
+          reference_type: string | null
+          unit_cost: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          material_id: string
+          movement_type: string
+          notes?: string | null
+          quantity: number
+          reference_id?: string | null
+          reference_type?: string | null
+          unit_cost?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          material_id?: string
+          movement_type?: string
+          notes?: string | null
+          quantity?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          unit_cost?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_materials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_status_history: {
         Row: {
           created_at: string
@@ -360,6 +443,48 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      product_materials: {
+        Row: {
+          created_at: string
+          id: string
+          material_id: string
+          product_id: string
+          quantity_per_unit: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          material_id: string
+          product_id: string
+          quantity_per_unit: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          material_id?: string
+          product_id?: string
+          quantity_per_unit?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_materials_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_materials_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       products: {
         Row: {
