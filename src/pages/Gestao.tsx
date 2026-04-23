@@ -125,6 +125,28 @@ const Gestao: React.FC = () => {
           ))}
         </div>
 
+        {/* Alerta de estoque baixo */}
+        {lowStockMaterials.length > 0 && (
+          <Card className="p-4 mb-6 bg-orange-500/5 border-orange-500/30">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-semibold text-foreground">Materiais em estoque baixo</h3>
+                  <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/30">{lowStockMaterials.length}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {lowStockMaterials.slice(0, 3).map(m => m.name).join(', ')}
+                  {lowStockMaterials.length > 3 && ` e mais ${lowStockMaterials.length - 3}`}
+                </p>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => navigate('/estoque')} className="shrink-0">
+                <Boxes className="w-4 h-4 mr-2" /> Ver Estoque
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Gráfico de faturamento */}
         <Card className="p-5 bg-card border-border">
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
