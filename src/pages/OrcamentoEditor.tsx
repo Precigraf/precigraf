@@ -472,7 +472,7 @@ const OrcamentoEditor: React.FC = () => {
     if (discountAmount > 0) {
       doc.setTextColor(220, 38, 38);
       doc.text('Desconto:', summaryX - 60, y);
-      doc.text(`−${formatCurrency(discountAmount)}`, summaryX, y, { align: 'right' });
+      doc.text(`-${formatCurrency(discountAmount)}`, summaryX, y, { align: 'right' });
       y += 6;
     }
 
