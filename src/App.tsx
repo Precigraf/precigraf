@@ -20,6 +20,7 @@ import Gestao from "./pages/Gestao";
 import Financeiro from "./pages/Financeiro";
 import PagamentoConfirmado from "./pages/PagamentoConfirmado";
 import Marketplace from "./pages/Marketplace";
+import Estoque from "./pages/Estoque";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="/gestao" element={<ProtectedRoute><Gestao /></ProtectedRoute>} />
               <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+              <Route path="/estoque" element={<ProtectedRoute><Estoque /></ProtectedRoute>} />
               <Route path="/pagamento-confirmado" element={<ProtectedRoute><PagamentoConfirmado /></ProtectedRoute>} />
               
               <Route path="*" element={<NotFound />} />

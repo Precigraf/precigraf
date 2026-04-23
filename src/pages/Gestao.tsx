@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Users, FileText, CheckCircle, XCircle, DollarSign, Calendar, Crown, Sparkles } from 'lucide-react';
+import { Users, FileText, CheckCircle, XCircle, DollarSign, Calendar, Crown, Sparkles, AlertTriangle, Boxes } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { useClients } from '@/hooks/useClients';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import { useRevenueChart } from '@/hooks/useRevenueChart';
+import { useInventory } from '@/hooks/useInventory';
 import { useNavigate } from 'react-router-dom';
 import PeriodFilter, { type PeriodKey, getDateRange } from '@/components/PeriodFilter';
 
@@ -33,6 +34,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 const Gestao: React.FC = () => {
   const { clients } = useClients();
   const { quotes } = useQuotes();
+  const { lowStockMaterials } = useInventory();
   const { plan, isTrialActive, isTrialExpired, trialEndsAt, trialRemainingHours } = useUserPlan();
   const navigate = useNavigate();
 
@@ -122,6 +124,28 @@ const Gestao: React.FC = () => {
             </Card>
           ))}
         </div>
+
+        {/* Alerta de estoque baixo */}
+        {lowStockMaterials.length > 0 && (
+          <Card className="p-4 mb-6 bg-orange-500/5 border-orange-500/30">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-orange-500 shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-semibold text-foreground">Materiais em estoque baixo</h3>
+                  <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/30">{lowStockMaterials.length}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {lowStockMaterials.slice(0, 3).map(m => m.name).join(', ')}
+                  {lowStockMaterials.length > 3 && ` e mais ${lowStockMaterials.length - 3}`}
+                </p>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => navigate('/estoque')} className="shrink-0">
+                <Boxes className="w-4 h-4 mr-2" /> Ver Estoque
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* Gráfico de faturamento */}
         <Card className="p-5 bg-card border-border">

@@ -10,12 +10,14 @@ import ProductForm from '@/components/gestao/ProductForm';
 import CategoryManager from '@/components/gestao/CategoryManager';
 import { useProducts, type Product } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
+import { useProductMaterials, type ProductMaterialInput } from '@/hooks/useProductMaterials';
 
 const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const Produtos: React.FC = () => {
   const { products, isLoading, createProduct, updateProduct, deleteProduct } = useProducts();
   const { categories } = useCategories();
+  const { replaceProductMaterials } = useProductMaterials();
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
@@ -31,11 +33,21 @@ const Produtos: React.FC = () => {
   const openNew = () => { setEditing(null); setOpen(true); };
   const openEdit = (p: Product) => { setEditing(p); setOpen(true); };
 
-  const handleSubmit = (payload: any) => {
+  const handleSubmit = (payload: any, materials: ProductMaterialInput[]) => {
     if (editing) {
-      updateProduct.mutate({ id: editing.id, ...payload }, { onSuccess: () => setOpen(false) });
+      updateProduct.mutate({ id: editing.id, ...payload }, {
+        onSuccess: async (updated) => {
+          await replaceProductMaterials.mutateAsync({ productId: updated.id, items: materials });
+          setOpen(false);
+        },
+      });
     } else {
-      createProduct.mutate(payload, { onSuccess: () => setOpen(false) });
+      createProduct.mutate(payload, {
+        onSuccess: async (created) => {
+          await replaceProductMaterials.mutateAsync({ productId: created.id, items: materials });
+          setOpen(false);
+        },
+      });
     }
   };
 
