@@ -29,7 +29,7 @@ export interface Product {
   updated_at: string;
 }
 
-export type ProductInput = Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+export type ProductInput = Omit<Product, 'id' | 'user_id' | 'created_at' | 'updated_at'> & { category_id?: string | null };
 
 export function useProducts() {
   const { user } = useAuth();
