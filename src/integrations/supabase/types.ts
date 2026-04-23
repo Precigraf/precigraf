@@ -340,8 +340,30 @@ export type Database = {
         }
         Relationships: []
       }
+      product_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
+          category_id: string | null
           cost: number
           created_at: string
           default_quantity: number
@@ -360,6 +382,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category_id?: string | null
           cost?: number
           created_at?: string
           default_quantity?: number
@@ -378,6 +401,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category_id?: string | null
           cost?: number
           created_at?: string
           default_quantity?: number
@@ -395,7 +419,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "product_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
