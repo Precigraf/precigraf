@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, forwardRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, Mail, Lock, User } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Mail, Lock, User, Phone } from 'lucide-react';
 import LogoIcon from '@/components/LogoIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,8 +19,17 @@ const Cadastro = forwardRef<HTMLDivElement>((_, ref) => {
   // Signup form
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  const formatWhatsapp = (v: string) => {
+    const d = v.replace(/\D/g, '').slice(0, 11);
+    if (d.length <= 2) return d;
+    if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  };
 
   // Redirect if already logged in
   const handleRedirect = useCallback(() => {
@@ -47,10 +56,12 @@ const Cadastro = forwardRef<HTMLDivElement>((_, ref) => {
 
     const trimmedName = name.trim();
     const trimmedEmail = email.trim().toLowerCase();
+    const trimmedWhatsapp = whatsapp.trim();
     const trimmedPassword = password;
+    const whatsappDigits = trimmedWhatsapp.replace(/\D/g, '');
 
-    if (!trimmedName || !trimmedEmail || !trimmedPassword) {
-      setError('Preencha todos os campos');
+    if (!trimmedName || !trimmedEmail || !trimmedWhatsapp || !trimmedPassword) {
+      setError('Todos os campos são obrigatórios');
       return;
     }
 
@@ -64,6 +75,11 @@ const Cadastro = forwardRef<HTMLDivElement>((_, ref) => {
       return;
     }
 
+    if (whatsappDigits.length < 10) {
+      setError('WhatsApp inválido. Informe DDD + número.');
+      return;
+    }
+
     if (trimmedPassword.length < 8) {
       setError('Senha deve ter pelo menos 8 caracteres');
       return;
@@ -72,7 +88,7 @@ const Cadastro = forwardRef<HTMLDivElement>((_, ref) => {
     setIsLoading(true);
 
     try {
-      const { error } = await signUp(trimmedEmail, trimmedPassword, trimmedName);
+      const { error } = await signUp(trimmedEmail, trimmedPassword, trimmedName, trimmedWhatsapp);
 
       if (error) {
         const errorMessage = error.message.toLowerCase();
@@ -139,7 +155,7 @@ const Cadastro = forwardRef<HTMLDivElement>((_, ref) => {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Nome</label>
+              <label className="text-sm font-medium text-foreground">Nome completo *</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -149,12 +165,30 @@ const Cadastro = forwardRef<HTMLDivElement>((_, ref) => {
                   placeholder="Seu nome completo"
                   className="input-currency pl-10"
                   disabled={isLoading}
+                  required
+                  maxLength={100}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Email</label>
+              <label className="text-sm font-medium text-foreground">WhatsApp *</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="tel"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(formatWhatsapp(e.target.value))}
+                  placeholder="(11) 99999-9999"
+                  className="input-currency pl-10"
+                  disabled={isLoading}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Email *</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -164,6 +198,7 @@ const Cadastro = forwardRef<HTMLDivElement>((_, ref) => {
                   placeholder="seu@email.com"
                   className="input-currency pl-10"
                   disabled={isLoading}
+                  required
                 />
               </div>
             </div>
