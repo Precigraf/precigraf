@@ -158,10 +158,6 @@ const Pedidos: React.FC = () => {
                       <div className="text-xs text-muted-foreground">Criado em {new Date(o.created_at).toLocaleDateString('pt-BR')} às {new Date(o.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
 
-                    <div className="flex-1 min-w-[140px] text-sm text-muted-foreground">
-                      {o.quotes?.product_name || '—'}
-                    </div>
-
                     <div className="shrink-0 text-right min-w-[110px]">
                       <div className="font-bold text-foreground">{formatCurrency(Number(o.total_revenue) || 0)}</div>
                       {Number(o.amount_pending) > 0 && (
@@ -170,12 +166,9 @@ const Pedidos: React.FC = () => {
                     </div>
 
                     <div className="shrink-0">
-                      <Select value={o.status} onValueChange={(v) => updateOrderStatus.mutate({ orderId: o.id, newStatus: v, oldStatus: o.status })}>
-                        <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {KANBAN_COLUMNS.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Badge variant="outline" className={STATUS_BADGE[o.status] || ''}>
+                        {statusLabel}
+                      </Badge>
                     </div>
 
                     <div className="shrink-0 flex items-center gap-1">
