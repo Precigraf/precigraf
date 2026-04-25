@@ -133,7 +133,6 @@ const Pedidos: React.FC = () => {
         ) : (
           <div className="space-y-2">
             {filteredOrders.map(o => {
-              const statusLabel = KANBAN_COLUMNS.find(c => c.id === o.status)?.label || o.status;
               return (
                 <Card key={o.id} className="p-4 bg-card border-border hover:border-primary/30 transition-colors">
                   <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
