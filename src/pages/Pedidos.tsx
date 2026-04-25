@@ -163,9 +163,12 @@ const Pedidos: React.FC = () => {
                     </div>
 
                     <div className="shrink-0">
-                      <Badge variant="outline" className={STATUS_BADGE[o.status] || ''}>
-                        {statusLabel}
-                      </Badge>
+                      <Select value={o.status} onValueChange={(v) => updateOrderStatus.mutate({ orderId: o.id, newStatus: v, oldStatus: o.status })}>
+                        <SelectTrigger className={`w-[180px] ${STATUS_BADGE[o.status] || ''}`}><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {KANBAN_COLUMNS.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="shrink-0 flex items-center gap-1">
