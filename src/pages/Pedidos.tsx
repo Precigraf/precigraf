@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Package, Clock, Truck, DollarSign, Search, Eye, Trash2, MessageCircle } from 'lucide-react';
+import { Package, Clock, CheckCircle2, DollarSign, Search, Eye, Trash2, MessageCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -53,14 +53,14 @@ const Pedidos: React.FC = () => {
 
   const total = filteredOrders.length;
   const emAndamento = filteredOrders.filter(o => o.status !== 'delivered').length;
-  const entregues = filteredOrders.filter(o => o.status === 'delivered').length;
+  const aprovados = filteredOrders.filter(o => o.status === 'approved').length;
   const faturamento = filteredOrders.reduce((sum, o) => sum + (Number(o.total_revenue) || 0), 0);
 
   const kpis = [
-    { label: 'Total', value: total, icon: Package, color: 'text-blue-500', display: String(total) },
-    { label: 'Em andamento', value: emAndamento, icon: Clock, color: 'text-orange-500', display: String(emAndamento) },
-    { label: 'Entregues', value: entregues, icon: Truck, color: 'text-green-500', display: String(entregues) },
-    { label: 'Faturamento', value: faturamento, icon: DollarSign, color: 'text-emerald-500', display: formatCurrency(faturamento) },
+    { label: 'Faturamento', icon: DollarSign, color: 'text-emerald-500', display: formatCurrency(faturamento) },
+    { label: 'Total', icon: Package, color: 'text-blue-500', display: String(total) },
+    { label: 'Em andamento', icon: Clock, color: 'text-orange-500', display: String(emAndamento) },
+    { label: 'Aprovados', icon: CheckCircle2, color: 'text-green-500', display: String(aprovados) },
   ];
 
   const openDetails = (o: Order) => { setSelected(o); setDetailsOpen(true); };
@@ -138,11 +138,8 @@ const Pedidos: React.FC = () => {
               return (
                 <Card key={o.id} className="p-4 bg-card border-border hover:border-primary/30 transition-colors">
                   <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
-                    <div className="shrink-0 min-w-[120px]">
+                    <div className="shrink-0 min-w-[90px]">
                       <div className="text-xs text-muted-foreground font-mono">PED-{o.order_number ?? '—'}</div>
-                      <Badge variant="outline" className={STATUS_BADGE[o.status] || ''}>
-                        {statusLabel}
-                      </Badge>
                     </div>
 
                     <div className="flex-1 min-w-[180px]">
@@ -158,10 +155,6 @@ const Pedidos: React.FC = () => {
                       <div className="text-xs text-muted-foreground">Criado em {new Date(o.created_at).toLocaleDateString('pt-BR')} às {new Date(o.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
 
-                    <div className="flex-1 min-w-[140px] text-sm text-muted-foreground">
-                      {o.quotes?.product_name || '—'}
-                    </div>
-
                     <div className="shrink-0 text-right min-w-[110px]">
                       <div className="font-bold text-foreground">{formatCurrency(Number(o.total_revenue) || 0)}</div>
                       {Number(o.amount_pending) > 0 && (
@@ -170,12 +163,9 @@ const Pedidos: React.FC = () => {
                     </div>
 
                     <div className="shrink-0">
-                      <Select value={o.status} onValueChange={(v) => updateOrderStatus.mutate({ orderId: o.id, newStatus: v, oldStatus: o.status })}>
-                        <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {KANBAN_COLUMNS.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                      <Badge variant="outline" className={STATUS_BADGE[o.status] || ''}>
+                        {statusLabel}
+                      </Badge>
                     </div>
 
                     <div className="shrink-0 flex items-center gap-1">
