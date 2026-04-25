@@ -53,14 +53,14 @@ const Pedidos: React.FC = () => {
 
   const total = filteredOrders.length;
   const emAndamento = filteredOrders.filter(o => o.status !== 'delivered').length;
-  const entregues = filteredOrders.filter(o => o.status === 'delivered').length;
+  const aprovados = filteredOrders.filter(o => o.status === 'approved').length;
   const faturamento = filteredOrders.reduce((sum, o) => sum + (Number(o.total_revenue) || 0), 0);
 
   const kpis = [
-    { label: 'Total', value: total, icon: Package, color: 'text-blue-500', display: String(total) },
-    { label: 'Em andamento', value: emAndamento, icon: Clock, color: 'text-orange-500', display: String(emAndamento) },
-    { label: 'Entregues', value: entregues, icon: Truck, color: 'text-green-500', display: String(entregues) },
-    { label: 'Faturamento', value: faturamento, icon: DollarSign, color: 'text-emerald-500', display: formatCurrency(faturamento) },
+    { label: 'Faturamento', icon: DollarSign, color: 'text-emerald-500', display: formatCurrency(faturamento) },
+    { label: 'Total', icon: Package, color: 'text-blue-500', display: String(total) },
+    { label: 'Em andamento', icon: Clock, color: 'text-orange-500', display: String(emAndamento) },
+    { label: 'Aprovados', icon: CheckCircle2, color: 'text-green-500', display: String(aprovados) },
   ];
 
   const openDetails = (o: Order) => { setSelected(o); setDetailsOpen(true); };
