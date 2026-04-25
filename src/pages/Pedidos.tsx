@@ -3,7 +3,6 @@ import { Package, Clock, CheckCircle2, DollarSign, Search, Eye, Trash2, MessageC
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import AppLayout from '@/components/AppLayout';
@@ -134,7 +133,6 @@ const Pedidos: React.FC = () => {
         ) : (
           <div className="space-y-2">
             {filteredOrders.map(o => {
-              const statusLabel = KANBAN_COLUMNS.find(c => c.id === o.status)?.label || o.status;
               return (
                 <Card key={o.id} className="p-4 bg-card border-border hover:border-primary/30 transition-colors">
                   <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
@@ -163,9 +161,12 @@ const Pedidos: React.FC = () => {
                     </div>
 
                     <div className="shrink-0">
-                      <Badge variant="outline" className={STATUS_BADGE[o.status] || ''}>
-                        {statusLabel}
-                      </Badge>
+                      <Select value={o.status} onValueChange={(v) => updateOrderStatus.mutate({ orderId: o.id, newStatus: v, oldStatus: o.status })}>
+                        <SelectTrigger className={`w-[180px] ${STATUS_BADGE[o.status] || ''}`}><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {KANBAN_COLUMNS.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="shrink-0 flex items-center gap-1">
