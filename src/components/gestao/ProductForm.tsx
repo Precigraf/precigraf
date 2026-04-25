@@ -6,24 +6,19 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, Boxes } from 'lucide-react';
 import { useCategories } from '@/hooks/useCategories';
-import { useInventory } from '@/hooks/useInventory';
-import { useProductMaterials, type ProductMaterialInput } from '@/hooks/useProductMaterials';
 import type { Product, ProductInput } from '@/hooks/useProducts';
 
 interface ProductFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: ProductInput, materials: ProductMaterialInput[]) => void;
+  onSubmit: (data: ProductInput) => void;
   initialData?: Product | null;
   isLoading?: boolean;
 }
 
 const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit, initialData, isLoading }) => {
   const { categories } = useCategories();
-  const { materials: inventoryMaterials } = useInventory();
-  const { productMaterials } = useProductMaterials(initialData?.id);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -37,7 +32,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
   const [cost, setCost] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [composition, setComposition] = useState<ProductMaterialInput[]>([]);
 
   useEffect(() => {
     if (initialData) {
@@ -59,35 +53,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       setMaterial(''); setFinish(''); setProductionTime('');
       setQuantity(''); setPrice(''); setCost(''); setIsActive(true);
       setCategoryId(null);
-      setComposition([]);
     }
   }, [initialData, open]);
-
-  // Sync composition from loaded productMaterials
-  useEffect(() => {
-    if (initialData && productMaterials.length > 0) {
-      setComposition(productMaterials.map(pm => ({
-        material_id: pm.material_id,
-        quantity_per_unit: pm.quantity_per_unit,
-      })));
-    } else if (initialData) {
-      setComposition([]);
-    }
-  }, [initialData, productMaterials]);
-
-  const addMaterialRow = () => {
-    if (inventoryMaterials.length === 0) return;
-    const used = new Set(composition.map(c => c.material_id));
-    const available = inventoryMaterials.find(m => !used.has(m.id));
-    if (!available) return;
-    setComposition(prev => [...prev, { material_id: available.id, quantity_per_unit: 1 }]);
-  };
-
-  const updateRow = (idx: number, patch: Partial<ProductMaterialInput>) => {
-    setComposition(prev => prev.map((r, i) => i === idx ? { ...r, ...patch } : r));
-  };
-
-  const removeRow = (idx: number) => setComposition(prev => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,7 +62,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
     const qty = Math.max(1, parseInt(quantity) || 1);
     const priceNum = parseFloat(price.replace(',', '.')) || 0;
     const costNum = parseFloat(cost.replace(',', '.')) || 0;
-    const validComposition = composition.filter(c => c.material_id && c.quantity_per_unit > 0);
     onSubmit({
       name: name.trim(),
       description: description.trim() || null,
@@ -110,7 +76,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       is_active: isActive,
       price_tiers: [{ quantity: qty, price: priceNum, cost: costNum }],
       category_id: categoryId,
-    }, validComposition);
+    });
   };
 
   return (
@@ -190,55 +156,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
               <Input type="number" step="0.01" min="0" value={price} onChange={e => setPrice(e.target.value)} placeholder="0,00" required />
               <Input type="number" step="0.01" min="0" value={cost} onChange={e => setCost(e.target.value)} placeholder="0,00" />
             </div>
-          </div>
-
-          {/* Materiais utilizados */}
-          <div className="space-y-2 pt-2 border-t border-border">
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-base flex items-center gap-2"><Boxes className="w-4 h-4" /> Materiais Utilizados</Label>
-                <p className="text-xs text-muted-foreground">Insumos do estoque consumidos por unidade. Será abatido ao aprovar pedidos.</p>
-              </div>
-              <Button type="button" size="sm" variant="outline" onClick={addMaterialRow} disabled={inventoryMaterials.length === 0 || composition.length >= inventoryMaterials.length}>
-                <Plus className="w-3 h-3 mr-1" /> Adicionar
-              </Button>
-            </div>
-            {inventoryMaterials.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">Cadastre materiais em Estoque para vincular aqui.</p>
-            ) : composition.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">Nenhum material vinculado.</p>
-            ) : (
-              <div className="space-y-2">
-                {composition.map((row, idx) => {
-                  const mat = inventoryMaterials.find(m => m.id === row.material_id);
-                  const usedIds = new Set(composition.filter((_, i) => i !== idx).map(c => c.material_id));
-                  return (
-                    <div key={idx} className="grid grid-cols-12 gap-2 items-end p-2 rounded-md bg-muted/30 border border-border">
-                      <div className="col-span-7">
-                        <Label className="text-xs">Material</Label>
-                        <Select value={row.material_id} onValueChange={v => updateRow(idx, { material_id: v })}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            {inventoryMaterials.filter(m => m.id === row.material_id || !usedIds.has(m.id)).map(m => (
-                              <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="col-span-4">
-                        <Label className="text-xs">Qtd / unidade ({mat?.unit || ''})</Label>
-                        <Input type="number" step="any" min="0" value={row.quantity_per_unit} onChange={e => updateRow(idx, { quantity_per_unit: parseFloat(e.target.value) || 0 })} />
-                      </div>
-                      <div className="col-span-1 flex justify-end">
-                        <Button type="button" variant="ghost" size="icon" onClick={() => removeRow(idx)} className="text-destructive hover:text-destructive">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
 
           <div className="flex items-center justify-between pt-3 border-t border-border">
