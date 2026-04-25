@@ -150,8 +150,8 @@ const Pedidos: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-foreground">{o.clients?.name || '—'}</span>
                         {o.clients?.whatsapp && (
-                          <button onClick={() => openWhatsApp(o)} className="text-green-500 hover:text-green-400" title="Abrir WhatsApp">
-                            <MessageCircle className="w-4 h-4" />
+                          <button onClick={() => openWhatsApp(o)} className="text-[#25D366] hover:text-[#25D366]/80" title="Abrir WhatsApp">
+                            <WhatsAppIcon className="w-4 h-4" />
                           </button>
                         )}
                       </div>
