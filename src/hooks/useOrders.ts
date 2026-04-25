@@ -22,14 +22,15 @@ export interface Order {
   quote_id: string;
   status: string;
   kanban_position: number;
+  order_number: number | null;
   total_revenue: number;
   total_cost: number;
   amount_received: number;
   amount_pending: number;
   created_at: string;
   updated_at: string;
-  clients?: { name: string } | null;
-  quotes?: { total_value: number; description: string | null; product_name: string | null } | null;
+  clients?: { name: string; whatsapp: string | null } | null;
+  quotes?: { total_value: number; description: string | null; product_name: string | null; items: any; quote_number: number | null } | null;
 }
 
 export interface OrderStatusHistory {
@@ -51,8 +52,8 @@ export function useOrders() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, clients(name), quotes(total_value, description, product_name)')
-        .order('kanban_position', { ascending: true });
+        .select('*, clients(name, whatsapp), quotes(total_value, description, product_name, items, quote_number)')
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data as Order[];
     },
