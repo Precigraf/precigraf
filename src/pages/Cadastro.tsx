@@ -155,7 +155,7 @@ const Cadastro = forwardRef<HTMLDivElement>((_, ref) => {
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Nome</label>
+              <label className="text-sm font-medium text-foreground">Nome completo *</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -165,6 +165,24 @@ const Cadastro = forwardRef<HTMLDivElement>((_, ref) => {
                   placeholder="Seu nome completo"
                   className="input-currency pl-10"
                   disabled={isLoading}
+                  required
+                  maxLength={100}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">WhatsApp *</label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="tel"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(formatWhatsapp(e.target.value))}
+                  placeholder="(11) 99999-9999"
+                  className="input-currency pl-10"
+                  disabled={isLoading}
+                  required
                 />
               </div>
             </div>
