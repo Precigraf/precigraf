@@ -8,7 +8,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name: string, whatsapp: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -107,10 +107,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string, name: string) => {
+  const signUp = useCallback(async (email: string, password: string, name: string, whatsapp: string) => {
     try {
       const trimmedEmail = email.trim().toLowerCase();
       const trimmedName = name.trim();
+      const trimmedWhatsapp = whatsapp.trim();
 
       const { data, error } = await supabase.auth.signUp({
         email: trimmedEmail,
@@ -119,6 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           emailRedirectTo: `${window.location.origin}/`,
           data: {
             name: trimmedName,
+            whatsapp: trimmedWhatsapp,
           },
         },
       });
