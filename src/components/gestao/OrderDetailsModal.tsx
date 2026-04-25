@@ -41,7 +41,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
 
   if (!order) return null;
 
-  const client = order.clients;
+  const client = order.clients as any;
   const quote = order.quotes as any;
   const subtotal = items.reduce((s, it: any) => s + (Number(it.quantity) || 0) * (Number(it.unit_value) || 0), 0);
   const discountValue = Number(quote?.discount_value) || 0;
