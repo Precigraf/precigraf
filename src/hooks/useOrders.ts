@@ -136,6 +136,52 @@ export function useOrders() {
     return data as OrderStatusHistory[];
   };
 
+  const deleteOrder = useMutation({
+    mutationFn: async (orderId: string) => {
+      const { error } = await supabase.from('orders').delete().eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast({ title: 'Pedido excluído.' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  const addItemToOrder = useMutation({
+    mutationFn: async ({ orderId, item }: { orderId: string; item: { name: string; quantity: number; unit_value: number; product_id?: string | null } }) => {
+      const order = ordersQuery.data?.find(o => o.id === orderId);
+      if (!order) throw new Error('Pedido não encontrado');
+      const addedRevenue = item.quantity * item.unit_value;
+      const newRevenue = (Number(order.total_revenue) || 0) + addedRevenue;
+      const newPending = Math.max(0, newRevenue - (Number(order.amount_received) || 0));
+
+      // Append item to quote.items JSONB
+      if (order.quote_id) {
+        const currentItems = Array.isArray(order.quotes?.items) ? order.quotes!.items : [];
+        const newItems = [...currentItems, { id: crypto.randomUUID(), ...item }];
+        const { error: qErr } = await supabase.from('quotes').update({ items: newItems }).eq('id', order.quote_id);
+        if (qErr) throw qErr;
+      }
+
+      const { error } = await supabase
+        .from('orders')
+        .update({ total_revenue: newRevenue, amount_pending: newPending })
+        .eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+      toast({ title: 'Item adicionado ao pedido!' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Erro ao adicionar item', description: error.message, variant: 'destructive' });
+    },
+  });
+
   return {
     orders: ordersQuery.data ?? [],
     isLoading: ordersQuery.isLoading,
@@ -143,5 +189,7 @@ export function useOrders() {
     updateOrderPosition,
     updatePaymentReceived,
     getOrderHistory,
+    deleteOrder,
+    addItemToOrder,
   };
 }
