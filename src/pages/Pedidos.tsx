@@ -138,11 +138,8 @@ const Pedidos: React.FC = () => {
               return (
                 <Card key={o.id} className="p-4 bg-card border-border hover:border-primary/30 transition-colors">
                   <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
-                    <div className="shrink-0 min-w-[120px]">
+                    <div className="shrink-0 min-w-[90px]">
                       <div className="text-xs text-muted-foreground font-mono">PED-{o.order_number ?? '—'}</div>
-                      <Badge variant="outline" className={STATUS_BADGE[o.status] || ''}>
-                        {statusLabel}
-                      </Badge>
                     </div>
 
                     <div className="flex-1 min-w-[180px]">
