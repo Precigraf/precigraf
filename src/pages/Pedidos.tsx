@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Package, Clock, CheckCircle2, DollarSign, Search, Eye, Trash2, MessageCircle } from 'lucide-react';
+import { Package, Clock, CheckCircle2, DollarSign, Search, Eye, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
