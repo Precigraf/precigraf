@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, User, Mail, MapPin, MessageCircle, Package } from 'lucide-react';
+import { Plus, User, Mail, MapPin, Package } from 'lucide-react';
+import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useOrders, KANBAN_COLUMNS, type Order } from '@/hooks/useOrders';
 import { useProducts } from '@/hooks/useProducts';
 
@@ -101,8 +102,12 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-foreground">{client?.name || '—'}</span>
                 {client?.whatsapp && (
-                  <button onClick={openWhatsApp} className="text-green-500 hover:text-green-400" title="Abrir WhatsApp">
-                    <MessageCircle className="w-4 h-4" />
+                  <button
+                    onClick={openWhatsApp}
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-md border border-[#25D366]/40 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors"
+                    title="Abrir WhatsApp"
+                  >
+                    <WhatsAppIcon className="w-4 h-4" />
                   </button>
                 )}
               </div>
