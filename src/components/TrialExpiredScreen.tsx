@@ -10,7 +10,7 @@ const benefits = [
   'Orçamentos, pedidos e gestão completa',
   'Exportação em PDF e Excel',
   'Marketplace e simulador de quantidades',
-  'Assistente de IA e relatórios financeiros',
+  'Relatórios financeiros',
 ];
 
 const TrialExpiredScreen: React.FC = () => {
