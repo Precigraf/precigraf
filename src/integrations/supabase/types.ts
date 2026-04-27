@@ -260,6 +260,7 @@ export type Database = {
           status: string
           total_cost: number
           total_revenue: number
+          tracking_token: string
           updated_at: string
           user_id: string
         }
@@ -275,6 +276,7 @@ export type Database = {
           status?: string
           total_cost?: number
           total_revenue?: number
+          tracking_token?: string
           updated_at?: string
           user_id: string
         }
@@ -290,6 +292,7 @@ export type Database = {
           status?: string
           total_cost?: number
           total_revenue?: number
+          tracking_token?: string
           updated_at?: string
           user_id?: string
         }
@@ -843,6 +846,7 @@ export type Database = {
         Returns: Json
       }
       get_free_plan_id: { Args: never; Returns: string }
+      get_order_by_tracking_token: { Args: { p_token: string }; Returns: Json }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
