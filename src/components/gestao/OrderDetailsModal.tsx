@@ -11,6 +11,8 @@ import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useOrders, KANBAN_COLUMNS, type Order } from '@/hooks/useOrders';
 import { useProducts } from '@/hooks/useProducts';
 
+const TRACKING_BASE_URL = 'https://precigraf.com.br';
+
 interface OrderDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
