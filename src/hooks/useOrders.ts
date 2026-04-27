@@ -23,6 +23,7 @@ export interface Order {
   status: string;
   kanban_position: number;
   order_number: number | null;
+  tracking_token: string | null;
   total_revenue: number;
   total_cost: number;
   amount_received: number;
