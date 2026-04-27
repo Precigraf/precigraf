@@ -1,0 +1,32 @@
+name: Verify Published Tracking Route
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Published app URL"
+        required: false
+        default: "https://precigraf.com.br"
+      tracking_token:
+        description: "Real order tracking token"
+        required: true
+  schedule:
+    - cron: "*/30 * * * *"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    env:
+      TRACKING_TEST_BASE_URL: ${{ github.event.inputs.base_url || 'https://precigraf.com.br' }}
+      TRACKING_TEST_TOKEN: ${{ github.event.inputs.tracking_token || secrets.TRACKING_TEST_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Verify /pedido/:token on published app
+        run: bun run verify:published-tracking
