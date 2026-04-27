@@ -37,7 +37,9 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/cadastro" element={<Cadastro />} />
+              <Route path="/pedido" element={<RastreioPedido />} />
               <Route path="/pedido/:token" element={<RastreioPedido />} />
+              <Route path="/pedido/*" element={<RastreioPedido />} />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
               <Route path="/upgrade" element={<ProtectedRoute><Upgrade /></ProtectedRoute>} />
@@ -52,7 +54,6 @@ const App = () => (
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
               <Route path="/producao" element={<ProtectedRoute><Producao /></ProtectedRoute>} />
               <Route path="/pagamento-confirmado" element={<ProtectedRoute><PagamentoConfirmado /></ProtectedRoute>} />
-              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>
