@@ -21,6 +21,7 @@ import Financeiro from "./pages/Financeiro";
 import PagamentoConfirmado from "./pages/PagamentoConfirmado";
 import Marketplace from "./pages/Marketplace";
 import Producao from "./pages/Producao";
+import RastreioPedido from "./pages/RastreioPedido";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/cadastro" element={<Cadastro />} />
+              <Route path="/pedido/:token" element={<RastreioPedido />} />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
               <Route path="/upgrade" element={<ProtectedRoute><Upgrade /></ProtectedRoute>} />

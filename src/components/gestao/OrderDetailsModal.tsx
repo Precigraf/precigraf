@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, User, Mail, MapPin, Package } from 'lucide-react';
+import { Plus, User, Mail, MapPin, Package, Copy, Link2 } from 'lucide-react';
+import { toast } from 'sonner';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useOrders, KANBAN_COLUMNS, type Order } from '@/hooks/useOrders';
 import { useProducts } from '@/hooks/useProducts';
@@ -136,6 +137,39 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
               </SelectContent>
             </Select>
           </div>
+
+          {/* Link público para o cliente acompanhar */}
+          {order.tracking_token && (
+            <div className="rounded-lg border border-primary/30 p-4 bg-primary/5">
+              <Label className="text-base font-semibold mb-2 flex items-center gap-2">
+                <Link2 className="w-4 h-4" /> Link para Cliente Acompanhar
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  readOnly
+                  value={`${window.location.origin}/pedido/${order.tracking_token}`}
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                  className="font-mono text-xs"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    const url = `${window.location.origin}/pedido/${order.tracking_token}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success('Link copiado!');
+                  }}
+                  title="Copiar link"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Envie este link ao cliente para ele acompanhar o status do pedido.
+              </p>
+            </div>
+          )}
 
           {/* Itens */}
           <div>

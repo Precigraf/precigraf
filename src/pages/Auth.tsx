@@ -81,7 +81,7 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
   // Redirect if already logged in
   const handleRedirect = useCallback(() => {
     if (!authLoading && user && !paymentProcessing) {
-      navigate('/', { replace: true });
+      navigate('/gestao', { replace: true });
     }
   }, [authLoading, user, navigate, paymentProcessing]);
 
