@@ -41,13 +41,21 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const RastreioPedido: React.FC = () => {
-  const { token } = useParams<{ token: string }>();
+  const params = useParams<{ token: string }>();
+  const pathToken = typeof window !== 'undefined'
+    ? window.location.pathname.match(/^\/pedido\/([^/?#]+)/)?.[1]
+    : undefined;
+  const token = params.token || pathToken;
   const [data, setData] = useState<TrackingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setError('Pedido não encontrado.');
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
 
     const fetchData = async () => {
