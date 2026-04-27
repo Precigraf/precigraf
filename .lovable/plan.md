@@ -1,86 +1,46 @@
-## Ajustes na página Pedidos
+# Bloqueio do sistema após expiração do trial (2 dias)
 
-### 1. KPIs (substituir os 4 cards atuais)
+## Objetivo
+Quando o período de teste de 2 dias expirar e o usuário ainda estiver no plano `free`, **todas as funcionalidades** do sistema devem ser bloqueadas, exibindo uma tela única chamando o usuário para fazer upgrade ao Plano Pro.
 
-**Arquivo:** `src/pages/Pedidos.tsx`
+Hoje o bloqueio é **parcial e por componente** (CostCalculator, SaveCalculationButton, Gestao). Páginas como Clientes, Orçamentos, Pedidos, Produção, Produtos, Financeiro, Marketplace permanecem totalmente acessíveis mesmo após o trial expirar.
 
-Nova ordem e conteúdo dos cards (da esquerda para a direita):
+## Solução: Guard global no `ProtectedRoute`
 
-| KPI | Cálculo | Ícone | Cor |
-|---|---|---|---|
-| **Faturamento** | soma de `total_revenue` dos pedidos filtrados | `DollarSign` | emerald |
-| **Total** | quantidade de pedidos filtrados | `Package` | blue |
-| **Em andamento** | pedidos com status ≠ `delivered` | `Clock` | orange |
-| **Aprovados** | pedidos com status = `approved` | `CheckCircle2` | green |
+### 1. `src/components/TrialExpiredScreen.tsx` (novo)
+Tela full-screen exibida quando o trial expira:
+- Ícone de cadeado + título "Seu período de teste terminou"
+- Mensagem explicando que o acesso foi bloqueado
+- Resumo dos benefícios do Plano Pro
+- Botão **"Fazer upgrade agora"** → navega para `/upgrade`
+- Botão secundário **"Sair"** → executa `signOut()` do `AuthContext`
+- Sem sidebar, sem header — tela isolada para evitar interação com qualquer outra parte
 
-> Substitui o card "Entregues" por "Aprovados". A ordem segue exatamente a lista pedida pelo usuário.
+### 2. `src/components/ProtectedRoute.tsx` (modificar)
+Após verificar autenticação, usar `useUserPlan()`:
+- Se `loading` do plano → spinner
+- Se `isTrialExpired === true` (ou seja, `plan === 'free'` E `trial_ends_at <= now`):
+  - **Exceção**: permitir acesso a `/upgrade`, `/perfil` e `/pagamento-confirmado` para que o usuário consiga concluir o pagamento e ver/editar dados básicos
+  - Para qualquer outra rota → renderizar `<TrialExpiredScreen />` em vez de `children`
+- Caso contrário → renderizar `children` normalmente
 
----
+Detectar a rota atual via `useLocation()` do `react-router-dom`.
 
-### 2. Lista de pedidos (simplificar cada linha)
+### 3. Limpeza dos bloqueios redundantes (opcional, mas recomendado)
+Como o guard global já cobre tudo, simplificar:
+- `CostCalculator.tsx`: o overlay/`isBlocked` interno deixa de ser necessário (mas pode ser mantido como camada extra de defesa — sem custo).
+- `TrialBanner` para `isTrialExpired` deixa de aparecer dentro das páginas (já não serão alcançadas). O banner de **trial ativo** continua aparecendo normalmente durante os 2 dias.
 
-**Arquivo:** `src/pages/Pedidos.tsx`
+Sugestão: manter as proteções existentes como defesa em profundidade e apenas adicionar o guard global — sem remover nada.
 
-Hoje cada `Card` tem: nº + badge status, cliente + whatsapp inline, produto, valor, **seletor de status**, botões visualizar/excluir.
+## Segurança no backend
+A função `check_calculation_limit` no Postgres já rejeita inserts de cálculos quando o trial expira (`RAISE EXCEPTION 'Seu período de teste terminou...'`). RLS e demais validações server-side permanecem intactas. Esta mudança é apenas de UX no client — o backend já é seguro.
 
-Nova estrutura (da esquerda para a direita):
+## Arquivos
+- **Criar**: `src/components/TrialExpiredScreen.tsx`
+- **Editar**: `src/components/ProtectedRoute.tsx`
 
-1. **Dados do cliente**: nº do pedido (PED-N) em pequeno + nome do cliente em destaque + telefone WhatsApp abaixo + data de criação.
-2. **Botão WhatsApp** ao lado dos dados (ícone verde, abre `wa.me/55…`).
-3. **Valor** (`total_revenue`) à direita; se houver `amount_pending > 0`, manter linha pequena "A receber".
-4. **Status** como `Badge` (não mais seletor inline) — a alteração de status passa a ser feita **somente dentro do modal de visualização**.
-5. **Botão Visualizar** (ícone `Eye`) — abre o `OrderDetailsModal` redesenhado.
-6. **Botão Excluir** (ícone `Trash2`) com `AlertDialog` de confirmação (mantido).
-
-Remover da linha:
-- Coluna "produto" (`o.quotes?.product_name`).
-- Seletor de status inline (`<Select>` com `KANBAN_COLUMNS`).
-
-A busca textual continua filtrando por nome, número e produto (mesmo o produto não aparecendo).
-
----
-
-### 3. Modal "Visualizar" estilo Orçamento
-
-**Arquivo:** `src/components/gestao/OrderDetailsModal.tsx` (reescrita)
-
-Replicar o layout visual de `src/pages/OrcamentoEditor.tsx` dentro do dialog:
-
-**Cabeçalho do dialog**
-- Título: `Pedido PED-{order_number}` + `Badge` do status atual.
-
-**Bloco Cliente** (card com borda, igual ao editor de orçamento)
-- Nome, WhatsApp (com botão para abrir conversa), e-mail e endereço completo (puxado de `order.clients`).
-
-**Bloco Status**
-- `Select` com `KANBAN_COLUMNS` (Aprovado, Criando arte, Aguardando aprovação, Em produção, Em transporte, Entregue) → dispara `updateOrderStatus.mutate(...)` ao trocar.
-
-**Bloco Itens** (tabela igual ao orçamento)
-- Cabeçalho: Produto | Qtd | Valor unit. | Subtotal.
-- Linhas vindas de `order.quotes.items` (JSONB já carregado pelo hook).
-- Caso vazio: mensagem "Nenhum item registrado".
-
-**Bloco Resumo financeiro** (igual ao orçamento)
-- Subtotal (soma dos itens).
-- Desconto (`order.quotes.discount_value` / `discount_type`) — exibir como linha negativa quando existir.
-- Frete (`order.quotes.shipping_value`) — exibir quando > 0.
-- **Total** em destaque (usa `order.total_revenue`, que já reflete itens adicionados depois).
-- Linha "A receber" em amarelo se `amount_pending > 0`.
-
-**Bloco Adicionar novo item** (mantém lógica atual de confirmação)
-- Select de produto + qtd + valor unit. + botão `+`.
-- Confirmação inline mostrando "Adicionar X · Novo total Y" antes de chamar `addItemToOrder.mutate`.
-- Após sucesso, o `total_revenue` recalculado já aparece no bloco Resumo.
-
-**Sem mudanças em** `useOrders.ts` (todos os dados necessários já vêm via `order.quotes.*` e `order.clients.*`).
-
----
-
-### Arquivos afetados
-
-| Arquivo | Mudança |
-|---|---|
-| `src/pages/Pedidos.tsx` | Trocar KPIs (Faturamento/Total/Em andamento/Aprovados) e simplificar linhas (remover produto e seletor inline, manter badge + ações) |
-| `src/components/gestao/OrderDetailsModal.tsx` | Reescrita visual para espelhar o layout de orçamento (cliente, itens em tabela, subtotal/desconto/frete/total, status, adicionar item) |
-
-Sem migração de banco. Sem mudanças em rotas, sidebar ou outros módulos.
+## Resultado
+- Usuário em trial ativo (≤ 2 dias): acesso completo, com `TrialBanner` mostrando tempo restante.
+- Usuário com trial expirado e plano free: vê apenas a tela de upgrade (com acesso a `/upgrade`, `/perfil`, `/pagamento-confirmado`). Todas as demais rotas redirecionam para a tela de bloqueio.
+- Usuário Pro (lifetime ou pro_monthly ativo): acesso completo, sem qualquer banner.
