@@ -144,7 +144,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
           {order.tracking_token && (
             <div className="rounded-lg border border-primary/30 p-4 bg-primary/5">
               <Label className="text-base font-semibold mb-2 flex items-center gap-2">
-                <Link2 className="w-4 h-4" /> Link para Cliente Acompanhar
+                <Link2 className="w-4 h-4" /> Link para acompanhar pedido
               </Label>
               <div className="flex gap-2">
                 <Input
@@ -168,7 +168,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Envie este link ao cliente para ele acompanhar o status do pedido.
+                Você pode enviar este link ao cliente para que ele acompanhe o pedido em tempo real
               </p>
             </div>
           )}
