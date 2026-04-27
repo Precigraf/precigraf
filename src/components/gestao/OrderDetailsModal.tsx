@@ -149,7 +149,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
               <div className="flex gap-2">
                 <Input
                   readOnly
-                  value={`${window.location.origin}/pedido/${order.tracking_token}`}
+                  value={`${TRACKING_BASE_URL}/pedido/${order.tracking_token}`}
                   onClick={(e) => (e.target as HTMLInputElement).select()}
                   className="font-mono text-xs"
                 />
@@ -158,7 +158,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
                   variant="outline"
                   size="icon"
                   onClick={() => {
-                    const url = `${window.location.origin}/pedido/${order.tracking_token}`;
+                    const url = `${TRACKING_BASE_URL}/pedido/${order.tracking_token}`;
                     navigator.clipboard.writeText(url);
                     toast.success('Link copiado!');
                   }}
