@@ -218,7 +218,7 @@ const RastreioPedido: React.FC = () => {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground mt-8">
-          Última atualização automática a cada 30 segundos
+          Atualização em tempo real
         </p>
       </div>
     </div>
