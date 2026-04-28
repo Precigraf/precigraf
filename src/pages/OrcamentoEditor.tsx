@@ -79,6 +79,7 @@ const OrcamentoEditor: React.FC = () => {
   const [items, setItems] = useState<QuoteItem[]>([]);
   const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [productSearch, setProductSearch] = useState('');
+  const [tierPickerProduct, setTierPickerProduct] = useState<Product | null>(null);
 
   const [notes, setNotes] = useState('');
   const [validUntil, setValidUntil] = useState<Date | undefined>();
