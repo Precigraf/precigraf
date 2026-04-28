@@ -5,10 +5,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
 
 export const KANBAN_COLUMNS = [
-  { id: 'approved', label: 'Aprovado', color: 'bg-blue-500' },
-  { id: 'creating_art', label: 'Criando Arte', color: 'bg-purple-500' },
-  { id: 'awaiting_client_approval', label: 'Aguardando Aprovação', color: 'bg-yellow-500' },
+  { id: 'approved', label: 'Em Aberto', color: 'bg-blue-500' },
+  { id: 'creating_art', label: 'Criando arte', color: 'bg-purple-500' },
+  { id: 'art_approved', label: 'Arte Aprovada', color: 'bg-yellow-500' },
   { id: 'in_production', label: 'Em Produção', color: 'bg-orange-500' },
+  { id: 'packing', label: 'Embalando', color: 'bg-pink-500' },
   { id: 'in_transit', label: 'Em Transporte', color: 'bg-cyan-500' },
   { id: 'delivered', label: 'Entregue', color: 'bg-green-500' },
 ] as const;
