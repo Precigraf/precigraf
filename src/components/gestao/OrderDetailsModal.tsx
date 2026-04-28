@@ -22,8 +22,9 @@ interface OrderDetailsModalProps {
 const STATUS_BADGE: Record<string, string> = {
   approved: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
   creating_art: 'bg-purple-500/10 text-purple-600 border-purple-500/30',
-  awaiting_client_approval: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30',
+  art_approved: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30',
   in_production: 'bg-orange-500/10 text-orange-600 border-orange-500/30',
+  packing: 'bg-pink-500/10 text-pink-600 border-pink-500/30',
   in_transit: 'bg-cyan-500/10 text-cyan-600 border-cyan-500/30',
   delivered: 'bg-green-500/10 text-green-600 border-green-500/30',
 };
