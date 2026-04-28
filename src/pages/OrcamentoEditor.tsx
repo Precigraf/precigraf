@@ -782,9 +782,15 @@ const OrcamentoEditor: React.FC = () => {
                     onClick={() => addProduct(p)}
                     className="w-full text-left px-3 py-2 rounded-md hover:bg-accent border border-border"
                   >
-                    <div className="flex justify-between items-center">
-                      <div className="font-medium text-foreground">{p.name}</div>
-                      <div className="text-sm font-semibold text-foreground">{formatCurrency(p.unit_price)}</div>
+                    <div className="flex justify-between items-center gap-2">
+                      <div className="font-medium text-foreground truncate">{p.name}</div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {Array.isArray(p.price_tiers) && p.price_tiers.length > 1 ? (
+                          <Badge variant="secondary" className="text-[10px]">{p.price_tiers.length} variações</Badge>
+                        ) : (
+                          <div className="text-sm font-semibold text-foreground">{formatCurrency(p.unit_price)}</div>
+                        )}
+                      </div>
                     </div>
                     {p.description && <div className="text-xs text-muted-foreground line-clamp-1">{p.description}</div>}
                   </button>
