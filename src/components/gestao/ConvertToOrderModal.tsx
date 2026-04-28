@@ -26,11 +26,12 @@ interface Props {
 }
 
 const STATUS_OPTIONS = [
-  { value: 'approved', label: 'Aprovado' },
+  { value: 'approved', label: 'Em Aberto' },
   { value: 'creating_art', label: 'Criando arte' },
-  { value: 'awaiting_approval', label: 'Aguardando aprovação' },
-  { value: 'in_production', label: 'Em produção' },
-  { value: 'in_transport', label: 'Em Transporte' },
+  { value: 'art_approved', label: 'Arte Aprovada' },
+  { value: 'in_production', label: 'Em Produção' },
+  { value: 'packing', label: 'Embalando' },
+  { value: 'in_transit', label: 'Em Transporte' },
   { value: 'delivered', label: 'Entregue' },
 ];
 

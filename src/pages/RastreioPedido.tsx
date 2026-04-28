@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, Package, Palette, Clock, Truck, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { Check, Package, Palette, ThumbsUp, Hammer, Box, Truck, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,9 +15,11 @@ interface TrackingData {
 }
 
 const STEPS = [
-  { id: 'approved', label: 'Pedido Recebido', icon: Package },
-  { id: 'creating_art', label: 'Criando Arte', icon: Palette },
-  { id: 'awaiting_client_approval', label: 'Aguardando Aprovação', icon: Clock },
+  { id: 'approved', label: 'Em Aberto', icon: Package },
+  { id: 'creating_art', label: 'Criando arte', icon: Palette },
+  { id: 'art_approved', label: 'Arte Aprovada', icon: ThumbsUp },
+  { id: 'in_production', label: 'Em Produção', icon: Hammer },
+  { id: 'packing', label: 'Embalando', icon: Box },
   { id: 'in_transit', label: 'Em Transporte', icon: Truck },
   { id: 'delivered', label: 'Entregue', icon: CheckCircle2 },
 ] as const;
@@ -25,17 +27,22 @@ const STEPS = [
 const STATUS_TO_STEP_INDEX: Record<string, number> = {
   approved: 0,
   creating_art: 1,
+  art_approved: 2,
+  // legacy fallback
   awaiting_client_approval: 2,
   in_production: 3,
-  in_transit: 3,
-  delivered: 4,
+  packing: 4,
+  in_transit: 5,
+  delivered: 6,
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  approved: 'Aprovado',
-  creating_art: 'Criando Arte',
-  awaiting_client_approval: 'Aguardando Aprovação',
+  approved: 'Em Aberto',
+  creating_art: 'Criando arte',
+  art_approved: 'Arte Aprovada',
+  awaiting_client_approval: 'Arte Aprovada',
   in_production: 'Em Produção',
+  packing: 'Embalando',
   in_transit: 'Em Transporte',
   delivered: 'Entregue',
 };
