@@ -798,6 +798,48 @@ const OrcamentoEditor: React.FC = () => {
           </DialogContent>
         </Dialog>
 
+        {/* Tier picker — when product has multiple variations */}
+        <Dialog open={!!tierPickerProduct} onOpenChange={(o) => !o && setTierPickerProduct(null)}>
+          <DialogContent className="max-w-md bg-card">
+            <DialogHeader>
+              <DialogTitle>Escolha a variação</DialogTitle>
+            </DialogHeader>
+            {tierPickerProduct && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{tierPickerProduct.name}</span> tem variações de preço por quantidade. Selecione a desejada:
+                </p>
+                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                  {(Array.isArray(tierPickerProduct.price_tiers) ? tierPickerProduct.price_tiers : [])
+                    .slice()
+                    .sort((a: any, b: any) => Number(a.quantity) - Number(b.quantity))
+                    .map((t: any, idx: number) => {
+                      const qty = Number(t.quantity);
+                      const price = Number(t.price);
+                      const unit = qty > 0 ? price / qty : 0;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => insertProductWithTier(tierPickerProduct, { quantity: qty, price })}
+                          className="w-full text-left px-4 py-3 rounded-md hover:bg-accent border border-border transition-colors"
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="font-semibold text-foreground">{qty} unidades</div>
+                              <div className="text-xs text-muted-foreground">Unitário: {formatCurrency(unit)}</div>
+                            </div>
+                            <div className="text-base font-bold text-primary">{formatCurrency(price)}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* New client */}
         <ClientForm
           open={newClientOpen}
