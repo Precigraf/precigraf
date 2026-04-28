@@ -67,14 +67,28 @@ const RastreioPedido: React.FC = () => {
         return;
       }
       setData(result as unknown as TrackingData);
+      setError(null);
       setLoading(false);
     };
 
     fetchData();
 
-    // Realtime poll fallback every 30s
-    const interval = setInterval(fetchData, 30000);
-    return () => { cancelled = true; clearInterval(interval); };
+    // Realtime: subscribe to broadcast triggered by DB on status change
+    const channel = supabase
+      .channel(`order:${token}`, { config: { broadcast: { self: false } } })
+      .on('broadcast', { event: 'status_change' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    // Polling fallback (60s) in case the WebSocket drops
+    const interval = setInterval(fetchData, 60000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [token]);
 
   if (loading) {
@@ -204,7 +218,7 @@ const RastreioPedido: React.FC = () => {
         </Card>
 
         <p className="text-center text-xs text-muted-foreground mt-8">
-          Última atualização automática a cada 30 segundos
+          Atualização em tempo real
         </p>
       </div>
     </div>

@@ -114,10 +114,23 @@ const Produtos: React.FC = () => {
                           {catName && <Badge variant="secondary" className="text-xs">{catName}</Badge>}
                         </div>
                         {p.description && <p className="text-sm text-muted-foreground line-clamp-1">{p.description}</p>}
-                        <div className="text-sm text-muted-foreground mt-1">
-                          <span className="text-foreground font-medium">{formatCurrency(p.unit_price)}</span> · qtd. padrão: {p.default_quantity}
-                          {p.size && <> · {p.size}</>}
-                        </div>
+                        {Array.isArray(p.price_tiers) && p.price_tiers.length > 1 ? (
+                          <div className="text-sm text-muted-foreground mt-1 line-clamp-1">
+                            {p.price_tiers.map((t, i) => (
+                              <span key={i}>
+                                {i > 0 && <span className="mx-1.5 text-border">|</span>}
+                                <span className="text-foreground font-medium">{t.quantity}un</span>
+                                <span className="ml-1">{formatCurrency(t.price)}</span>
+                              </span>
+                            ))}
+                            {p.size && <span className="ml-2">· {p.size}</span>}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground mt-1">
+                            <span className="text-foreground font-medium">{formatCurrency(p.unit_price)}</span> · qtd. padrão: {p.default_quantity}
+                            {p.size && <> · {p.size}</>}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">

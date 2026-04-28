@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Plus, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCategories } from '@/hooks/useCategories';
-import type { Product, ProductInput } from '@/hooks/useProducts';
+import { useToast } from '@/hooks/use-toast';
+import type { Product, ProductInput, PriceTier } from '@/hooks/useProducts';
 
 interface ProductFormProps {
   open: boolean;
@@ -17,8 +19,18 @@ interface ProductFormProps {
   isLoading?: boolean;
 }
 
+interface TierRow {
+  id: string;
+  quantity: string;
+  price: string;
+  cost: string;
+}
+
+const newRow = (): TierRow => ({ id: crypto.randomUUID(), quantity: '', price: '', cost: '' });
+
 const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit, initialData, isLoading }) => {
   const { categories } = useCategories();
+  const { toast } = useToast();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -27,9 +39,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
   const [material, setMaterial] = useState('');
   const [finish, setFinish] = useState('');
   const [productionTime, setProductionTime] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [price, setPrice] = useState('');
-  const [cost, setCost] = useState('');
+  const [tiers, setTiers] = useState<TierRow[]>([newRow()]);
   const [isActive, setIsActive] = useState(true);
   const [categoryId, setCategoryId] = useState<string | null>(null);
 
@@ -42,26 +52,76 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       setMaterial(initialData.material || '');
       setFinish(initialData.finish || '');
       setProductionTime(initialData.production_time || '');
-      const tier = initialData.price_tiers?.[0];
-      setQuantity(String(tier?.quantity ?? initialData.default_quantity ?? ''));
-      setPrice(String(tier?.price ?? initialData.unit_price ?? ''));
-      setCost(String(tier?.cost ?? initialData.cost ?? ''));
       setIsActive(initialData.is_active ?? true);
       setCategoryId(initialData.category_id ?? null);
+
+      const existing = Array.isArray(initialData.price_tiers) ? initialData.price_tiers : [];
+      if (existing.length > 0) {
+        setTiers(existing.map((t) => ({
+          id: crypto.randomUUID(),
+          quantity: String(t.quantity ?? ''),
+          price: String(t.price ?? ''),
+          cost: String(t.cost ?? ''),
+        })));
+      } else {
+        setTiers([{
+          id: crypto.randomUUID(),
+          quantity: String(initialData.default_quantity ?? ''),
+          price: String(initialData.unit_price ?? ''),
+          cost: String(initialData.cost ?? ''),
+        }]);
+      }
     } else {
       setName(''); setDescription(''); setSize(''); setPrintType('');
       setMaterial(''); setFinish(''); setProductionTime('');
-      setQuantity(''); setPrice(''); setCost(''); setIsActive(true);
-      setCategoryId(null);
+      setIsActive(true); setCategoryId(null);
+      setTiers([newRow()]);
     }
   }, [initialData, open]);
+
+  const updateTier = (id: string, patch: Partial<TierRow>) => {
+    setTiers((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+  };
+
+  const addTier = () => setTiers((prev) => [...prev, newRow()]);
+  const removeTier = (id: string) => setTiers((prev) => (prev.length > 1 ? prev.filter((t) => t.id !== id) : prev));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    const qty = Math.max(1, parseInt(quantity) || 1);
-    const priceNum = parseFloat(price.replace(',', '.')) || 0;
-    const costNum = parseFloat(cost.replace(',', '.')) || 0;
+
+    // Parse and validate tiers
+    const parsed: PriceTier[] = [];
+    const seenQty = new Set<number>();
+    for (const t of tiers) {
+      const q = parseInt(t.quantity);
+      const p = parseFloat(t.price.replace(',', '.'));
+      const c = parseFloat(t.cost.replace(',', '.')) || 0;
+      if (!q || q < 1) {
+        toast({ title: 'Quantidade inválida', description: 'Cada variação precisa ter quantidade ≥ 1.', variant: 'destructive' });
+        return;
+      }
+      if (!p || p <= 0) {
+        toast({ title: 'Preço inválido', description: 'Cada variação precisa ter preço de venda > 0.', variant: 'destructive' });
+        return;
+      }
+      if (seenQty.has(q)) {
+        toast({ title: 'Quantidade duplicada', description: `A quantidade ${q} aparece em mais de uma variação.`, variant: 'destructive' });
+        return;
+      }
+      seenQty.add(q);
+      parsed.push({ quantity: q, price: p, cost: c });
+    }
+
+    if (parsed.length === 0) {
+      toast({ title: 'Adicione pelo menos uma variação.', variant: 'destructive' });
+      return;
+    }
+
+    // Sort by quantity ascending for consistent display
+    parsed.sort((a, b) => a.quantity - b.quantity);
+    const first = parsed[0];
+
     onSubmit({
       name: name.trim(),
       description: description.trim() || null,
@@ -70,11 +130,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       material: material.trim() || null,
       finish: finish.trim() || null,
       production_time: productionTime.trim() || null,
-      unit_price: priceNum,
-      cost: costNum,
-      default_quantity: qty,
+      unit_price: first.price,
+      cost: first.cost,
+      default_quantity: first.quantity,
       is_active: isActive,
-      price_tiers: [{ quantity: qty, price: priceNum, cost: costNum }],
+      price_tiers: parsed,
       category_id: categoryId,
     });
   };
@@ -143,19 +203,66 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
 
           <div className="space-y-2 pt-2 border-t border-border">
             <div>
-              <Label className="text-base">Preços por Quantidade *</Label>
-              <p className="text-xs text-muted-foreground">Define preços e quantidades para diferentes quantidades</p>
+              <Label className="text-base">Variações de Preço *</Label>
+              <p className="text-xs text-muted-foreground">Cadastre diferentes faixas de quantidade com seus respectivos preços e custos. No orçamento, você poderá escolher qual usar.</p>
             </div>
-            <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground font-medium px-1">
+            <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 text-xs text-muted-foreground font-medium px-1">
               <div>Quantidade</div>
               <div>Preço de Venda (R$)</div>
               <div>Custo (R$)</div>
+              <div className="w-9" />
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              <Input type="number" min="1" value={quantity} onChange={e => setQuantity(e.target.value)} placeholder="Ex: 100" required />
-              <Input type="number" step="0.01" min="0" value={price} onChange={e => setPrice(e.target.value)} placeholder="0,00" required />
-              <Input type="number" step="0.01" min="0" value={cost} onChange={e => setCost(e.target.value)} placeholder="0,00" />
+            <div className="space-y-2">
+              {tiers.map((t, idx) => (
+                <div key={t.id} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
+                  <Input
+                    type="number"
+                    min="1"
+                    value={t.quantity}
+                    onChange={e => updateTier(t.id, { quantity: e.target.value })}
+                    placeholder="Ex: 100"
+                    required
+                  />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={t.price}
+                    onChange={e => updateTier(t.id, { price: e.target.value })}
+                    placeholder="0,00"
+                    required
+                  />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={t.cost}
+                    onChange={e => updateTier(t.id, { cost: e.target.value })}
+                    placeholder="0,00"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeTier(t.id)}
+                    disabled={tiers.length === 1}
+                    title="Remover variação"
+                    className="text-destructive hover:text-destructive disabled:opacity-30"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addTier}
+              className="w-full"
+            >
+              <Plus className="w-4 h-4 mr-2" /> Adicionar variação
+            </Button>
           </div>
 
           <div className="flex items-center justify-between pt-3 border-t border-border">

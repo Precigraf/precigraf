@@ -79,6 +79,7 @@ const OrcamentoEditor: React.FC = () => {
   const [items, setItems] = useState<QuoteItem[]>([]);
   const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [productSearch, setProductSearch] = useState('');
+  const [tierPickerProduct, setTierPickerProduct] = useState<Product | null>(null);
 
   const [notes, setNotes] = useState('');
   const [validUntil, setValidUntil] = useState<Date | undefined>();
@@ -142,19 +143,9 @@ const OrcamentoEditor: React.FC = () => {
   const shippingAmount = parseFloat(shippingValue) || 0;
   const total = Math.max(0, subtotal - discountAmount + shippingAmount);
 
-  const addProduct = (p: Product) => {
-    // Check price_tiers for matching tier
-    const tiers = Array.isArray(p.price_tiers) ? (p.price_tiers as any[]) : [];
-    const matchingTier = tiers.find((t: any) => t.quantity === p.default_quantity);
-    
-    let qty = p.default_quantity;
-    let unitVal = p.unit_price;
-    
-    if (matchingTier && matchingTier.price) {
-      // Use price tier: price is total for that qty, so unit = price / qty
-      unitVal = matchingTier.price / qty;
-    }
-    
+  const insertProductWithTier = (p: Product, tier: { quantity: number; price: number }) => {
+    const qty = Math.max(1, tier.quantity);
+    const unitVal = qty > 0 ? tier.price / qty : tier.price;
     setItems(prev => [...prev, {
       id: crypto.randomUUID(),
       product_id: p.id,
@@ -163,7 +154,26 @@ const OrcamentoEditor: React.FC = () => {
       unit_value: unitVal,
     }]);
     setProductPickerOpen(false);
+    setTierPickerProduct(null);
     setProductSearch('');
+  };
+
+  const addProduct = (p: Product) => {
+    const tiers = Array.isArray(p.price_tiers) ? (p.price_tiers as any[]) : [];
+
+    if (tiers.length > 1) {
+      // Multiple variations: open tier picker
+      setTierPickerProduct(p);
+      return;
+    }
+
+    // Single tier or fallback to legacy unit_price
+    const tier = tiers[0];
+    if (tier && tier.price && tier.quantity) {
+      insertProductWithTier(p, { quantity: tier.quantity, price: tier.price });
+    } else {
+      insertProductWithTier(p, { quantity: p.default_quantity, price: p.unit_price * p.default_quantity });
+    }
   };
 
   const addBlankItem = () => {
@@ -172,7 +182,20 @@ const OrcamentoEditor: React.FC = () => {
   };
 
   const updateItem = (idx: number, patch: Partial<QuoteItem>) => {
-    setItems(prev => prev.map((it, i) => i === idx ? { ...it, ...patch } : it));
+    setItems(prev => prev.map((it, i) => {
+      if (i !== idx) return it;
+      const merged = { ...it, ...patch };
+      // Auto re-match tier when quantity changes on a product-linked item
+      if (patch.quantity !== undefined && it.product_id) {
+        const product = products.find(p => p.id === it.product_id);
+        const tiers = Array.isArray(product?.price_tiers) ? (product!.price_tiers as any[]) : [];
+        const matchingTier = tiers.find((t: any) => Number(t.quantity) === Number(patch.quantity));
+        if (matchingTier && matchingTier.price && matchingTier.quantity) {
+          merged.unit_value = Number(matchingTier.price) / Number(matchingTier.quantity);
+        }
+      }
+      return merged;
+    }));
   };
 
   const removeItem = (idx: number) => setItems(prev => prev.filter((_, i) => i !== idx));
@@ -759,9 +782,15 @@ const OrcamentoEditor: React.FC = () => {
                     onClick={() => addProduct(p)}
                     className="w-full text-left px-3 py-2 rounded-md hover:bg-accent border border-border"
                   >
-                    <div className="flex justify-between items-center">
-                      <div className="font-medium text-foreground">{p.name}</div>
-                      <div className="text-sm font-semibold text-foreground">{formatCurrency(p.unit_price)}</div>
+                    <div className="flex justify-between items-center gap-2">
+                      <div className="font-medium text-foreground truncate">{p.name}</div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {Array.isArray(p.price_tiers) && p.price_tiers.length > 1 ? (
+                          <Badge variant="secondary" className="text-[10px]">{p.price_tiers.length} variações</Badge>
+                        ) : (
+                          <div className="text-sm font-semibold text-foreground">{formatCurrency(p.unit_price)}</div>
+                        )}
+                      </div>
                     </div>
                     {p.description && <div className="text-xs text-muted-foreground line-clamp-1">{p.description}</div>}
                   </button>
@@ -772,6 +801,48 @@ const OrcamentoEditor: React.FC = () => {
                 <Button variant="outline" size="sm" onClick={addBlankItem}>+ Item livre</Button>
               </div>
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Tier picker — when product has multiple variations */}
+        <Dialog open={!!tierPickerProduct} onOpenChange={(o) => !o && setTierPickerProduct(null)}>
+          <DialogContent className="max-w-md bg-card">
+            <DialogHeader>
+              <DialogTitle>Escolha a variação</DialogTitle>
+            </DialogHeader>
+            {tierPickerProduct && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">{tierPickerProduct.name}</span> tem variações de preço por quantidade. Selecione a desejada:
+                </p>
+                <div className="space-y-1.5 max-h-72 overflow-y-auto">
+                  {(Array.isArray(tierPickerProduct.price_tiers) ? tierPickerProduct.price_tiers : [])
+                    .slice()
+                    .sort((a: any, b: any) => Number(a.quantity) - Number(b.quantity))
+                    .map((t: any, idx: number) => {
+                      const qty = Number(t.quantity);
+                      const price = Number(t.price);
+                      const unit = qty > 0 ? price / qty : 0;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => insertProductWithTier(tierPickerProduct, { quantity: qty, price })}
+                          className="w-full text-left px-4 py-3 rounded-md hover:bg-accent border border-border transition-colors"
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <div className="font-semibold text-foreground">{qty} unidades</div>
+                              <div className="text-xs text-muted-foreground">Unitário: {formatCurrency(unit)}</div>
+                            </div>
+                            <div className="text-base font-bold text-primary">{formatCurrency(price)}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
 
