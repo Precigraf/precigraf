@@ -110,7 +110,7 @@ const Marketplace = () => {
 
           {/* Coluna Direita - Resultados */}
           <div className="space-y-6">
-            <div className="glass-card result-gradient p-6 sticky top-6 animate-slide-up space-y-6">
+            <div className="glass-card result-gradient p-4 sm:p-6 lg:sticky lg:top-6 animate-slide-up space-y-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
                   <TrendingUp className="w-5 h-5 text-background" />
