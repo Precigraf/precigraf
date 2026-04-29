@@ -44,13 +44,13 @@ const Clientes: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        <div className="flex items-center justify-between mb-6">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-4xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 sm:mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
-            <p className="text-sm text-muted-foreground">{clients.length} cliente{clients.length !== 1 ? 's' : ''} cadastrado{clients.length !== 1 ? 's' : ''}</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Clientes</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">{clients.length} cliente{clients.length !== 1 ? 's' : ''} cadastrado{clients.length !== 1 ? 's' : ''}</p>
           </div>
-          <Button onClick={() => { setEditingClient(null); setFormOpen(true); }}>
+          <Button onClick={() => { setEditingClient(null); setFormOpen(true); }} className="w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" /> Novo Cliente
           </Button>
         </div>
@@ -69,23 +69,23 @@ const Clientes: React.FC = () => {
         ) : (
           <div className="space-y-3">
             {filtered.map(client => (
-              <Card key={client.id} className="p-4 bg-card border-border">
-                <div className="flex items-start justify-between gap-4">
+              <Card key={client.id} className="p-3 sm:p-4 bg-card border-border">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-foreground truncate">{client.name}</h3>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap sm:gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
                       {client.email && (
-                        <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{client.email}</span>
+                        <span className="flex items-center gap-1 min-w-0"><Mail className="w-3 h-3 shrink-0" /><span className="truncate">{client.email}</span></span>
                       )}
                       {client.whatsapp && (
-                        <span className="flex items-center gap-1"><WhatsAppIcon className="w-3 h-3" />{client.whatsapp}</span>
+                        <span className="flex items-center gap-1"><WhatsAppIcon className="w-3 h-3 shrink-0" />{client.whatsapp}</span>
                       )}
                       {client.city && client.state && (
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{client.city}/{client.state}</span>
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3 shrink-0" />{client.city}/{client.state}</span>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0 self-end sm:self-start">
                     {client.whatsapp && (
                       <Button
                         variant="outline"
@@ -109,7 +109,7 @@ const Clientes: React.FC = () => {
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-card">
+                      <AlertDialogContent className="bg-card max-w-[calc(100vw-1rem)] sm:max-w-lg">
                         <AlertDialogHeader>
                           <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
                           <AlertDialogDescription>Esta ação excluirá também todos os orçamentos e pedidos vinculados a este cliente.</AlertDialogDescription>
