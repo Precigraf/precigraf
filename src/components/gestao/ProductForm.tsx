@@ -141,7 +141,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto bg-card">
+      <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-xl max-h-[90vh] overflow-y-auto bg-card p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{initialData ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
           <DialogDescription>Produtos são usados apenas em pedidos e orçamentos.</DialogDescription>
@@ -174,7 +174,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Tamanho</Label>
               <Input value={size} onChange={e => setSize(e.target.value)} maxLength={50} placeholder="Ex: 11x9x3,5cm, A4, etc." />
@@ -185,7 +185,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Papel/Material</Label>
               <Input value={material} onChange={e => setMaterial(e.target.value)} maxLength={100} placeholder="Ex: Papel offset 180g" />
@@ -206,40 +206,49 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
               <Label className="text-base">Variações de Preço *</Label>
               <p className="text-xs text-muted-foreground">Cadastre diferentes faixas de quantidade com seus respectivos preços e custos. No orçamento, você poderá escolher qual usar.</p>
             </div>
-            <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 text-xs text-muted-foreground font-medium px-1">
+            <div className="hidden sm:grid grid-cols-[1fr_1fr_1fr_auto] gap-2 text-xs text-muted-foreground font-medium px-1">
               <div>Quantidade</div>
               <div>Preço de Venda (R$)</div>
               <div>Custo (R$)</div>
               <div className="w-9" />
             </div>
-            <div className="space-y-2">
-              {tiers.map((t, idx) => (
-                <div key={t.id} className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
-                  <Input
-                    type="number"
-                    min="1"
-                    value={t.quantity}
-                    onChange={e => updateTier(t.id, { quantity: e.target.value })}
-                    placeholder="Ex: 100"
-                    required
-                  />
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={t.price}
-                    onChange={e => updateTier(t.id, { price: e.target.value })}
-                    placeholder="0,00"
-                    required
-                  />
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={t.cost}
-                    onChange={e => updateTier(t.id, { cost: e.target.value })}
-                    placeholder="0,00"
-                  />
+            <div className="space-y-3 sm:space-y-2">
+              {tiers.map((t) => (
+                <div key={t.id} className="rounded-lg border border-border p-3 sm:p-0 sm:border-0 sm:rounded-none grid grid-cols-2 sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
+                  <div className="space-y-1 sm:space-y-0">
+                    <Label className="sm:hidden text-[11px] text-muted-foreground">Quantidade</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={t.quantity}
+                      onChange={e => updateTier(t.id, { quantity: e.target.value })}
+                      placeholder="Ex: 100"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1 sm:space-y-0">
+                    <Label className="sm:hidden text-[11px] text-muted-foreground">Preço (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={t.price}
+                      onChange={e => updateTier(t.id, { price: e.target.value })}
+                      placeholder="0,00"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1 sm:space-y-0">
+                    <Label className="sm:hidden text-[11px] text-muted-foreground">Custo (R$)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={t.cost}
+                      onChange={e => updateTier(t.id, { cost: e.target.value })}
+                      placeholder="0,00"
+                    />
+                  </div>
                   <Button
                     type="button"
                     variant="ghost"
@@ -247,7 +256,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
                     onClick={() => removeTier(t.id)}
                     disabled={tiers.length === 1}
                     title="Remover variação"
-                    className="text-destructive hover:text-destructive disabled:opacity-30"
+                    className="text-destructive hover:text-destructive disabled:opacity-30 justify-self-end"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -265,14 +274,14 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
             </Button>
           </div>
 
-          <div className="flex items-center justify-between pt-3 border-t border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-border">
             <div className="flex items-center gap-3">
               <Switch checked={isActive} onCheckedChange={setIsActive} />
               <Label className="cursor-pointer">Produto ativo</Label>
             </div>
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button type="submit" disabled={isLoading || !name.trim()}>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">Cancelar</Button>
+              <Button type="submit" disabled={isLoading || !name.trim()} className="flex-1 sm:flex-none">
                 {initialData ? 'Salvar' : 'Criar'}
               </Button>
             </div>

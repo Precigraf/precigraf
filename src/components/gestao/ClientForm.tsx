@@ -84,7 +84,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ open, onOpenChange, onSubmit, i
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-card">
+      <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-lg max-h-[90vh] overflow-y-auto bg-card p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>{initialData ? 'Editar Cliente' : 'Novo Cliente'}</DialogTitle>
         </DialogHeader>
@@ -93,7 +93,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ open, onOpenChange, onSubmit, i
             <Label htmlFor="name">Nome *</Label>
             <Input id="name" value={form.name} onChange={e => update('name', e.target.value)} required maxLength={100} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value={form.email} onChange={e => update('email', e.target.value)} maxLength={255} />
@@ -107,7 +107,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ open, onOpenChange, onSubmit, i
             <Label htmlFor="cpf">CPF/CNPJ</Label>
             <Input id="cpf" value={form.cpf} onChange={e => update('cpf', maskCpfCnpj(e.target.value))} placeholder="000.000.000-00" maxLength={18} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="cep">CEP</Label>
               <Input id="cep" value={form.cep} onChange={e => update('cep', maskCep(e.target.value))} onBlur={() => handleCepLookup(form.cep)} placeholder="00000-000" maxLength={9} />
@@ -131,7 +131,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ open, onOpenChange, onSubmit, i
               <Input id="address_number" value={form.address_number} onChange={e => update('address_number', e.target.value)} maxLength={10} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="neighborhood">Bairro</Label>
               <Input id="neighborhood" value={form.neighborhood} onChange={e => update('neighborhood', e.target.value)} maxLength={100} />

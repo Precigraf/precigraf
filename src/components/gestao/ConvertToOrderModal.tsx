@@ -111,7 +111,7 @@ const ConvertToOrderModal: React.FC<Props> = ({ open, onOpenChange, totalValue, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card">
+      <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-card p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Completar Dados do Pedido</DialogTitle>
           <DialogDescription>Confirme os dados do cliente e o pagamento antes de criar o pedido.</DialogDescription>
@@ -159,7 +159,7 @@ const ConvertToOrderModal: React.FC<Props> = ({ open, onOpenChange, totalValue, 
           </div>
 
           {/* Form fields */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Nome Completo *</Label>
               <Input value={name} onChange={e => setName(e.target.value)} required />
@@ -234,9 +234,9 @@ const ConvertToOrderModal: React.FC<Props> = ({ open, onOpenChange, totalValue, 
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button onClick={handleSubmit} disabled={!canSubmit || isLoading}>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">Cancelar</Button>
+            <Button onClick={handleSubmit} disabled={!canSubmit || isLoading} className="w-full sm:w-auto">
               <ShoppingCart className="w-4 h-4 mr-2" />
               {isLoading ? 'Convertendo...' : 'Converter para Pedido'}
             </Button>

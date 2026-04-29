@@ -35,11 +35,11 @@ const Producao: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 sm:mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Produção</h1>
-            <p className="text-sm text-muted-foreground">Arraste os pedidos entre as colunas para atualizar o status</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Produção</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Arraste os pedidos entre as colunas para atualizar o status</p>
           </div>
           <PeriodFilter
             value={period}
@@ -51,16 +51,16 @@ const Producao: React.FC = () => {
           />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-5 sm:mb-6">
           {kpis.map(kpi => (
-            <Card key={kpi.label} className="p-4 bg-card border-border">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg bg-secondary ${kpi.color}`}>
+            <Card key={kpi.label} className="p-3 sm:p-4 bg-card border-border">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className={`p-2 rounded-lg bg-secondary ${kpi.color} shrink-0`}>
                   <kpi.icon className="w-4 h-4" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                  <p className="text-sm font-bold text-foreground">{kpi.value}</p>
+                <div className="min-w-0">
+                  <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{kpi.label}</p>
+                  <p className="text-sm font-bold text-foreground truncate">{kpi.value}</p>
                 </div>
               </div>
             </Card>

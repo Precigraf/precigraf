@@ -51,17 +51,17 @@ const Produtos: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        <div className="flex items-center justify-between mb-6">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-4xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 sm:mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
-            <p className="text-sm text-muted-foreground">{products.length} produto{products.length !== 1 ? 's' : ''} cadastrado{products.length !== 1 ? 's' : ''}</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Produtos</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">{products.length} produto{products.length !== 1 ? 's' : ''} cadastrado{products.length !== 1 ? 's' : ''}</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setCatOpen(true)}>
-              <FolderPlus className="w-4 h-4 mr-2" /> Criar Categoria
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setCatOpen(true)} className="w-full sm:w-auto">
+              <FolderPlus className="w-4 h-4 mr-2" /> <span className="sm:hidden md:inline">Criar </span>Categoria<span className="hidden md:inline"></span>
             </Button>
-            <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Novo Produto</Button>
+            <Button onClick={openNew} className="w-full sm:w-auto"><Plus className="w-4 h-4 mr-2" /> Novo Produto</Button>
           </div>
         </div>
 
@@ -115,18 +115,17 @@ const Produtos: React.FC = () => {
                         </div>
                         {p.description && <p className="text-sm text-muted-foreground line-clamp-1">{p.description}</p>}
                         {Array.isArray(p.price_tiers) && p.price_tiers.length > 1 ? (
-                          <div className="text-sm text-muted-foreground mt-1 line-clamp-1">
+                          <div className="text-sm text-muted-foreground mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
                             {p.price_tiers.map((t, i) => (
-                              <span key={i}>
-                                {i > 0 && <span className="mx-1.5 text-border">|</span>}
+                              <span key={i} className="whitespace-nowrap">
                                 <span className="text-foreground font-medium">{t.quantity}un</span>
                                 <span className="ml-1">{formatCurrency(t.price)}</span>
                               </span>
                             ))}
-                            {p.size && <span className="ml-2">· {p.size}</span>}
+                            {p.size && <span className="text-foreground/70">· {p.size}</span>}
                           </div>
                         ) : (
-                          <div className="text-sm text-muted-foreground mt-1">
+                          <div className="text-sm text-muted-foreground mt-1 truncate">
                             <span className="text-foreground font-medium">{formatCurrency(p.unit_price)}</span> · qtd. padrão: {p.default_quantity}
                             {p.size && <> · {p.size}</>}
                           </div>

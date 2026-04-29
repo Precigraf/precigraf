@@ -36,24 +36,24 @@ const Orcamentos: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        <div className="flex items-center justify-between mb-6">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-4xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 sm:mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Orçamentos</h1>
-            <p className="text-sm text-muted-foreground">{quotes.length} orçamento{quotes.length !== 1 ? 's' : ''}</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Orçamentos</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">{quotes.length} orçamento{quotes.length !== 1 ? 's' : ''}</p>
           </div>
-          <Button onClick={() => navigate('/orcamentos/novo')}>
+          <Button onClick={() => navigate('/orcamentos/novo')} className="w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" /> Novo Orçamento
           </Button>
         </div>
 
-        <div className="flex gap-3 mb-4">
-          <div className="relative flex-1">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4">
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Buscar por cliente, produto ou número..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="draft">Rascunhos</SelectItem>
@@ -73,12 +73,12 @@ const Orcamentos: React.FC = () => {
             {filtered.map(quote => {
               const num = (quote as Quote & { quote_number?: number }).quote_number;
               return (
-                <Card key={quote.id} className="p-4 bg-card border-border hover:border-primary/40 transition-colors cursor-pointer" onClick={() => navigate(`/orcamentos/${quote.id}`)}>
-                  <div className="flex items-start justify-between gap-4">
+                <Card key={quote.id} className="p-3 sm:p-4 bg-card border-border hover:border-primary/40 transition-colors cursor-pointer" onClick={() => navigate(`/orcamentos/${quote.id}`)}>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                        <h3 className="font-semibold text-foreground">
+                        <h3 className="font-semibold text-foreground text-sm sm:text-base">
                           {num ? `ORC-${num}` : 'Sem número'}
                           {quote.product_name && <span className="text-muted-foreground font-normal"> · {quote.product_name}</span>}
                         </h3>
@@ -86,13 +86,13 @@ const Orcamentos: React.FC = () => {
                           {statusLabels[quote.status] || quote.status}
                         </Badge>
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground truncate">
                         Cliente: <span className="text-foreground">{quote.clients?.name || '—'}</span>
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">{new Date(quote.created_at).toLocaleDateString('pt-BR')}</div>
                     </div>
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      <span className="text-lg font-bold text-foreground">{formatCurrency(quote.total_value)}</span>
+                    <div className="flex items-center justify-between sm:flex-col sm:items-end gap-2 sm:shrink-0">
+                      <span className="text-base sm:text-lg font-bold text-foreground">{formatCurrency(quote.total_value)}</span>
                       <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                         <Button size="sm" variant="outline" onClick={() => navigate(`/orcamentos/${quote.id}?view=true`)} title="Visualizar">
                           <Eye className="w-4 h-4" />
@@ -106,7 +106,7 @@ const Orcamentos: React.FC = () => {
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent className="bg-card">
+                          <AlertDialogContent className="bg-card max-w-[calc(100vw-1rem)] sm:max-w-lg">
                             <AlertDialogHeader>
                               <AlertDialogTitle>Excluir orçamento?</AlertDialogTitle>
                               <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>

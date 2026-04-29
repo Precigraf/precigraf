@@ -18,7 +18,6 @@ const KanbanBoard: React.FC = () => {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
-    // Determine target column - over.id could be a column id or another order id
     let targetStatus: string;
     const isColumn = KANBAN_COLUMNS.some(c => c.id === over.id);
     if (isColumn) {
@@ -38,19 +37,24 @@ const KanbanBoard: React.FC = () => {
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4 min-h-[400px]">
-        {KANBAN_COLUMNS.map(col => (
-          <KanbanColumn
-            key={col.id}
-            id={col.id}
-            label={col.label}
-            color={col.color}
-            orders={getOrdersByStatus(col.id)}
-          />
-        ))}
-      </div>
-    </DndContext>
+    <>
+      <p className="text-xs text-muted-foreground mb-2 sm:hidden">
+        ← deslize para ver mais colunas →
+      </p>
+      <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+        <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 min-h-[400px] snap-x snap-mandatory -mx-3 px-3 sm:mx-0 sm:px-0">
+          {KANBAN_COLUMNS.map(col => (
+            <KanbanColumn
+              key={col.id}
+              id={col.id}
+              label={col.label}
+              color={col.color}
+              orders={getOrdersByStatus(col.id)}
+            />
+          ))}
+        </div>
+      </DndContext>
+    </>
   );
 };
 

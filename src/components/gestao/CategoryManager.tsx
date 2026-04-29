@@ -23,7 +23,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ open, onOpenChange })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-card">
+      <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-md bg-card p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Gerenciar Categorias</DialogTitle>
           <DialogDescription>Crie categorias para organizar seus produtos.</DialogDescription>

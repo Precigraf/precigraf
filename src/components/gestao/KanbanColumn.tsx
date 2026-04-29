@@ -15,7 +15,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = ({ id, label, color, orders })
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
-    <div className="flex flex-col w-64 shrink-0">
+    <div className="flex flex-col w-[80vw] max-w-[280px] sm:w-64 shrink-0 snap-center sm:snap-start">
       <div className="flex items-center gap-2 mb-3 px-1">
         <div className={`w-3 h-3 rounded-full ${color}`} />
         <h3 className="text-sm font-semibold text-foreground">{label}</h3>

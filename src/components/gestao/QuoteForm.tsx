@@ -71,7 +71,7 @@ const QuoteForm: React.FC<QuoteFormProps> = ({ open, onOpenChange, clients, onSu
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-card">
+      <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-md bg-card max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Novo Orçamento</DialogTitle>
         </DialogHeader>
@@ -89,7 +89,7 @@ const QuoteForm: React.FC<QuoteFormProps> = ({ open, onOpenChange, clients, onSu
             <Label>Produto</Label>
             <Input value={productName} onChange={e => setProductName(e.target.value)} placeholder="Nome do produto" maxLength={100} />
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <Label>Valor Total *</Label>
               <Input type="number" step="0.01" min="0" value={totalValue} onChange={e => setTotalValue(e.target.value)} required />

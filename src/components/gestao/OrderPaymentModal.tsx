@@ -30,7 +30,7 @@ const OrderPaymentModal: React.FC<Props> = ({ open, onOpenChange, totalRevenue, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm bg-card">
+      <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-sm bg-card p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="w-5 h-5 text-primary" />

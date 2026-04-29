@@ -37,11 +37,11 @@ const Financeiro: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-6xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 sm:mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Financeiro</h1>
-            <p className="text-sm text-muted-foreground">Controle financeiro dos pedidos</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Financeiro</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Controle financeiro dos pedidos</p>
           </div>
           <PeriodFilter
             value={period}
@@ -53,65 +53,67 @@ const Financeiro: React.FC = () => {
           />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-5 sm:mb-6">
           {kpis.map(kpi => (
-            <Card key={kpi.label} className="p-4 bg-card border-border">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg bg-secondary ${kpi.color}`}>
+            <Card key={kpi.label} className="p-3 sm:p-4 bg-card border-border">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className={`p-2 rounded-lg bg-secondary ${kpi.color} shrink-0`}>
                   <kpi.icon className="w-4 h-4" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                  <p className="text-sm font-bold text-foreground">{kpi.value}</p>
+                <div className="min-w-0">
+                  <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{kpi.label}</p>
+                  <p className="text-sm font-bold text-foreground truncate">{kpi.value}</p>
                 </div>
               </div>
             </Card>
           ))}
         </div>
 
-        <Card className="bg-card border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Produto</TableHead>
-                <TableHead className="text-right">Faturamento</TableHead>
-                <TableHead className="text-right">Despesas</TableHead>
-                <TableHead className="text-right">Lucro</TableHead>
-                <TableHead className="text-right">Recebido</TableHead>
-                <TableHead className="text-right">Pendente</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredOrders.length === 0 ? (
+        <Card className="bg-card border-border overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table className="min-w-[720px]">
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    Nenhum pedido encontrado no período.
-                  </TableCell>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Produto</TableHead>
+                  <TableHead className="text-right">Faturamento</TableHead>
+                  <TableHead className="text-right">Despesas</TableHead>
+                  <TableHead className="text-right">Lucro</TableHead>
+                  <TableHead className="text-right">Recebido</TableHead>
+                  <TableHead className="text-right">Pendente</TableHead>
                 </TableRow>
-              ) : filteredOrders.map(order => {
-                const rev = Number((order as any).total_revenue) || 0;
-                const cost = Number((order as any).total_cost) || 0;
-                const received = Number((order as any).amount_received) || 0;
-                const pending = Number((order as any).amount_pending) || 0;
-                return (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.clients?.name || '—'}</TableCell>
-                    <TableCell className="text-muted-foreground">{order.quotes?.product_name || '—'}</TableCell>
-                    <TableCell className="text-right font-semibold text-green-600">{formatCurrency(rev)}</TableCell>
-                    <TableCell className="text-right text-red-500">{formatCurrency(cost)}</TableCell>
-                    <TableCell className={`text-right font-semibold ${rev - cost >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {formatCurrency(rev - cost)}
-                    </TableCell>
-                    <TableCell className="text-right">{formatCurrency(received)}</TableCell>
-                    <TableCell className={`text-right font-semibold ${pending > 0 ? 'text-yellow-600' : 'text-muted-foreground'}`}>
-                      {formatCurrency(pending)}
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      Nenhum pedido encontrado no período.
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                ) : filteredOrders.map(order => {
+                  const rev = Number((order as any).total_revenue) || 0;
+                  const cost = Number((order as any).total_cost) || 0;
+                  const received = Number((order as any).amount_received) || 0;
+                  const pending = Number((order as any).amount_pending) || 0;
+                  return (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">{order.clients?.name || '—'}</TableCell>
+                      <TableCell className="text-muted-foreground">{order.quotes?.product_name || '—'}</TableCell>
+                      <TableCell className="text-right font-semibold text-green-600">{formatCurrency(rev)}</TableCell>
+                      <TableCell className="text-right text-red-500">{formatCurrency(cost)}</TableCell>
+                      <TableCell className={`text-right font-semibold ${rev - cost >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {formatCurrency(rev - cost)}
+                      </TableCell>
+                      <TableCell className="text-right">{formatCurrency(received)}</TableCell>
+                      <TableCell className={`text-right font-semibold ${pending > 0 ? 'text-yellow-600' : 'text-muted-foreground'}`}>
+                        {formatCurrency(pending)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       </div>
     </AppLayout>

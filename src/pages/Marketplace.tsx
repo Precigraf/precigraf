@@ -64,18 +64,18 @@ const Marketplace = () => {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Store className="w-6 h-6 text-primary" />
+      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
+        <div className="mb-5 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground flex items-center gap-2">
+            <Store className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             Marketplace
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Simule taxas e preços finais para venda em marketplaces
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4 sm:gap-6">
           {/* Coluna Esquerda */}
           <div className="space-y-6">
             {/* Preço Base */}
@@ -110,7 +110,7 @@ const Marketplace = () => {
 
           {/* Coluna Direita - Resultados */}
           <div className="space-y-6">
-            <div className="glass-card result-gradient p-6 sticky top-6 animate-slide-up space-y-6">
+            <div className="glass-card result-gradient p-4 sm:p-6 lg:sticky lg:top-6 animate-slide-up space-y-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center">
                   <TrendingUp className="w-5 h-5 text-background" />
@@ -122,12 +122,12 @@ const Marketplace = () => {
               </div>
 
               {/* Preço Final */}
-              <div className="bg-foreground rounded-xl p-6">
+              <div className="bg-foreground rounded-xl p-5 sm:p-6">
                 <div className="text-center">
                   <span className="text-xs font-medium text-background/70 uppercase tracking-wide">
                     Preço Final com Taxas
                   </span>
-                  <div className="text-4xl font-bold text-background mt-1">
+                  <div className="text-3xl sm:text-4xl font-bold text-background mt-1 break-words">
                     {formatCurrency(calculations.finalPrice)}
                   </div>
                 </div>

@@ -64,10 +64,10 @@ const Gestao: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Visão geral do seu negócio</p>
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-5xl">
+        <div className="mb-5 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Visão geral do seu negócio</p>
         </div>
 
         {/* Painel "Meu Plano" */}
@@ -111,14 +111,14 @@ const Gestao: React.FC = () => {
         </Card>
 
         {/* Métricas */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mb-5 sm:mb-6">
           {metrics.map(m => (
-            <Card key={m.label} className="p-4 bg-card border-border">
-              <div className="flex items-center gap-3">
+            <Card key={m.label} className="p-3 sm:p-4 bg-card border-border">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <m.icon className={`w-5 h-5 ${m.color} shrink-0`} />
-                <div>
-                  <div className="text-xl font-bold text-foreground">{m.value}</div>
-                  <div className="text-xs text-muted-foreground">{m.label}</div>
+                <div className="min-w-0">
+                  <div className="text-base sm:text-xl font-bold text-foreground truncate">{m.value}</div>
+                  <div className="text-[11px] sm:text-xs text-muted-foreground truncate">{m.label}</div>
                 </div>
               </div>
             </Card>
@@ -145,18 +145,18 @@ const Gestao: React.FC = () => {
           </div>
 
           {/* Summary cards */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4">
+            <div className="rounded-lg bg-green-500/10 border border-green-500/20 p-3 min-w-0">
               <div className="text-xs text-muted-foreground">Faturamento Total</div>
-              <div className="text-lg font-bold text-green-600">{formatCurrency(totals.faturamento)}</div>
+              <div className="text-base sm:text-lg font-bold text-green-600 truncate">{formatCurrency(totals.faturamento)}</div>
             </div>
-            <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3">
+            <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 min-w-0">
               <div className="text-xs text-muted-foreground">Despesas Totais</div>
-              <div className="text-lg font-bold text-red-500">{formatCurrency(totals.despesas)}</div>
+              <div className="text-base sm:text-lg font-bold text-red-500 truncate">{formatCurrency(totals.despesas)}</div>
             </div>
-            <div className={`rounded-lg border p-3 ${totals.lucro >= 0 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
+            <div className={`rounded-lg border p-3 min-w-0 ${totals.lucro >= 0 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
               <div className="text-xs text-muted-foreground">Lucro Líquido</div>
-              <div className={`text-lg font-bold ${totals.lucro >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrency(totals.lucro)}</div>
+              <div className={`text-base sm:text-lg font-bold truncate ${totals.lucro >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrency(totals.lucro)}</div>
             </div>
           </div>
 
