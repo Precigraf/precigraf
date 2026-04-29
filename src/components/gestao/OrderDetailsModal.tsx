@@ -85,7 +85,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-card">
+      <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-3xl max-h-[90vh] overflow-y-auto bg-card p-4 sm:p-6">
         <DialogHeader>
           <div className="flex items-center gap-3 flex-wrap">
             <DialogTitle>Pedido PED-{order.order_number ?? '—'}</DialogTitle>
@@ -182,21 +182,23 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
             {items.length === 0 ? (
               <p className="text-sm text-muted-foreground italic py-4 text-center">Nenhum item registrado.</p>
             ) : (
-              <div className="rounded-lg border border-border overflow-hidden">
-                <div className="grid grid-cols-12 gap-2 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
-                  <div className="col-span-6">Produto</div>
-                  <div className="col-span-2 text-center">Qtd</div>
-                  <div className="col-span-2 text-right">Valor unit.</div>
-                  <div className="col-span-2 text-right">Subtotal</div>
-                </div>
-                {items.map((it: any, i: number) => (
-                  <div key={it.id || i} className="grid grid-cols-12 gap-2 px-3 py-2 text-sm border-t border-border">
-                    <div className="col-span-6 text-foreground">{it.name}</div>
-                    <div className="col-span-2 text-center">{it.quantity}</div>
-                    <div className="col-span-2 text-right">{formatCurrency(Number(it.unit_value) || 0)}</div>
-                    <div className="col-span-2 text-right font-semibold">{formatCurrency((Number(it.quantity) || 0) * (Number(it.unit_value) || 0))}</div>
+              <div className="rounded-lg border border-border overflow-x-auto">
+                <div className="min-w-[480px]">
+                  <div className="grid grid-cols-12 gap-2 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
+                    <div className="col-span-6">Produto</div>
+                    <div className="col-span-2 text-center">Qtd</div>
+                    <div className="col-span-2 text-right">Valor unit.</div>
+                    <div className="col-span-2 text-right">Subtotal</div>
                   </div>
-                ))}
+                  {items.map((it: any, i: number) => (
+                    <div key={it.id || i} className="grid grid-cols-12 gap-2 px-3 py-2 text-sm border-t border-border">
+                      <div className="col-span-6 text-foreground break-words">{it.name}</div>
+                      <div className="col-span-2 text-center">{it.quantity}</div>
+                      <div className="col-span-2 text-right">{formatCurrency(Number(it.unit_value) || 0)}</div>
+                      <div className="col-span-2 text-right font-semibold">{formatCurrency((Number(it.quantity) || 0) * (Number(it.unit_value) || 0))}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -234,8 +236,8 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
           {/* Adicionar novo item */}
           <div className="border-t border-border pt-4">
             <Label className="text-base font-semibold mb-2 block">Adicionar novo item</Label>
-            <div className="grid grid-cols-12 gap-2">
-              <div className="col-span-6">
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+              <div className="sm:col-span-6">
                 <Select value={productId} onValueChange={(v) => {
                   setProductId(v);
                   const p = products.find(pp => pp.id === v);
@@ -247,9 +249,9 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
                   </SelectContent>
                 </Select>
               </div>
-              <Input className="col-span-2" type="number" min="1" value={qty} onChange={e => setQty(e.target.value)} placeholder="Qtd" />
-              <Input className="col-span-3" type="number" step="0.01" min="0" value={unitValue} onChange={e => setUnitValue(e.target.value)} placeholder="Valor unit." />
-              <Button className="col-span-1" size="icon" onClick={() => setConfirming(true)} disabled={!productId || addedRevenue <= 0}>
+              <Input className="sm:col-span-2" type="number" min="1" value={qty} onChange={e => setQty(e.target.value)} placeholder="Qtd" />
+              <Input className="sm:col-span-3" type="number" step="0.01" min="0" value={unitValue} onChange={e => setUnitValue(e.target.value)} placeholder="Valor unit." />
+              <Button className="sm:col-span-1 w-full" size="icon" onClick={() => setConfirming(true)} disabled={!productId || addedRevenue <= 0}>
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
