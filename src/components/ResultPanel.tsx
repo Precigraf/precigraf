@@ -116,12 +116,12 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
       />
 
       {/* PREÇO FINAL */}
-      <div className="bg-foreground rounded-xl p-6">
+      <div className="bg-foreground rounded-xl p-5 sm:p-6">
         <div className="text-center">
           <span className="text-xs font-medium text-background/70 uppercase tracking-wide">
             Preço Final de Venda
           </span>
-          <div className="text-4xl font-bold text-background mt-1">
+          <div className="text-3xl sm:text-4xl font-bold text-background mt-1 break-words">
             {formatCurrency(finalSellingPrice)}
           </div>
           <div className="text-sm text-background/80 mt-1">
