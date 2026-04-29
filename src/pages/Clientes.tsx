@@ -137,7 +137,7 @@ const Clientes: React.FC = () => {
 
         {/* View Client Dialog */}
         <Dialog open={!!viewingClient} onOpenChange={(o) => !o && setViewingClient(null)}>
-          <DialogContent className="max-w-md bg-card">
+          <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-md bg-card max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Cadastro do Cliente</DialogTitle>
             </DialogHeader>
