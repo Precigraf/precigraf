@@ -74,11 +74,11 @@ const Pedidos: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 sm:mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Pedidos</h1>
-            <p className="text-sm text-muted-foreground">Gerencie seus pedidos e acompanhe o status</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-foreground">Pedidos</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Gerencie seus pedidos e acompanhe o status</p>
           </div>
           <PeriodFilter
             value={period}
@@ -90,16 +90,16 @@ const Pedidos: React.FC = () => {
           />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-5 sm:mb-6">
           {kpis.map(kpi => (
-            <Card key={kpi.label} className="p-4 bg-card border-border">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg bg-secondary ${kpi.color}`}>
+            <Card key={kpi.label} className="p-3 sm:p-4 bg-card border-border">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className={`p-2 rounded-lg bg-secondary ${kpi.color} shrink-0`}>
                   <kpi.icon className="w-4 h-4" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                  <p className="text-base font-bold text-foreground truncate">{kpi.display}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] sm:text-xs text-muted-foreground truncate">{kpi.label}</p>
+                  <p className="text-sm sm:text-base font-bold text-foreground truncate">{kpi.display}</p>
                 </div>
               </div>
             </Card>
@@ -107,21 +107,18 @@ const Pedidos: React.FC = () => {
         </div>
 
         <Card className="p-3 mb-4 bg-card border-border">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 min-w-[220px]">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por nome, número ou produto..." className="pl-9" />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Status:</span>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {KANBAN_COLUMNS.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                {KANBAN_COLUMNS.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
         </Card>
 
@@ -134,75 +131,81 @@ const Pedidos: React.FC = () => {
           </Card>
         ) : (
           <div className="space-y-2">
-            {filteredOrders.map(o => {
-              return (
-                <Card key={o.id} className="p-4 bg-card border-border hover:border-primary/30 transition-colors">
-                  <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
-                    <div className="shrink-0 min-w-[90px]">
-                      <div className="text-xs text-muted-foreground font-mono">PED-{o.order_number ?? '—'}</div>
+            {filteredOrders.map(o => (
+              <Card key={o.id} className="p-3 sm:p-4 bg-card border-border hover:border-primary/30 transition-colors">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+                  <div className="flex items-center justify-between md:contents">
+                    <div className="md:shrink-0 md:min-w-[90px]">
+                      <div className="text-[11px] sm:text-xs text-muted-foreground font-mono">PED-{o.order_number ?? '—'}</div>
                     </div>
-
-                    <div className="flex-1 min-w-[180px]">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-foreground">{o.clients?.name || '—'}</span>
-                        {o.clients?.whatsapp && (
-                          <button
-                            onClick={() => openWhatsApp(o)}
-                            className="inline-flex items-center justify-center w-7 h-7 rounded-md border border-[#25D366]/40 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors"
-                            title="Abrir WhatsApp"
-                          >
-                            <WhatsAppIcon className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                      {o.clients?.whatsapp && <div className="text-xs text-muted-foreground">{o.clients.whatsapp}</div>}
-                      <div className="text-xs text-muted-foreground">Criado em {new Date(o.created_at).toLocaleDateString('pt-BR')} às {new Date(o.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
-                    </div>
-
-                    <div className="shrink-0 text-right min-w-[110px]">
+                    <div className="text-right md:hidden">
                       <div className="font-bold text-foreground">{formatCurrency(Number(o.total_revenue) || 0)}</div>
                       {Number(o.amount_pending) > 0 && (
-                        <div className="text-xs text-yellow-600">A receber: {formatCurrency(Number(o.amount_pending))}</div>
+                        <div className="text-[11px] text-yellow-600">A receber: {formatCurrency(Number(o.amount_pending))}</div>
                       )}
                     </div>
+                  </div>
 
-                    <div className="shrink-0">
-                      <Select value={o.status} onValueChange={(v) => updateOrderStatus.mutate({ orderId: o.id, newStatus: v, oldStatus: o.status })}>
-                        <SelectTrigger className={`w-[180px] ${STATUS_BADGE[o.status] || ''}`}><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {KANBAN_COLUMNS.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-foreground truncate">{o.clients?.name || '—'}</span>
+                      {o.clients?.whatsapp && (
+                        <button
+                          onClick={() => openWhatsApp(o)}
+                          className="inline-flex items-center justify-center w-7 h-7 rounded-md border border-[#25D366]/40 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors shrink-0"
+                          title="Abrir WhatsApp"
+                        >
+                          <WhatsAppIcon className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
-
-                    <div className="shrink-0 flex items-center gap-1">
-                      <Button size="icon" variant="ghost" onClick={() => openDetails(o)} title="Visualizar">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive" title="Excluir">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="bg-card">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Excluir pedido?</AlertDialogTitle>
-                            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => deleteOrder.mutate(o.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                    {o.clients?.whatsapp && <div className="text-xs text-muted-foreground truncate">{o.clients.whatsapp}</div>}
+                    <div className="text-[11px] sm:text-xs text-muted-foreground truncate">
+                      {new Date(o.created_at).toLocaleDateString('pt-BR')} · {new Date(o.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
-                </Card>
-              );
-            })}
+
+                  <div className="hidden md:block shrink-0 text-right min-w-[110px]">
+                    <div className="font-bold text-foreground">{formatCurrency(Number(o.total_revenue) || 0)}</div>
+                    {Number(o.amount_pending) > 0 && (
+                      <div className="text-xs text-yellow-600">A receber: {formatCurrency(Number(o.amount_pending))}</div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1 md:shrink-0 md:gap-2">
+                    <Select value={o.status} onValueChange={(v) => updateOrderStatus.mutate({ orderId: o.id, newStatus: v, oldStatus: o.status })}>
+                      <SelectTrigger className={`flex-1 md:flex-none md:w-[170px] h-9 ${STATUS_BADGE[o.status] || ''}`}><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {KANBAN_COLUMNS.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+
+                    <Button size="icon" variant="ghost" onClick={() => openDetails(o)} title="Visualizar" className="shrink-0">
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="icon" variant="ghost" className="text-destructive hover:text-destructive shrink-0" title="Excluir">
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="bg-card max-w-[calc(100vw-1rem)] sm:max-w-lg">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir pedido?</AlertDialogTitle>
+                          <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteOrder.mutate(o.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         )}
 
