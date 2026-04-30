@@ -448,10 +448,20 @@ const LandingPage: React.FC = () => {
                 ))}
               </ul>
 
-              <Button asChild className="mt-7 w-full h-11 text-base">
-                <Link to="/cadastro?plan=pro">
-                  Assinar Pro <ArrowRight className="w-4 h-4" />
-                </Link>
+              <Button
+                onClick={handleSubscribePro}
+                disabled={isCheckoutLoading}
+                className="mt-7 w-full h-11 text-base"
+              >
+                {isCheckoutLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Redirecionando...
+                  </>
+                ) : (
+                  <>
+                    Assinar Pro <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </Button>
             </Card>
           </div>
