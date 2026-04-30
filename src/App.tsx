@@ -22,6 +22,7 @@ import PagamentoConfirmado from "./pages/PagamentoConfirmado";
 import Marketplace from "./pages/Marketplace";
 import Producao from "./pages/Producao";
 import RastreioPedido from "./pages/RastreioPedido";
+import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
+              <Route path="/lp" element={<LandingPage />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/cadastro" element={<Cadastro />} />
               <Route path="/pedido" element={<RastreioPedido />} />
