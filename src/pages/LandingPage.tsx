@@ -117,8 +117,8 @@ const LandingPage: React.FC = () => {
         <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
             {[
-              { v: '+1.200', l: 'gráficas usando' },
-              { v: '50k+', l: 'cálculos feitos' },
+              { v: '+100', l: 'usuários ativos' },
+              { v: '234', l: 'cálculos feitos' },
               { v: '4.9/5', l: 'avaliação média' },
               { v: '99.9%', l: 'disponibilidade' },
             ].map((s) => (
