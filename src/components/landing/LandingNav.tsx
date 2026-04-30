@@ -25,7 +25,7 @@ const LandingNav: React.FC = () => {
           : 'bg-transparent'
       )}
     >
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="container mx-auto px-6 sm:px-8 lg:px-12 py-3 flex items-center justify-between">
         <Link to="/lp" className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center">
             <LogoIcon className="w-4 h-4 text-background" />
