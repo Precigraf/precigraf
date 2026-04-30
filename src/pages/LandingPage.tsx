@@ -1,5 +1,8 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 import {
   Calculator,
   Layers,
@@ -33,8 +36,32 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const LandingPage: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const ctaPrimary = user ? '/' : '/cadastro';
   const ctaPrimaryLabel = user ? 'Ir para o app' : 'Começar período grátis';
+
+  const handleSubscribePro = async () => {
+    setIsCheckoutLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.info('Crie sua conta para assinar o Pro');
+        navigate('/cadastro?plan=pro');
+        return;
+      }
+      const { data, error } = await supabase.functions.invoke('create-stripe-checkout');
+      if (error || !data?.url) {
+        toast.error(data?.error || 'Erro ao iniciar checkout. Tente novamente.');
+        setIsCheckoutLoading(false);
+        return;
+      }
+      window.location.href = data.url;
+    } catch (e) {
+      toast.error('Erro inesperado. Tente novamente.');
+      setIsCheckoutLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -42,7 +69,7 @@ const LandingPage: React.FC = () => {
 
       {/* HERO */}
       <section className="relative pt-32 sm:pt-40 pb-16 sm:pb-24 overflow-hidden">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="text-center lg:text-left">
               <Badge
@@ -87,11 +114,11 @@ const LandingPage: React.FC = () => {
 
       {/* SOCIAL PROOF */}
       <section className="py-10 border-y border-border bg-muted/30">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
             {[
-              { v: '+1.200', l: 'gráficas usando' },
-              { v: '50k+', l: 'cálculos feitos' },
+              { v: '+100', l: 'usuários ativos' },
+              { v: '234', l: 'cálculos feitos' },
               { v: '4.9/5', l: 'avaliação média' },
               { v: '99.9%', l: 'disponibilidade' },
             ].map((s) => (
@@ -108,7 +135,7 @@ const LandingPage: React.FC = () => {
 
       {/* PROBLEM */}
       <section className="py-20 sm:py-28">
-        <div className="container mx-auto px-4 max-w-3xl text-center">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-12 max-w-3xl text-center">
           <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
             O problema
           </p>
@@ -125,7 +152,7 @@ const LandingPage: React.FC = () => {
 
       {/* SOLUTION PILLARS */}
       <section className="py-16 sm:py-24 bg-muted/30 border-y border-border">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
               A solução
@@ -174,7 +201,7 @@ const LandingPage: React.FC = () => {
 
       {/* FEATURES */}
       <section id="features" className="py-20 sm:py-28">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
               Recursos
@@ -240,7 +267,7 @@ const LandingPage: React.FC = () => {
         id="como-funciona"
         className="py-20 sm:py-28 bg-muted/30 border-y border-border"
       >
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
               Como funciona
@@ -284,7 +311,7 @@ const LandingPage: React.FC = () => {
 
       {/* TESTIMONIALS */}
       <section className="py-20 sm:py-28">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
               Quem usa, recomenda
@@ -317,7 +344,7 @@ const LandingPage: React.FC = () => {
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
                       key={i}
-                      className="w-4 h-4 fill-foreground text-foreground"
+                      className="w-4 h-4 fill-yellow-400 text-yellow-400"
                     />
                   ))}
                 </div>
@@ -339,7 +366,7 @@ const LandingPage: React.FC = () => {
         id="precos"
         className="py-20 sm:py-28 bg-muted/30 border-y border-border"
       >
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
               Preços
@@ -421,10 +448,20 @@ const LandingPage: React.FC = () => {
                 ))}
               </ul>
 
-              <Button asChild className="mt-7 w-full h-11 text-base">
-                <Link to="/cadastro?plan=pro">
-                  Assinar Pro <ArrowRight className="w-4 h-4" />
-                </Link>
+              <Button
+                onClick={handleSubscribePro}
+                disabled={isCheckoutLoading}
+                className="mt-7 w-full h-11 text-base"
+              >
+                {isCheckoutLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Redirecionando...
+                  </>
+                ) : (
+                  <>
+                    Assinar Pro <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
               </Button>
             </Card>
           </div>
@@ -433,7 +470,7 @@ const LandingPage: React.FC = () => {
 
       {/* FAQ */}
       <section id="faq" className="py-20 sm:py-28">
-        <div className="container mx-auto px-4 max-w-3xl">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-12 max-w-3xl">
           <div className="text-center mb-12">
             <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">
               Dúvidas frequentes
@@ -485,7 +522,7 @@ const LandingPage: React.FC = () => {
 
       {/* FINAL CTA */}
       <section className="py-20 sm:py-28">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="rounded-2xl bg-foreground text-background p-10 sm:p-16 text-center relative overflow-hidden">
             <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
               style={{
@@ -540,7 +577,7 @@ const LandingPage: React.FC = () => {
 
       {/* FOOTER */}
       <footer className="border-t border-border py-10">
-        <div className="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="container mx-auto px-6 sm:px-8 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-4">
           <Link to="/lp" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
               <LogoIcon className="w-3.5 h-3.5 text-background" />
