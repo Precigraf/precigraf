@@ -344,7 +344,7 @@ const LandingPage: React.FC = () => {
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
                       key={i}
-                      className="w-4 h-4 fill-foreground text-foreground"
+                      className="w-4 h-4 fill-yellow-400 text-yellow-400"
                     />
                   ))}
                 </div>
