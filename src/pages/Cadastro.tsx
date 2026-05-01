@@ -34,7 +34,7 @@ const Cadastro = forwardRef<HTMLDivElement>((_, ref) => {
   // Redirect if already logged in
   const handleRedirect = useCallback(() => {
     if (!authLoading && user) {
-      navigate('/', { replace: true });
+      navigate('/app', { replace: true });
     }
   }, [authLoading, user, navigate]);
 
@@ -107,7 +107,7 @@ const Cadastro = forwardRef<HTMLDivElement>((_, ref) => {
       }
 
       toast.success('Conta criada! Bem-vindo ao PreciGraf.');
-      navigate('/', { replace: true });
+      navigate('/app', { replace: true });
     } catch (err) {
       setError('Erro inesperado. Tente novamente.');
       setIsLoading(false);
