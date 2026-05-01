@@ -32,6 +32,7 @@ import {
 import LogoIcon from '@/components/LogoIcon';
 import LandingNav from '@/components/landing/LandingNav';
 import HeroMockup from '@/components/landing/HeroMockup';
+import WhatsAppFloat from '@/components/landing/WhatsAppFloat';
 import { useAuth } from '@/contexts/AuthContext';
 
 const LandingPage: React.FC = () => {
