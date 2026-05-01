@@ -43,7 +43,7 @@ const HeroMockup: React.FC = () => {
         </Card>
 
         {/* Result card */}
-        <Card className="relative lg:col-span-2 p-5 sm:p-6 bg-foreground text-background border-foreground shadow-card flex flex-col justify-between min-h-[320px] overflow-hidden">
+        <Card className="relative lg:col-span-2 p-6 sm:p-7 bg-foreground text-background border-foreground shadow-card flex flex-col justify-between min-h-[340px] overflow-hidden">
           {/* Decorative gradient orb */}
           <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-background/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 -left-10 w-40 h-40 rounded-full bg-background/5 blur-3xl" />
@@ -54,12 +54,12 @@ const HeroMockup: React.FC = () => {
               Sugestão inteligente
             </div>
 
-            <div className="mt-4">
+            <div className="mt-5">
               <p className="text-xs text-background/60 flex items-center gap-1.5">
                 <TrendingUp className="w-3.5 h-3.5" />
                 Preço final sugerido
               </p>
-              <p className="text-5xl sm:text-6xl font-bold tabular-nums leading-none mt-2 tracking-tight">
+              <p className="text-4xl sm:text-5xl font-bold tabular-nums leading-tight mt-2 tracking-tight whitespace-nowrap">
                 R$ 197,27
               </p>
               <div className="mt-3 h-px w-16 bg-background/30" />
@@ -78,27 +78,27 @@ const HeroMockup: React.FC = () => {
           </div>
 
           <div className="relative grid grid-cols-2 gap-3 mt-6">
-            <div className="rounded-xl bg-background/10 border border-background/15 p-3 hover:bg-background/15 transition-colors">
-              <div className="flex items-center gap-1.5 text-[11px] text-background/60">
-                <span className="w-5 h-5 rounded-md bg-background/15 flex items-center justify-center">
+            <div className="rounded-xl bg-background/10 border border-background/15 p-3.5 hover:bg-background/15 transition-colors">
+              <div className="flex items-center gap-1.5 text-[11px] text-background/70">
+                <span className="w-5 h-5 rounded-md bg-background/15 flex items-center justify-center shrink-0">
                   <Percent className="w-3 h-3" />
                 </span>
-                Margem
+                <span>Margem</span>
               </div>
-              <p className="text-lg font-bold mt-1.5 tabular-nums">89,60%</p>
+              <p className="text-base sm:text-lg font-bold mt-2 tabular-nums whitespace-nowrap">89,60%</p>
             </div>
-            <div className="rounded-xl bg-background/10 border border-background/15 p-3 hover:bg-background/15 transition-colors">
-              <div className="flex items-center gap-1.5 text-[11px] text-background/60">
-                <span className="w-5 h-5 rounded-md bg-background/15 flex items-center justify-center">
+            <div className="rounded-xl bg-background/10 border border-background/15 p-3.5 hover:bg-background/15 transition-colors">
+              <div className="flex items-center gap-1.5 text-[11px] text-background/70">
+                <span className="w-5 h-5 rounded-md bg-background/15 flex items-center justify-center shrink-0">
                   <DollarSign className="w-3 h-3" />
                 </span>
-                Lucro
+                <span>Lucro</span>
               </div>
-              <p className="text-lg font-bold mt-1.5 tabular-nums">R$ 93,22</p>
+              <p className="text-base sm:text-lg font-bold mt-2 tabular-nums whitespace-nowrap">R$ 93,22</p>
             </div>
           </div>
 
-          <div className="relative flex items-center gap-2 mt-4 text-[10px] text-background/60">
+          <div className="relative flex items-center gap-2 mt-5 text-[10px] text-background/60">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-70 animate-ping" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
