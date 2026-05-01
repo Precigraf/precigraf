@@ -9,6 +9,26 @@ const Row: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   </div>
 );
 
+// Single source of truth — todos os valores derivam destas constantes
+const COST_ITEMS: Array<{ label: string; value: number }> = [
+  { label: 'Papel Offset 180g', value: 56.8 },
+  { label: 'Alça', value: 11.0 },
+  { label: 'Mão de obra', value: 9.25 },
+  { label: 'Custos operacionais', value: 11.6 },
+  { label: 'Acabamento (laminação)', value: 27.0 },
+];
+const TOTAL_COST = COST_ITEMS.reduce((s, i) => s + i.value, 0); // 115,65
+// Final Price = Cost / (1 - Margin) — usamos margem real de 40%
+const TARGET_MARGIN = 0.4;
+const FINAL_PRICE = TOTAL_COST / (1 - TARGET_MARGIN); // 192,75
+const PROFIT = FINAL_PRICE - TOTAL_COST;
+const REAL_MARGIN_PCT = (PROFIT / FINAL_PRICE) * 100;
+
+const fmtBRL = (v: number) =>
+  v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtPct = (v: number) =>
+  `${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+
 const HeroMockup: React.FC = () => {
   return (
     <div className="relative">
@@ -29,16 +49,14 @@ const HeroMockup: React.FC = () => {
           </div>
 
           <div className="space-y-1">
-            <Row label="Papel Offset 180g" value="R$ 56,80" />
-            <Row label="Alça" value="R$ 11,00" />
-            <Row label="Mão de obra" value="R$ 9,25" />
-            <Row label="Custos operacionais" value="R$ 11,60" />
-            <Row label="Acabamento (laminação)" value="R$ 27,00" />
+            {COST_ITEMS.map((item) => (
+              <Row key={item.label} label={item.label} value={fmtBRL(item.value)} />
+            ))}
           </div>
 
           <div className="mt-5 flex items-center justify-between p-3 rounded-lg bg-muted/60">
             <span className="text-xs sm:text-sm font-medium text-foreground">Custo total</span>
-            <span className="text-base font-bold text-foreground tabular-nums">R$ 104,05</span>
+            <span className="text-base font-bold text-foreground tabular-nums">{fmtBRL(TOTAL_COST)}</span>
           </div>
         </Card>
 
@@ -48,53 +66,58 @@ const HeroMockup: React.FC = () => {
           <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-background/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-20 -left-10 w-40 h-40 rounded-full bg-background/5 blur-3xl" />
 
-          <div className="relative">
+          <div className="relative min-w-0">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-background/10 border border-background/15 text-[10px] uppercase tracking-wider text-background/80">
               <Sparkles className="w-3 h-3" />
               Sugestão inteligente
             </div>
 
-            <div className="mt-5">
+            <div className="mt-5 min-w-0">
               <p className="text-xs text-background/60 flex items-center gap-1.5">
                 <TrendingUp className="w-3.5 h-3.5" />
                 Preço final sugerido
               </p>
-              <p className="text-4xl sm:text-5xl font-bold tabular-nums leading-tight mt-2 tracking-tight whitespace-nowrap">
-                R$ 197,27
+              <p className="font-bold tabular-nums leading-tight mt-2 tracking-tight whitespace-nowrap text-[clamp(1.75rem,5.2vw,2.75rem)]">
+                {fmtBRL(FINAL_PRICE)}
               </p>
               <div className="mt-3 h-px w-16 bg-background/30" />
               <p className="text-xs text-background/70 mt-3">
-                com margem real de <span className="font-semibold text-background">89,60%</span>
+                com margem real de{' '}
+                <span className="font-semibold text-background">{fmtPct(REAL_MARGIN_PCT)}</span>
               </p>
 
               {/* Margem health bar */}
               <div className="mt-3 h-1.5 w-full rounded-full bg-background/10 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-background/60 to-background"
-                  style={{ width: '89.6%' }}
+                  style={{ width: `${REAL_MARGIN_PCT}%` }}
                 />
               </div>
             </div>
           </div>
 
-          <div className="relative grid grid-cols-2 gap-3 mt-6">
-            <div className="rounded-xl bg-background/10 border border-background/15 p-3.5 hover:bg-background/15 transition-colors">
+          <div className="relative grid grid-cols-2 gap-3 mt-6 items-stretch">
+            <div className="flex flex-col h-full min-w-0 rounded-xl bg-background/10 border border-background/15 p-3.5 hover:bg-background/15 transition-colors">
               <div className="flex items-center gap-1.5 text-[11px] text-background/70">
                 <span className="w-5 h-5 rounded-md bg-background/15 flex items-center justify-center shrink-0">
                   <Percent className="w-3 h-3" />
                 </span>
                 <span>Margem</span>
               </div>
-              <p className="text-base sm:text-lg font-bold mt-2 tabular-nums whitespace-nowrap">89,60%</p>
+              <p className="text-base sm:text-lg font-bold mt-2 tabular-nums truncate">
+                {fmtPct(REAL_MARGIN_PCT)}
+              </p>
             </div>
-            <div className="rounded-xl bg-background/10 border border-background/15 p-3.5 hover:bg-background/15 transition-colors">
+            <div className="flex flex-col h-full min-w-0 rounded-xl bg-background/10 border border-background/15 p-3.5 hover:bg-background/15 transition-colors">
               <div className="flex items-center gap-1.5 text-[11px] text-background/70">
                 <span className="w-5 h-5 rounded-md bg-background/15 flex items-center justify-center shrink-0">
                   <DollarSign className="w-3 h-3" />
                 </span>
                 <span>Lucro</span>
               </div>
-              <p className="text-base sm:text-lg font-bold mt-2 tabular-nums whitespace-nowrap">R$ 93,22</p>
+              <p className="text-base sm:text-lg font-bold mt-2 tabular-nums truncate">
+                {fmtBRL(PROFIT)}
+              </p>
             </div>
           </div>
 
