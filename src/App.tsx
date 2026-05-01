@@ -36,13 +36,14 @@ const App = () => (
             <Toaster />
             <Sonner />
             <Routes>
+              <Route path="/" element={<LandingPage />} />
               <Route path="/lp" element={<LandingPage />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/cadastro" element={<Cadastro />} />
               <Route path="/pedido" element={<RastreioPedido />} />
               <Route path="/pedido/:token" element={<RastreioPedido />} />
               <Route path="/pedido/*" element={<RastreioPedido />} />
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/app" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
               <Route path="/upgrade" element={<ProtectedRoute><Upgrade /></ProtectedRoute>} />
               <Route path="/clientes" element={<ProtectedRoute><Clientes /></ProtectedRoute>} />

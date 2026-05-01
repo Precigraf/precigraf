@@ -26,7 +26,7 @@ const LandingNav: React.FC = () => {
       )}
     >
       <div className="container mx-auto px-6 sm:px-8 lg:px-12 py-3 flex items-center justify-between">
-        <Link to="/lp" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center">
             <LogoIcon className="w-4 h-4 text-background" />
           </div>
@@ -48,7 +48,7 @@ const LandingNav: React.FC = () => {
         <div className="flex items-center gap-2">
           {user ? (
             <Button asChild size="sm">
-              <Link to="/">Ir para o app</Link>
+              <Link to="/app">Ir para o app</Link>
             </Button>
           ) : (
             <>

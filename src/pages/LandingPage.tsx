@@ -32,13 +32,14 @@ import {
 import LogoIcon from '@/components/LogoIcon';
 import LandingNav from '@/components/landing/LandingNav';
 import HeroMockup from '@/components/landing/HeroMockup';
+import WhatsAppFloat from '@/components/landing/WhatsAppFloat';
 import { useAuth } from '@/contexts/AuthContext';
 
 const LandingPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
-  const ctaPrimary = user ? '/' : '/cadastro';
+  const ctaPrimary = user ? '/app' : '/cadastro';
   const ctaPrimaryLabel = user ? 'Ir para o app' : 'Começar período grátis';
 
   const handleSubscribePro = async () => {
@@ -66,6 +67,7 @@ const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <LandingNav />
+      <WhatsAppFloat />
 
       {/* HERO */}
       <section className="relative pt-32 sm:pt-40 pb-16 sm:pb-24 overflow-hidden">

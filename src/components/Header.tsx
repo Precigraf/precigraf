@@ -17,7 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { label: 'Calculadora', path: '/' },
+  { label: 'Calculadora', path: '/app' },
   { label: 'Gestão', path: '/gestao' },
   { label: 'Clientes', path: '/clientes' },
   { label: 'Orçamentos', path: '/orcamentos' },
@@ -43,7 +43,7 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <Link to="/" className="flex items-center gap-2 shrink-0">
+            <Link to="/app" className="flex items-center gap-2 shrink-0">
               <div className="w-9 h-9 rounded-xl bg-foreground flex items-center justify-center">
                 <LogoIcon className="w-4 h-4 text-background" />
               </div>

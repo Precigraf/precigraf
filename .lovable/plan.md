@@ -1,127 +1,76 @@
-# Landing Page de Alta Conversão — PreciGraf
+# Plano de Atualização da Landing Page
 
-## Objetivo
-Criar uma landing page pública profissional, focada em conversão, que apresenta o PreciGraf como a solução definitiva de precificação para gráficas, conduzindo o visitante ao cadastro (trial grátis) ou upgrade Pro.
+## 1. Landing como rota raiz (precigraf.com.br → /lp)
 
-## Identidade visual (mantida)
-- Paleta monocromática preto/branco (tokens HSL existentes: `--foreground`, `--background`, `--card`, `--muted`).
-- Tipografia: Inter (já carregada).
-- Componentes: shadcn/ui (`Button`, `Card`, `Badge`, `Accordion`).
-- Logo: `<LogoIcon />` em quadrado preto arredondado.
-- Tema dark/light suportado via `useTheme`.
-- Cantos arredondados (`--radius: 0.75rem`), sombras suaves.
+Atualmente o domínio raiz (`/`) está protegido e redireciona usuários não logados para `/auth`. Vamos tornar a landing a página pública padrão, mantendo o app autenticado em outra rota.
 
-## Rota e navegação
-- Nova rota pública `/lp` em `App.tsx` (sem `ProtectedRoute`).
-- Botão "Acessar" no header da LP → `/auth`. Botão "Começar grátis" → `/cadastro`.
-- Não altera a rota `/` (continua sendo a calculadora para usuários logados).
-- Usuários autenticados que acessarem `/lp` veem CTA "Ir para o app".
+**Alterações em `src/App.tsx`:**
+- `/` passa a renderizar `<LandingPage />` (rota pública).
+- Criar `/app` como rota protegida que renderiza `<Index />` (a calculadora).
+- Manter `/lp` como alias da landing (para não quebrar links existentes).
 
-## Estrutura da página
+**Ajustes de navegação interna:**
+- `src/components/landing/LandingNav.tsx`: quando o usuário estiver logado, "Ir para o app" aponta para `/app` em vez de `/`.
+- `src/pages/LandingPage.tsx`: `ctaPrimary` para usuário logado vira `/app`.
+- `src/components/Header.tsx`: link do logo e item "Calculadora" passam a apontar para `/app`.
+- `src/components/AppSidebar.tsx`: ajustar item "Calculadora"/Dashboard para `/app` (verificar e atualizar somente se apontar para `/`).
+- `src/pages/Auth.tsx` e `src/pages/Cadastro.tsx`: após login/cadastro bem-sucedido, redirecionar para `/app` (em vez de `/`).
+- `src/components/ProtectedRoute.tsx`: quando não logado, redirecionar para `/` (landing) em vez de `/auth`, para manter o funil de marketing — exceto se a intenção do usuário era a área logada (nesse caso `/auth` continua sendo destino do botão "Entrar").
 
-```text
-1. NAV (logo + Entrar + CTA Começar grátis)
-2. HERO (H1 + subtítulo + 2 CTAs + mockup da calculadora)
-3. PROVA SOCIAL
-4. PROBLEMA (dor do cliente)
-5. SOLUÇÃO (3-4 pilares com ícones)
-6. FEATURES detalhadas (grid 2x3)
-7. COMO FUNCIONA (3 passos)
-8. DEPOIMENTOS (3 cards)
-9. PRICING (Trial Grátis vs Pro R$15,90/mês)
-10. FAQ (Accordion 6 perguntas)
-11. CTA FINAL (faixa preta full width)
-12. FOOTER
-```
+Resultado: ao acessar precigraf.com.br, o visitante vê a landing; clicar nos CTAs leva para `/cadastro` ou `/auth`.
 
-### Copy principal (PT-BR)
+## 2. Botão flutuante de WhatsApp
 
-**Hero**
-- H1: "Precifique seus serviços gráficos com a precisão que seu lucro merece"
-- Sub: "A calculadora completa para gráficas calcularem custos, margens e preços finais — sem planilhas confusas e sem prejuízo."
-- CTA primário: "Começar período grátis"
-- CTA secundário: "Ver como funciona"
-- Microcopy: "Sem cartão de crédito • Acesso imediato"
+Criar `src/components/landing/WhatsAppFloat.tsx`:
+- Botão fixo `bottom-6 right-6` (z-50), redondo, verde WhatsApp (`bg-[#25D366]`), sombra forte, hover scale.
+- Ícone do `WhatsAppIcon` já existente em `src/components/WhatsAppIcon.tsx`.
+- Link: `https://wa.me/5574981209228?text=Olá! Tenho interesse no PreciGraf.` com `target="_blank"` e `rel="noopener noreferrer"`.
+- Tooltip/label opcional "Fale conosco" visível em hover (desktop).
+- Pequeno pulso animado (`animate-ping` em ring atrás) para chamar atenção sem poluir.
+- Acessibilidade: `aria-label="Falar no WhatsApp"`.
 
-**Pilares**
-1. Cálculo de custo real (matéria-prima, tinta, mão de obra)
-2. Margem e preço final automáticos
-3. Simulação por quantidade (Pro)
-4. Gestão de clientes, orçamentos e pedidos
+Renderizar em `src/pages/LandingPage.tsx` (apenas na landing, não no app).
 
-**Features**
-- Calculadora completa de custos
-- Custos operacionais avançados (depreciação, energia, mão de obra)
-- Marketplace builder (taxas, cupons, frete)
-- CRM com Kanban de pedidos
-- Área pública de rastreio
-- Histórico ilimitado e exportação
+## 3. Refinar `HeroMockup` com novos dados (sacola personalizada)
 
-### Pricing (atualizado)
+Editar `src/components/landing/HeroMockup.tsx`:
 
-Dois cards lado a lado:
+**Card de inputs (esquerda):**
+- Título: "Sacola Personalizada" — "100 unidades".
+- Linhas:
+  - Papel Offset 180g — R$ 56,80
+  - Alça — R$ 11,00
+  - Mão de obra — R$ 9,25
+  - Custos operacionais — R$ 11,60
+  - Acabamento (laminação) — R$ 27,00
+- Custo total: R$ 104,05.
 
-**Card 1 — Trial / Período Grátis**
-- Título: "Período Grátis"
-- Preço: "R$ 0"
-- Subtexto: "Teste sem compromisso"
-- Lista: Acesso à calculadora • Cálculos básicos de custo e margem • Sem cartão de crédito
-- CTA: "Começar grátis" (outline) → `/cadastro`
+**Card de resultado (direita) — versão mais profissional/atraente:**
+- Manter fundo `bg-foreground text-background`, mas adicionar:
+  - Badge superior pequeno "Sugestão inteligente" com ícone `Sparkles`.
+  - Preço em maior destaque: `text-5xl sm:text-6xl`, com linha decorativa fina abaixo.
+  - Subtítulo "com margem real de **89,60%**" (negrito no número).
+  - Mini "barra de saúde" da margem (gradiente cinza→branco) preenchida ~90% para sinal visual.
+  - Grid 2 colunas refinada:
+    - Margem: 89,60%
+    - Lucro: R$ 93,22
+  - Cada card interno com borda translúcida (`border border-background/15`) + hover sutil, ícone em círculo `bg-background/15`.
+  - Rodapé com micro-linha "Recalculado em tempo real" + ponto verde piscando (status).
+- Valores atualizados: Preço final R$ 197,27, Margem 89,60%, Lucro R$ 93,22.
 
-**Card 2 — Pro (DESTAQUE)**
-- Borda forte (`border-2 border-foreground`), sombra reforçada, leve `scale-105` no desktop.
-- Badge no topo: "Mais popular" (`bg-foreground text-background`).
-- Título: "Pro"
-- Preço: "R$ 15,90" + sufixo "/mês" em muted
-- Subtexto: "Tudo que sua gráfica precisa"
-- Lista de benefícios:
-  - Cálculos ilimitados
-  - Simulador por quantidade
-  - Custos operacionais avançados
-  - CRM completo (Clientes, Orçamentos, Pedidos)
-  - Kanban de produção e área pública de rastreio
-  - Marketplace builder com cupons e frete
-  - Exportação PDF e Excel
-  - Histórico ilimitado
-  - Suporte prioritário
-  - Todas as atualizações futuras
-- CTA: "Assinar Pro" (preenchido, preto) → `/cadastro?plan=pro`
+Sem mudanças no contraste/identidade (segue minimalista monocromático).
 
-**FAQ** (6 perguntas curtas: o que é, como funciona o trial, como funciona a assinatura mensal, posso usar no celular, é seguro, como cancelo)
+## Resumo de Arquivos
 
-**CTA Final**
-- Faixa full width preta: "Pronto para precificar com confiança?" + botão branco grande "Criar conta grátis"
+**Criados:**
+- `src/components/landing/WhatsAppFloat.tsx`
 
-## Princípios de UX/conversão
-- Hierarquia visual: H1 grande (`text-5xl md:text-7xl`), espaçamento generoso (`py-20 sm:py-28`).
-- CTA primário visível em 3+ pontos (hero, pricing, faixa final).
-- Prova social acima da dobra.
-- Microcopy de redução de fricção: "sem cartão", "cancele quando quiser".
-- Mobile-first: stack vertical em `<sm`, CTAs full-width.
-- Acessibilidade: alt em imagens, contraste AAA, foco visível.
-- Performance: zero imagens externas, ilustrações via Lucide + composições CSS.
-
-## Arquivos a criar/editar
-
-**Criar**
-- `src/pages/LandingPage.tsx` — página com seções como subcomponentes internos.
-- `src/components/landing/LandingNav.tsx` — header sticky.
-- `src/components/landing/HeroMockup.tsx` — mockup CSS da calculadora.
-
-**Editar**
-- `src/App.tsx` — adicionar `<Route path="/lp" element={<LandingPage />} />` (rota pública).
-- `index.html` — atualizar `<title>` e `<meta description>` orientados à conversão.
-
-## Detalhes técnicos
-- Sem novas dependências (shadcn/ui + lucide-react já instalados).
-- Sem chamadas a backend; página estática 100%.
-- `useAuth()` para alternar CTA do header ("Entrar" ↔ "Ir para o app").
-- Tokens semânticos (`bg-background`, `text-foreground`) — nada hardcoded.
-- Animações leves via Tailwind (`transition-colors`, `hover:scale-[1.02]`, `animate-in fade-in`).
-- SEO básico no `index.html` (title, meta description, og tags).
-
-## Observação sobre cobrança
-A landing apresenta o Pro como **R$ 15,90/mês**. O fluxo de checkout atual (InfinitePay vitalício R$ 29,90 registrado em memória) **não será alterado neste plano** — apenas a comunicação visual da LP. Caso queira que o checkout real passe a cobrar mensal R$ 15,90, posso planejar essa mudança em uma próxima etapa (envolve alterar produto/plano no provedor de pagamento e ajustar a lógica de ativação do `plan_id`).
-
-## Resultado esperado
-Landing page acessível em `/lp`, totalmente responsiva, fiel à identidade preto/branco minimalista, com fluxo claro: visitante → "Começar grátis" → `/cadastro` → trial ativo, ou → "Assinar Pro" → cadastro com intenção de upgrade.
+**Editados:**
+- `src/App.tsx` (rotas: `/` = landing pública, `/app` = calculadora protegida)
+- `src/pages/LandingPage.tsx` (CTA logado → `/app`, montar `WhatsAppFloat`)
+- `src/components/landing/LandingNav.tsx` (logado → `/app`)
+- `src/components/landing/HeroMockup.tsx` (novos dados + refino visual do card de resultado)
+- `src/components/Header.tsx` (logo e "Calculadora" → `/app`)
+- `src/components/AppSidebar.tsx` (ajustar item raiz se necessário)
+- `src/pages/Auth.tsx`, `src/pages/Cadastro.tsx` (redirect pós-login → `/app`)
+- `src/components/ProtectedRoute.tsx` (não logado → `/` se vier de área protegida do app, mantendo `/auth` apenas via botão "Entrar")

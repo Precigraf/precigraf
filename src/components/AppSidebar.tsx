@@ -27,7 +27,7 @@ const navItems = [
   { title: 'Pedidos', url: '/pedidos', icon: Package },
   { title: 'Produção', url: '/producao', icon: Factory },
   { title: 'Financeiro', url: '/financeiro', icon: Wallet },
-  { title: 'Calculadora', url: '/', icon: Calculator },
+  { title: 'Calculadora', url: '/app', icon: Calculator },
   { title: 'Marketplace', url: '/marketplace', icon: Store },
 ];
 
