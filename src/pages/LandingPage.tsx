@@ -67,6 +67,7 @@ const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <LandingNav />
+      <WhatsAppFloat />
 
       {/* HERO */}
       <section className="relative pt-32 sm:pt-40 pb-16 sm:pb-24 overflow-hidden">
