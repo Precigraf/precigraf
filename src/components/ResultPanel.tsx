@@ -32,6 +32,7 @@ interface ResultPanelProps {
     equipment: number;
     rent: number;
     otherCosts: number;
+    categoryId?: string | null;
   };
   onSaved?: () => void;
   onApplySuggestedMargin?: (margin: number) => void;
