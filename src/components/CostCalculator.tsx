@@ -489,21 +489,42 @@ const CostCalculator: React.FC = () => {
 
           {/* Seção 1: Nome do Produto */}
           <FormSection title="Produto" icon={<Tag className="w-5 h-5 text-primary" />}>
-            <div className="col-span-full">
-              <label className="text-sm font-medium text-secondary-foreground mb-2 block">
-                Nome do produto
-              </label>
-              <Input
-                type="text"
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                placeholder="Ex: Sacola de papel personalizada"
-                className="input-currency"
-                maxLength={100}
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                Dê um nome para identificar este cálculo
-              </p>
+            <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-secondary-foreground mb-2 block">
+                  Nome do produto
+                </label>
+                <Input
+                  type="text"
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                  placeholder="Ex: Sacola de papel personalizada"
+                  className="input-currency"
+                  maxLength={100}
+                />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Salvar o cálculo também cadastra o produto.
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-secondary-foreground mb-2 block">
+                  Categoria
+                </label>
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger className="input-currency">
+                    <SelectValue placeholder="Selecione (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem categoria</SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Vincule a uma categoria para organizar.
+                </p>
+              </div>
             </div>
           </FormSection>
 
