@@ -11,9 +11,11 @@ import OtherMaterialsInput, { OtherMaterialItem, calculateOtherMaterialItemCost 
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import CalculationHistory from './CalculationHistory';
 import OnboardingTour from './OnboardingTour';
 import { useUserPlan } from '@/hooks/useUserPlan';
+import { useCategories } from '@/hooks/useCategories';
 import UpgradePlanModal from './UpgradePlanModal';
 import TrialBanner from './TrialBanner';
 import { useNavigate } from 'react-router-dom';
