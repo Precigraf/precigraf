@@ -84,9 +84,11 @@ const CostCalculator: React.FC = () => {
 
   // Estado do formulário
   const [productName, setProductName] = useState('');
+  const [categoryId, setCategoryId] = useState<string>('none');
   const [lotQuantity, setLotQuantity] = useState(0);
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [productPreset, setProductPreset] = useState<ProductPresetType>('custom');
+  const { categories } = useCategories();
 
   // Matéria-prima - Nova estrutura com pacote/quantidade/uso
   const [paperData, setPaperData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
