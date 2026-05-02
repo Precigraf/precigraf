@@ -656,7 +656,7 @@ const CostCalculator: React.FC = () => {
             operationalTotal={calculations.operationalTotal}
             fixedProfit={fixedProfit}
             hasOperationalCosts={hasOperationalCosts}
-            saveData={saveDataValues}
+            saveData={{ ...saveDataValues, categoryId: categoryId === 'none' ? null : categoryId }}
             rawInputs={{
               paperData,
               handleData,
