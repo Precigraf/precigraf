@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       calculations: {
         Row: {
+          category_id: string | null
           cost_type: string
           created_at: string
           duplicated_from: string | null
@@ -32,6 +33,7 @@ export type Database = {
           other_material_cost: number
           other_operational_cost: number
           paper_cost: number
+          product_id: string | null
           product_name: string
           profit: number
           raw_inputs: Json | null
@@ -43,6 +45,7 @@ export type Database = {
           varnish_cost: number
         }
         Insert: {
+          category_id?: string | null
           cost_type?: string
           created_at?: string
           duplicated_from?: string | null
@@ -59,6 +62,7 @@ export type Database = {
           other_material_cost?: number
           other_operational_cost?: number
           paper_cost?: number
+          product_id?: string | null
           product_name: string
           profit: number
           raw_inputs?: Json | null
@@ -70,6 +74,7 @@ export type Database = {
           varnish_cost?: number
         }
         Update: {
+          category_id?: string | null
           cost_type?: string
           created_at?: string
           duplicated_from?: string | null
@@ -86,6 +91,7 @@ export type Database = {
           other_material_cost?: number
           other_operational_cost?: number
           paper_cost?: number
+          product_id?: string | null
           product_name?: string
           profit?: number
           raw_inputs?: Json | null

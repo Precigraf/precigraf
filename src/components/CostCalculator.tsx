@@ -11,9 +11,11 @@ import OtherMaterialsInput, { OtherMaterialItem, calculateOtherMaterialItemCost 
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import CalculationHistory from './CalculationHistory';
 import OnboardingTour from './OnboardingTour';
 import { useUserPlan } from '@/hooks/useUserPlan';
+import { useCategories } from '@/hooks/useCategories';
 import UpgradePlanModal from './UpgradePlanModal';
 import TrialBanner from './TrialBanner';
 import { useNavigate } from 'react-router-dom';
@@ -82,9 +84,11 @@ const CostCalculator: React.FC = () => {
 
   // Estado do formulário
   const [productName, setProductName] = useState('');
+  const [categoryId, setCategoryId] = useState<string>('none');
   const [lotQuantity, setLotQuantity] = useState(0);
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [productPreset, setProductPreset] = useState<ProductPresetType>('custom');
+  const { categories } = useCategories();
 
   // Matéria-prima - Nova estrutura com pacote/quantidade/uso
   const [paperData, setPaperData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
@@ -485,21 +489,42 @@ const CostCalculator: React.FC = () => {
 
           {/* Seção 1: Nome do Produto */}
           <FormSection title="Produto" icon={<Tag className="w-5 h-5 text-primary" />}>
-            <div className="col-span-full">
-              <label className="text-sm font-medium text-secondary-foreground mb-2 block">
-                Nome do produto
-              </label>
-              <Input
-                type="text"
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                placeholder="Ex: Sacola de papel personalizada"
-                className="input-currency"
-                maxLength={100}
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                Dê um nome para identificar este cálculo
-              </p>
+            <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-secondary-foreground mb-2 block">
+                  Nome do produto
+                </label>
+                <Input
+                  type="text"
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                  placeholder="Ex: Sacola de papel personalizada"
+                  className="input-currency"
+                  maxLength={100}
+                />
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Salvar o cálculo também cadastra o produto.
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-secondary-foreground mb-2 block">
+                  Categoria
+                </label>
+                <Select value={categoryId} onValueChange={setCategoryId}>
+                  <SelectTrigger className="input-currency">
+                    <SelectValue placeholder="Selecione (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem categoria</SelectItem>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Vincule a uma categoria para organizar.
+                </p>
+              </div>
             </div>
           </FormSection>
 
@@ -631,7 +656,7 @@ const CostCalculator: React.FC = () => {
             operationalTotal={calculations.operationalTotal}
             fixedProfit={fixedProfit}
             hasOperationalCosts={hasOperationalCosts}
-            saveData={saveDataValues}
+            saveData={{ ...saveDataValues, categoryId: categoryId === 'none' ? null : categoryId }}
             rawInputs={{
               paperData,
               handleData,

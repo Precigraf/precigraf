@@ -7,6 +7,7 @@ import { logError } from '@/lib/logger';
 import { useUserPlan } from '@/hooks/useUserPlan';
 import UpgradePlanModal from '@/components/UpgradePlanModal';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface CalculationData {
   productName: string;
@@ -26,6 +27,7 @@ interface CalculationData {
   desiredProfit: number;
   finalSellingPrice: number;
   unitPrice: number;
+  categoryId?: string | null;
 }
 
 interface SaveCalculationButtonProps {
@@ -36,8 +38,8 @@ interface SaveCalculationButtonProps {
   rawInputs?: Record<string, unknown>;
 }
 
-const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({ 
-  data, 
+const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
+  data,
   onSaved,
   editingCalculation = null,
   duplicatedFrom = null,
@@ -46,19 +48,57 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const { canSaveCalculation, canCreateCalculation, isTrialExpired, refetch } = useUserPlan();
+  const { canSaveCalculation, canCreateCalculation, refetch } = useUserPlan();
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   const isValid = data.productName.trim().length > 0 && data.quantity > 0 && data.finalSellingPrice > 0;
   const isEditing = editingCalculation?.mode === 'edit';
-
-  // Block saving if trial expired or can't save calculation (only for new calculations)
   const canSave = isEditing || (canCreateCalculation && canSaveCalculation);
+
+  const upsertLinkedProduct = async (
+    userId: string,
+    calculationId: string,
+    existingProductId: string | null
+  ): Promise<string | null> => {
+    const unitCost = data.quantity > 0 ? data.productionCost / data.quantity : 0;
+    const productPayload = {
+      name: data.productName.trim(),
+      category_id: data.categoryId ?? null,
+      cost: unitCost,
+      unit_price: data.unitPrice,
+      default_quantity: data.quantity,
+      price_tiers: [{ quantity: data.quantity, cost: unitCost, price: data.unitPrice }] as any,
+      is_active: true,
+    };
+
+    if (existingProductId) {
+      const { error } = await supabase
+        .from('products')
+        .update(productPayload)
+        .eq('id', existingProductId)
+        .eq('user_id', userId);
+      if (error) {
+        logError('Error updating linked product:', error);
+        return existingProductId;
+      }
+      return existingProductId;
+    }
+
+    const { data: created, error } = await supabase
+      .from('products')
+      .insert({ ...productPayload, user_id: userId })
+      .select('id')
+      .single();
+    if (error) {
+      logError('Error creating linked product:', error);
+      return null;
+    }
+    return created?.id ?? null;
+  };
 
   const handleSave = async () => {
     if (!isValid) return;
-
-    // Check if user can save more calculations
     if (!canSave) {
       setShowUpgradeModal(true);
       return;
@@ -68,13 +108,13 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
 
     try {
       const { data: session } = await supabase.auth.getSession();
-      
       if (!session.session?.user) {
         toast.error('Você precisa estar logado para salvar cálculos');
         return;
       }
+      const userId = session.session.user.id;
 
-      const calculationData = {
+      const calculationData: any = {
         product_name: data.productName.trim(),
         lot_quantity: data.quantity,
         paper_cost: data.paper,
@@ -93,45 +133,70 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
         sale_price: data.finalSellingPrice,
         unit_price: data.unitPrice,
         raw_inputs: (rawInputs || null) as any,
+        category_id: data.categoryId ?? null,
       };
 
-      let error;
+      let calcId: string | null = null;
+      let existingProductId: string | null = null;
 
       if (isEditing && editingCalculation) {
-        // Atualizar cálculo existente
-        const result = await supabase
+        const { data: existing } = await supabase
+          .from('calculations')
+          .select('product_id')
+          .eq('id', editingCalculation.id)
+          .eq('user_id', userId)
+          .maybeSingle();
+        existingProductId = (existing as any)?.product_id ?? null;
+
+        const { error } = await supabase
           .from('calculations')
           .update(calculationData)
           .eq('id', editingCalculation.id)
-          .eq('user_id', session.session.user.id); // Segurança adicional
-        error = result.error;
+          .eq('user_id', userId);
+        if (error) throw error;
+        calcId = editingCalculation.id;
       } else {
-        // Criar novo cálculo (incluindo duplicações)
         const insertData = {
-          user_id: session.session.user.id,
+          user_id: userId,
           ...calculationData,
           is_favorite: false,
-          duplicated_from: (editingCalculation?.mode === 'duplicate' && duplicatedFrom) ? duplicatedFrom : null,
+          duplicated_from:
+            editingCalculation?.mode === 'duplicate' && duplicatedFrom ? duplicatedFrom : null,
         };
-        
-        const result = await supabase.from('calculations').insert(insertData);
-        error = result.error;
+        const { data: inserted, error } = await supabase
+          .from('calculations')
+          .insert(insertData)
+          .select('id')
+          .single();
+        if (error) throw error;
+        calcId = (inserted as any)?.id ?? null;
       }
 
-      if (error) {
-        logError('Error saving calculation:', error);
-        toast.error('Erro ao salvar cálculo');
-        return;
+      // Upsert linked product
+      let productId: string | null = null;
+      if (calcId) {
+        productId = await upsertLinkedProduct(userId, calcId, existingProductId);
+        if (productId && productId !== existingProductId) {
+          await supabase
+            .from('calculations')
+            .update({ product_id: productId } as any)
+            .eq('id', calcId)
+            .eq('user_id', userId);
+        }
       }
+
+      qc.invalidateQueries({ queryKey: ['products'] });
 
       setJustSaved(true);
-      toast.success(isEditing ? 'Cálculo atualizado com sucesso!' : 'Cálculo salvo com sucesso!');
+      toast.success(
+        isEditing
+          ? 'Cálculo atualizado e produto sincronizado!'
+          : 'Cálculo salvo e produto cadastrado!'
+      );
       onSaved?.();
-      await refetch(); // Update calculations count
+      await refetch();
 
-      setTimeout(() => {
-        setJustSaved(false);
-      }, 2000);
+      setTimeout(() => setJustSaved(false), 2000);
     } catch (error) {
       logError('Error saving calculation:', error);
       toast.error('Erro ao salvar cálculo');

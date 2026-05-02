@@ -376,11 +376,30 @@ const OrcamentoEditor: React.FC = () => {
   };
 
   const handleExportPDF = async () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 14;
+    // ---------- helpers ----------
+    const hexToRgb = (hex: string): [number, number, number] => {
+      const h = hex.replace('#', '');
+      const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+      const num = parseInt(full || '6366f1', 16);
+      return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+    };
+    const primary = hexToRgb(profile?.system_color || '#6366f1');
+    const lightGray: [number, number, number] = [244, 244, 246];
+    const altRow: [number, number, number] = [248, 248, 250];
 
-    // Load logo if available
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 14;
+    const contentW = pageW - margin * 2;
+
+    // ---------- 1. HEADER BAND ----------
+    const headerH = 40;
+    doc.setFillColor(primary[0], primary[1], primary[2]);
+    doc.rect(0, 0, pageW, headerH, 'F');
+
+    // logo (right side, white chip if loaded)
+    let logoLoaded = false;
     if (profile?.logo_url) {
       try {
         const img = new Image();
@@ -395,71 +414,83 @@ const OrcamentoEditor: React.FC = () => {
         canvas.height = img.height;
         canvas.getContext('2d')!.drawImage(img, 0, 0);
         const logoData = canvas.toDataURL('image/png');
-        doc.addImage(logoData, 'PNG', 14, y, 18, 18);
-        // Company info next to logo
-        const infoX = 36;
-        if (profile.company_name) {
-          doc.setFontSize(14);
-          doc.setFont('helvetica', 'bold');
-          doc.text(profile.company_name, infoX, y + 6);
-        }
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100);
-        const infoLines = [profile.company_document, profile.company_phone, profile.company_email, profile.company_full_address].filter(Boolean) as string[];
-        infoLines.forEach((line, i) => doc.text(line, infoX, y + 12 + i * 4));
-        y += Math.max(22, 12 + infoLines.length * 4 + 4);
+        // white rounded chip
+        doc.setFillColor(255, 255, 255);
+        doc.roundedRect(pageW - margin - 26, 7, 26, 26, 3, 3, 'F');
+        doc.addImage(logoData, 'PNG', pageW - margin - 24, 9, 22, 22);
+        logoLoaded = true;
       } catch {
-        // Logo failed to load, render text-only header
-        if (profile.company_name) {
-          doc.setFontSize(14);
-          doc.setFont('helvetica', 'bold');
-          doc.text(profile.company_name, 14, y + 6);
-          y += 10;
-        }
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100);
-        const infoLines = [profile.company_document, profile.company_phone, profile.company_email, profile.company_full_address].filter(Boolean) as string[];
-        infoLines.forEach((line, i) => doc.text(line, 14, y + i * 4));
-        y += infoLines.length * 4 + 4;
+        // ignore
       }
-    } else if (profile?.company_name) {
-      doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
-      doc.text(profile.company_name, 14, y + 6);
-      y += 10;
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(100, 100, 100);
-      const infoLines = [profile.company_document, profile.company_phone, profile.company_email, profile.company_full_address].filter(Boolean) as string[];
-      infoLines.forEach((line, i) => doc.text(line, 14, y + i * 4));
-      y += infoLines.length * 4 + 4;
     }
 
-    // Divider
-    doc.setDrawColor(200);
-    doc.line(14, y, pageWidth - 14, y);
-    y += 8;
+    const headerLeftX = margin;
+    const headerTextMaxW = contentW - (logoLoaded ? 32 : 0);
 
-    // Title + date
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(18);
+    doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Orçamento ORC-${quoteNumber || '—'}`, 14, y);
-    doc.setFontSize(10);
+    doc.setFontSize(18);
+    const companyName = profile?.company_name || profile?.store_name || 'Sua Empresa';
+    doc.text(companyName, headerLeftX, 14);
+
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100, 100, 100);
-    doc.text(new Date(createdAt).toLocaleDateString('pt-BR'), pageWidth - 14, y, { align: 'right' });
-    y += 8;
+    doc.setFontSize(8.5);
+    doc.setTextColor(255, 255, 255);
+    doc.text('Soluções gráficas com qualidade e prazo', headerLeftX, 19);
 
-    // Client
+    // separator
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.2);
+    doc.line(headerLeftX, 23, headerLeftX + Math.min(headerTextMaxW, 120), 23);
+
+    // contact row
+    doc.setFontSize(8.5);
+    const contacts = [
+      profile?.company_document ? `CNPJ: ${profile.company_document}` : '',
+      profile?.company_phone || '',
+      profile?.company_email || '',
+    ].filter(Boolean);
+    doc.text(contacts.join('   •   '), headerLeftX, 28);
+
+    let y = headerH + 8;
+
+    // ---------- 2. QUOTE ID STRIP ----------
+    // pill badge left
+    const badgeText = `ORÇAMENTO Nº ORC-${quoteNumber || '—'}`;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    const badgeW = doc.getTextWidth(badgeText) + 8;
+    doc.setFillColor(primary[0], primary[1], primary[2]);
+    doc.roundedRect(margin, y - 4, badgeW, 7, 2, 2, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.text(badgeText, margin + 4, y + 1);
+
+    // dates right
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(110, 110, 120);
+    const emissao = `Emissão: ${new Date(createdAt).toLocaleDateString('pt-BR')}`;
+    const validade = validUntil ? `Válido até: ${format(validUntil, 'dd/MM/yyyy')}` : 'Válido por 7 dias';
+    doc.text(emissao, pageW - margin, y - 1, { align: 'right' });
+    doc.text(validade, pageW - margin, y + 3.5, { align: 'right' });
+
+    y += 11;
+
+    // ---------- 3. CLIENT BOX ----------
+    const clientBoxH = 16;
+    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+    doc.roundedRect(margin, y, contentW, clientBoxH, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(primary[0], primary[1], primary[2]);
+    doc.text('CLIENTE', margin + 4, y + 5.5);
     doc.setFontSize(11);
-    doc.setTextColor(80, 80, 80);
-    doc.text(`Cliente: ${selectedClient?.name || '—'}`, 14, y);
-    y += 10;
+    doc.setTextColor(30, 30, 40);
+    doc.text(selectedClient?.name || '—', margin + 4, y + 12);
 
-    // Items table
+    y += clientBoxH + 6;
+
+    // ---------- 4. ITEMS TABLE ----------
     const tableBody = items.map(i => [
       i.name,
       String(i.quantity),
@@ -469,74 +500,147 @@ const OrcamentoEditor: React.FC = () => {
 
     autoTable(doc, {
       startY: y,
-      head: [['Item', 'Qtd', 'Unitário', 'Total']],
+      head: [['Descrição do Produto', 'Qtd', 'Unitário', 'Total']],
       body: tableBody,
-      theme: 'striped',
-      headStyles: { fillColor: [240, 240, 240], textColor: [80, 80, 80], fontStyle: 'bold', fontSize: 9 },
-      styles: { fontSize: 10, cellPadding: 4 },
+      theme: 'plain',
+      headStyles: {
+        fillColor: primary,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9.5,
+        cellPadding: 3.5,
+      },
+      bodyStyles: {
+        fontSize: 9.5,
+        cellPadding: 3.5,
+        textColor: [40, 40, 50],
+      },
+      alternateRowStyles: { fillColor: altRow },
       columnStyles: {
         0: { cellWidth: 'auto' },
-        1: { halign: 'center', cellWidth: 25 },
-        2: { halign: 'right', cellWidth: 35 },
-        3: { halign: 'right', cellWidth: 35 },
+        1: { halign: 'center', cellWidth: 18 },
+        2: { halign: 'right', cellWidth: 32 },
+        3: { halign: 'right', cellWidth: 32, fontStyle: 'bold' },
       },
+      margin: { left: margin, right: margin },
     });
 
-    y = (doc as any).lastAutoTable.finalY + 10;
+    y = (doc as any).lastAutoTable.finalY;
+    // bottom border
+    doc.setDrawColor(primary[0], primary[1], primary[2]);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, pageW - margin, y);
+    y += 8;
 
-    // Summary
-    const summaryX = pageWidth - 14;
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
+    // ---------- 5. TOTALS ----------
+    const totalsLabelX = pageW - margin - 60;
+    const totalsValueX = pageW - margin;
     doc.setFont('helvetica', 'normal');
-    doc.text('Subtotal:', summaryX - 60, y);
-    doc.text(formatCurrency(subtotal), summaryX, y, { align: 'right' });
-    y += 6;
+    doc.setFontSize(10);
+    doc.setTextColor(80, 80, 90);
+    doc.text('Subtotal:', totalsLabelX, y);
+    doc.setTextColor(30, 30, 40);
+    doc.text(formatCurrency(subtotal), totalsValueX, y, { align: 'right' });
+    y += 5.5;
 
     if (discountAmount > 0) {
+      doc.setTextColor(80, 80, 90);
+      doc.text('Desconto:', totalsLabelX, y);
       doc.setTextColor(220, 38, 38);
-      doc.text('Desconto:', summaryX - 60, y);
-      doc.text(`-${formatCurrency(discountAmount)}`, summaryX, y, { align: 'right' });
-      y += 6;
+      doc.text(`- ${formatCurrency(discountAmount)}`, totalsValueX, y, { align: 'right' });
+      y += 5.5;
     }
-
     if (shippingAmount > 0) {
+      doc.setTextColor(80, 80, 90);
+      doc.text('Frete:', totalsLabelX, y);
       doc.setTextColor(22, 163, 74);
-      doc.text('Frete:', summaryX - 60, y);
-      doc.text(`+${formatCurrency(shippingAmount)}`, summaryX, y, { align: 'right' });
-      y += 6;
+      doc.text(`+ ${formatCurrency(shippingAmount)}`, totalsValueX, y, { align: 'right' });
+      y += 5.5;
     }
 
-    doc.setTextColor(0, 0, 0);
+    // Total chip
+    y += 1;
+    const totalBoxW = 70;
+    const totalBoxH = 12;
+    const totalBoxX = pageW - margin - totalBoxW;
+    doc.setFillColor(primary[0], primary[1], primary[2]);
+    doc.roundedRect(totalBoxX, y, totalBoxW, totalBoxH, 2.5, 2.5, 'F');
+    doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    y += 2;
-    doc.text('Total:', summaryX - 60, y);
-    doc.text(formatCurrency(total), summaryX, y, { align: 'right' });
-    y += 10;
+    doc.setFontSize(11);
+    doc.text('TOTAL', totalBoxX + 4, y + 7.5);
+    doc.setFontSize(13);
+    doc.text(formatCurrency(total), totalBoxX + totalBoxW - 4, y + 7.8, { align: 'right' });
+    y += totalBoxH + 10;
 
-    // Notes
-    if (notes) {
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(60, 60, 60);
-      doc.setFillColor(249, 250, 251);
-      const splitNotes = doc.splitTextToSize(notes, pageWidth - 38);
-      const notesHeight = splitNotes.length * 5 + 10;
-      doc.roundedRect(14, y, pageWidth - 28, notesHeight, 2, 2, 'F');
+    // ---------- 6. INFO PANELS ----------
+    const panelGap = 4;
+    const panelW = (contentW - panelGap) / 2;
+    const panelH = 30;
+
+    const drawPanel = (x: number, title: string, lines: string[]) => {
+      doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+      doc.roundedRect(x, y, panelW, panelH, 2.5, 2.5, 'F');
       doc.setFont('helvetica', 'bold');
-      doc.text('Observações:', 18, y + 6);
+      doc.setFontSize(7.5);
+      doc.setTextColor(primary[0], primary[1], primary[2]);
+      doc.text(title, x + 4, y + 5.5);
       doc.setFont('helvetica', 'normal');
-      doc.text(splitNotes, 18, y + 12);
-      y += notesHeight + 6;
-    }
-
-    // Validity
-    if (validUntil) {
       doc.setFontSize(9);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Validade: ${format(validUntil, 'dd/MM/yyyy')}`, 14, y);
+      doc.setTextColor(50, 50, 60);
+      lines.forEach((ln, i) => doc.text(ln, x + 4, y + 11 + i * 5));
+    };
+
+    drawPanel(margin, 'PRAZO DE ENTREGA', [
+      'Produção: 5 a 7 dias úteis',
+      'Envio: 2 a 4 dias úteis',
+    ]);
+
+    const paymentLines = ['PIX', 'Cartão de crédito', 'Boleto bancário'];
+    if (profile?.pix_key) paymentLines.push(`PIX: ${profile.pix_key}`);
+    drawPanel(margin + panelW + panelGap, 'FORMAS DE PAGAMENTO', paymentLines.slice(0, 4));
+
+    y += panelH + 14;
+
+    // ---------- 7. SIGNATURES ----------
+    // make sure signatures fit before footer
+    const footerH = 18;
+    if (y > pageH - footerH - 30) {
+      // push signatures up if not enough space — keep simple
+      y = pageH - footerH - 28;
     }
+    const sigW = (contentW - panelGap) / 2;
+    doc.setDrawColor(120, 120, 130);
+    doc.setLineWidth(0.3);
+    doc.line(margin + 6, y, margin + sigW - 6, y);
+    doc.line(margin + sigW + panelGap + 6, y, margin + sigW + panelGap + sigW - 6, y);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(80, 80, 90);
+    doc.text('Assinatura do Responsável', margin + sigW / 2, y + 4, { align: 'center' });
+    doc.text('Assinatura do Cliente', margin + sigW + panelGap + sigW / 2, y + 4, { align: 'center' });
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(40, 40, 50);
+    doc.text(companyName, margin + sigW / 2, y + 9, { align: 'center' });
+    doc.text(selectedClient?.name || '—', margin + sigW + panelGap + sigW / 2, y + 9, { align: 'center' });
+
+    // ---------- 8. FOOTER BAND ----------
+    doc.setFillColor(primary[0], primary[1], primary[2]);
+    doc.rect(0, pageH - footerH, pageW, footerH, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    const footerContacts = [profile?.company_phone, profile?.company_email, profile?.company_full_address]
+      .filter(Boolean)
+      .join('   •   ');
+    if (footerContacts) {
+      doc.text(footerContacts, pageW / 2, pageH - footerH + 7, { align: 'center' });
+    }
+    doc.setFont('helvetica', 'bold');
+    doc.text('Obrigado pela preferência!', pageW / 2, pageH - footerH + 13, { align: 'center' });
 
     doc.save(`orcamento-ORC-${quoteNumber || 'novo'}.pdf`);
   };

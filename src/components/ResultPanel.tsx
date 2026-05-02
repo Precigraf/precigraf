@@ -32,6 +32,7 @@ interface ResultPanelProps {
     equipment: number;
     rent: number;
     otherCosts: number;
+    categoryId?: string | null;
   };
   onSaved?: () => void;
   onApplySuggestedMargin?: (margin: number) => void;
@@ -283,6 +284,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
             equipment: saveData.equipment,
             rent: saveData.rent,
             otherCosts: saveData.otherCosts,
+            categoryId: saveData.categoryId ?? null,
             profitMargin,
             fixedProfit,
             productionCost,
