@@ -310,11 +310,18 @@ const OrcamentoEditor: React.FC = () => {
         if (item.product_id) {
           const product = products.find(p => p.id === item.product_id);
           if (product) {
-            // Check price_tiers for cost at this quantity
             const tiers = Array.isArray(product.price_tiers) ? (product.price_tiers as any[]) : [];
-            const matchingTier = tiers.find((t: any) => t.quantity === item.quantity);
-            const costPerUnit = matchingTier?.cost ? matchingTier.cost / item.quantity : product.cost / Math.max(1, product.default_quantity);
-            orderTotalCost += costPerUnit * item.quantity;
+            const matchingTier = tiers.find((t: any) => Number(t.quantity) === Number(item.quantity)) || tiers[0];
+            let perUnit = 0;
+            if (matchingTier) {
+              const cp = matchingTier.cost_production != null ? Number(matchingTier.cost_production) : Number(matchingTier.cost ?? 0);
+              const co = matchingTier.cost_operational != null ? Number(matchingTier.cost_operational) : 0;
+              const tierQty = Math.max(1, Number(matchingTier.quantity) || 1);
+              perUnit = (cp + co) / tierQty;
+            } else {
+              perUnit = product.cost / Math.max(1, product.default_quantity);
+            }
+            orderTotalCost += perUnit * item.quantity;
           }
         }
       }
