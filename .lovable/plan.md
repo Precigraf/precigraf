@@ -1,119 +1,73 @@
-## Plan
-
-Five independent changes across landing, calculator, products, quotes PDF and financial dashboard.
-
----
-
-### 1. Smart Suggestion card — fix overflow & responsiveness (`src/components/landing/HeroMockup.tsx`)
-
-Rebuild the right-side result card so nothing clips at any width:
-
-- Root card: `min-w-0`, `w-full`, remove `whitespace-nowrap` on price; rely on fluid scaling instead.
-- Use `clamp()` driven by container queries (Tailwind `@container`) so font-size adapts to the card width, not viewport. Add `@container` to the card and `text-[clamp(1.5rem,9cqw,2.5rem)]` for the price.
-- Replace `truncate` on Margem/Lucro values with fluid sizing `text-[clamp(0.95rem,4.5cqw,1.15rem)]` + `tabular-nums` + `leading-none`. No `truncate` (it was hiding content).
-- Lower bottom-card grid to `grid-cols-2 gap-2.5`, internal padding `p-3` with consistent vertical rhythm; add a subtle icon-row + value-row layout that keeps icons small (`w-4 h-4`) so values get more space.
-- Standardize spacing rhythm: `space-y-5` between sections (badge → price block → bar → bottom cards → live indicator).
-- Increase card padding to `p-5 sm:p-6`, `rounded-2xl`, soften shadow with `shadow-[0_10px_40px_-12px_hsl(var(--foreground)/0.25)]`.
-- Ensure both lower cards use `flex flex-col justify-between` and identical heights via `items-stretch`.
-- Add `min-h-[360px]` only on `lg:` so mobile shrinks naturally.
-
-Result: price and both metric values render in full from 320px upward.
+## Goal
+Polish HeroMockup, refresh landing stats, redesign the budget PDF, split product cost into Produção/Operacional everywhere, and keep Financeiro fully in sync.
 
 ---
 
-### 2. Landing copy & stats (`src/pages/LandingPage.tsx`)
+## 1. HeroMockup — final polish (`src/components/landing/HeroMockup.tsx`)
+- Lower the price `clamp()` upper bound (e.g. `clamp(1.4rem, 7.5cqw, 2.25rem)`) and add `min-w-0` + `pr-1` to the price wrapper so the value never clips even on narrow containers.
+- Replace the bottom 2-col grid with `grid grid-cols-2` + `auto-rows-fr` and apply `text-[clamp(0.85rem,5cqw,1.05rem)]` + `truncate-none` so "Margem" and "Lucro" always render full values.
+- Increase internal padding to `p-6 sm:p-7`, raise card gap to `gap-5`, and tighten vertical rhythm: `space-y-5` between badge / price / bar / metric grid / live indicator.
+- Add `text-balance` to labels and ensure tabular-nums on every number.
+- No logic change — single-source-of-truth math stays.
 
-- Stats grid: replace items with `+189 usuários ativos`, `1753 cálculos feitos`, `5/5 avaliação média`, keep `99.9% disponibilidade`.
-- Remove the `Feito para gráficas brasileiras` Badge above the H1 in the hero.
+## 2. Landing stats (`src/pages/LandingPage.tsx`)
+Update array values to:
+```
++100 usuários ativos
+234 cálculos feitos
+5/5 avaliação média
+```
 
----
+## 3. PDF do Orçamento (`src/pages/OrcamentoEditor.tsx → handleExportPDF`)
+Rebuild the layout following the user spec:
+1. **Header** — white background, company name bold (primary color), tagline, separator line, contact column (CNPJ, phone, email, address) on the left, logo image on the right.
+2. **Identificação** — primary-tinted rounded badge `ORÇAMENTO Nº ###` left; data emissão / validade right.
+3. **Cliente** — small "CLIENTE" label + name.
+4. **Itens** — autoTable with primary-color header (Descrição / Qtd / Unitário / Total), zebra rows, bottom border.
+5. **Totais** — right-aligned Subtotal/Desconto/Frete + filled primary box for Total.
+6. **Painéis (lado a lado)** — left "Prazo de entrega" / right "Formas de pagamento". Both pull text from the existing `notes` field by parsing labeled lines (`Prazo de produção:`, `Entrega:`, `Formas de pagamento:`); fall back to "—" when not provided.
+7. **Assinaturas** — two underline lines side-by-side: "Assinatura do Responsável" (company name) | "Assinatura do Cliente" (client name).
+8. **Footer** — light band centered with contact + thank-you message.
 
-### 3. Quote PDF redesign (`src/pages/OrcamentoEditor.tsx` → `handleExportPDF`)
+All colors use `profile.system_color`.
 
-Rebuild the function to match the requested A4 layout. Primary color comes from `profile.system_color` (fallback `#6366f1`), parsed once into RGB.
+## 4. Split product cost into Produção + Operacional
+**No DB migration needed** — store both inside the existing `price_tiers` JSONB:
+```json
+{ "quantity": 100, "price": 192.75, "cost_production": 80, "cost_operational": 35 }
+```
+Keep legacy `cost` for backward compat: write `cost = cost_production + cost_operational`.
 
-Sections, top-to-bottom:
+### 4a. ProductForm (`src/components/gestao/ProductForm.tsx`)
+- Change tier grid to 4 columns: `Quantidade | Preço de Venda (R$) | Custo de produção | Custo Operacional` + delete button.
+- State: replace `cost` with `costProduction` + `costOperational`; total cost = sum.
+- Update validation, sort, and submit payload accordingly.
 
-1. **Header band** (filled rectangle, primary color, ~38mm tall): company name (bold, white, 20pt), tagline line under name (white 70% opacity), thin white separator line, contact row (CNPJ • phone • email, 9pt). Logo aligned to the right inside the header (max 24mm box, white background rounded chip if logo has transparency).
-2. **Quote ID strip**: pill badge `ORÇAMENTO Nº ORC-XXXX` left, `Emissão dd/mm/aaaa` and `Válido até dd/mm/aaaa` right, both 9pt muted.
-3. **Client box**: light grey `#F4F4F6` rounded rectangle, label `CLIENTE` (8pt uppercase, primary color), client name 12pt bold below.
-4. **Items table** via `autoTable`: head fill = primary color, white text; columns `Descrição do Produto | Qtd | Unitário | Total`; `alternateRowStyles.fillColor = [248,248,250]`; bottom border line after table.
-5. **Totals block** right-aligned: Subtotal, Desconto (only if >0), Frete (only if >0). Then a filled rounded box with primary color background containing `TOTAL` label + value (bold, white, 14pt).
-6. **Two info panels side-by-side** (each 50% width, light grey bg, rounded): left = `PRAZO DE ENTREGA` with sub-lines `Produção: X dias úteis` and `Envio: Y dias úteis` (pulled from `notes` parsed fields or sensible defaults if absent — show placeholders only if data missing); right = `FORMAS DE PAGAMENTO` listing `PIX`, `Cartão`, `Boleto` (+ pix key if `profile.pix_key`).
-7. **Signature lines**: two horizontal rules side-by-side near bottom; left labelled `Assinatura do Responsável` with company name below, right labelled `Assinatura do Cliente` with client name below.
-8. **Footer band**: filled rectangle (primary color) at page bottom, centered contact info + `Obrigado pela preferência!` (white 9pt).
+### 4b. useProducts types (`src/hooks/useProducts.ts`)
+- Extend `PriceTier` with `cost_production?: number; cost_operational?: number`.
+- When loading legacy tiers (only `cost`), default `cost_production = cost`, `cost_operational = 0`.
 
-Pagination: if items table overflows, autoTable handles it; re-draw header/footer bands using `didDrawPage` hook.
+### 4c. SaveCalculationButton (`src/components/SaveCalculationButton.tsx`)
+- Compute `unitCostProd = (paper+ink+varnish+other_material)/qty` and `unitCostOp = (labor+energy+equipment+rent+other_op)/qty`.
+- Write `price_tiers: [{ quantity, price, cost_production: unitCostProd, cost_operational: unitCostOp }]` and `cost = unitCostProd + unitCostOp`.
 
-Helpers added inside the function:
+### 4d. Quote → Order conversion (`OrcamentoEditor.handleConvertConfirm`)
+- When summing `orderTotalCost`, use `cost_production + cost_operational` from the matching tier (fallback to legacy `cost`).
+- Persist breakdown on the order via two new derived fields stored in `orders` — **no schema change**: reuse `total_cost` (sum) and add a JSON-less approach: split is recomputed from linked `quote.items` + `products.price_tiers` in Financeiro (same approach already used). No DB change required.
 
-- `hexToRgb(hex)` for primary color.
-- `drawBand(y, height, rgb)` for header/footer rectangles.
-- `drawPanel(x, y, w, h, title, lines)` for side panels.
+## 5. Financeiro (`src/pages/Financeiro.tsx`)
+- Replace the heuristic operational-ratio block with a deterministic computation:
+  - For each order, read its quote items, map to product tiers, sum `cost_production` and `cost_operational` directly.
+  - KPIs become exact: Faturamento, Custo de produção, Custos operacionais, Lucro líquido, A receber.
+- Variações de preço table: source rows from `products.price_tiers` (Quantidade | Custo de produção | Custo operacional | Preço de venda) — fully aligned with what the user filled in ProductForm/Calculator.
 
-The two info-panel data points (delivery time, payment methods) get optional state fields persisted later if needed; for now they read from existing `notes` (no schema change) and fall back to defaults.
+## Files touched
+- `src/components/landing/HeroMockup.tsx`
+- `src/pages/LandingPage.tsx`
+- `src/pages/OrcamentoEditor.tsx` (PDF + cost reading on convert)
+- `src/components/gestao/ProductForm.tsx`
+- `src/hooks/useProducts.ts`
+- `src/components/SaveCalculationButton.tsx`
+- `src/pages/Financeiro.tsx`
 
----
-
-### 4. Calculator → product creation + category link
-
-Goal: when saving a calculation, also create/update a Product entry tied to a category.
-
-**Schema migration** (new file): no new tables. Add nullable `category_id uuid` and nullable `product_id uuid` columns to `public.calculations`. No FK constraint added (matches project convention; integrity handled in app).
-
-**`src/components/CostCalculator.tsx`**:
-- Add a `categoryId` state and a `<Select>` (using existing `useCategories` hook) rendered next to the product name input.
-- Pass `categoryId` into the `saveData` payload of `<ResultPanel>`.
-
-**`src/components/ResultPanel.tsx`**:
-- Extend `saveData` interface with `categoryId?: string | null`.
-- Forward to `<SaveCalculationButton>`.
-
-**`src/components/SaveCalculationButton.tsx`**:
-- Extend `CalculationData` with `categoryId?: string | null`.
-- After successfully inserting/updating the calculation, call `useProducts().createProduct` (or update if a `product_id` already exists on this calculation) with:
-  - `name = data.productName`
-  - `category_id = data.categoryId ?? null`
-  - `cost = data.productionCost / data.quantity`
-  - `unit_price = data.unitPrice`
-  - `default_quantity = data.quantity`
-  - `price_tiers = [{ quantity, cost, price: unitPrice }]`
-  - `is_active = true`
-- Persist returned `product_id` back onto the calculation row.
-- Toast: `Cálculo salvo e produto cadastrado`.
-
-Edge case: editing an existing calculation updates the linked product instead of creating a duplicate.
-
----
-
-### 5. Financeiro — new KPIs and price-variation table (`src/pages/Financeiro.tsx`)
-
-KPIs (5 cards in `grid-cols-2 lg:grid-cols-5`):
-
-- **Faturamento** = Σ `total_revenue`
-- **Custo de produção** = Σ `total_cost` (kept as-is)
-- **Custos operacionais** = Σ operational portion derived from each order's underlying calculation/product. Resolved by joining `quotes.calculation_id → calculations` and summing `labor_cost + energy_cost + equipment_cost + rent_cost + other_operational_cost` × order share. Fetched via a new memo that reads calculations via existing supabase client.
-- **Lucro líquido** = Faturamento − (Custo de produção + Custos operacionais)
-- **A receber** = Σ `amount_pending`
-
-**Price variation table** (replaces current orders table at the bottom):
-
-Columns: `Quantidade | Custo de produção | Custo operacional | Preço de venda`.
-
-Source: query `calculations` for the current user (already RLS-scoped), one row per calculation, and additionally include each tier from any linked product's `price_tiers`. Numbers feed the same formulas above so KPIs and table stay in sync (memoized from one fetch).
-
-Add a small `useMemo` data layer that:
-1. Loads orders (existing).
-2. Loads calculations linked to those orders' quotes for cost breakdown.
-3. Produces both KPI sums and the variation rows.
-
-No edge function needed.
-
----
-
-### Technical notes
-
-- New migration: `ALTER TABLE public.calculations ADD COLUMN category_id uuid, ADD COLUMN product_id uuid;`
-- Files touched: `HeroMockup.tsx`, `LandingPage.tsx`, `OrcamentoEditor.tsx`, `CostCalculator.tsx`, `ResultPanel.tsx`, `SaveCalculationButton.tsx`, `Financeiro.tsx`, plus one SQL migration.
-- No new dependencies; reuses `jspdf`, `jspdf-autotable`, `useCategories`, `useProducts`, `useOrders`.
-- Tailwind container queries: enabled by default in v3.4 via `@tailwindcss/container-queries`. If plugin missing, fall back to viewport-based `clamp()` using `cqw` replaced with `vw` capped through wrapper.
+No DB migration. All changes are backwards-compatible with existing rows.
