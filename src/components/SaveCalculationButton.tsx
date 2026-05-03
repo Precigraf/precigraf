@@ -61,14 +61,25 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
     calculationId: string,
     existingProductId: string | null
   ): Promise<string | null> => {
-    const unitCost = data.quantity > 0 ? data.productionCost / data.quantity : 0;
+    const qty = data.quantity > 0 ? data.quantity : 1;
+    const matCost = (data.paper || 0) + (data.ink || 0) + (data.varnish || 0) + (data.otherMaterials || 0);
+    const opCost = (data.labor || 0) + (data.energy || 0) + (data.equipment || 0) + (data.rent || 0) + (data.otherCosts || 0);
+    const unitCostProd = matCost / qty;
+    const unitCostOp = opCost / qty;
+    const unitCost = unitCostProd + unitCostOp;
     const productPayload = {
       name: data.productName.trim(),
       category_id: data.categoryId ?? null,
       cost: unitCost,
       unit_price: data.unitPrice,
       default_quantity: data.quantity,
-      price_tiers: [{ quantity: data.quantity, cost: unitCost, price: data.unitPrice }] as any,
+      price_tiers: [{
+        quantity: data.quantity,
+        cost: unitCost,
+        cost_production: unitCostProd,
+        cost_operational: unitCostOp,
+        price: data.unitPrice,
+      }] as any,
       is_active: true,
     };
 
