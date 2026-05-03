@@ -383,7 +383,6 @@ const OrcamentoEditor: React.FC = () => {
   };
 
   const handleExportPDF = async () => {
-    // ---------- helpers ----------
     const hexToRgb = (hex: string): [number, number, number] => {
       const h = hex.replace('#', '');
       const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
@@ -391,8 +390,8 @@ const OrcamentoEditor: React.FC = () => {
       return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
     };
     const primary = hexToRgb(profile?.system_color || '#6366f1');
-    const lightGray: [number, number, number] = [244, 244, 246];
     const altRow: [number, number, number] = [248, 248, 250];
+    const softBg: [number, number, number] = [246, 247, 250];
 
     const doc = new jsPDF('p', 'mm', 'a4');
     const pageW = doc.internal.pageSize.getWidth();
@@ -400,13 +399,13 @@ const OrcamentoEditor: React.FC = () => {
     const margin = 14;
     const contentW = pageW - margin * 2;
 
-    // ---------- 1. HEADER BAND ----------
-    const headerH = 40;
-    doc.setFillColor(primary[0], primary[1], primary[2]);
-    doc.rect(0, 0, pageW, headerH, 'F');
+    // ---------- 1. HEADER (white) ----------
+    let y = margin + 2;
+    const companyName = profile?.company_name || profile?.store_name || 'Sua Empresa';
 
-    // logo (right side, white chip if loaded)
-    let logoLoaded = false;
+    // Try to load logo (right side)
+    let logoData: string | null = null;
+    let logoRatio = 1;
     if (profile?.logo_url) {
       try {
         const img = new Image();
@@ -420,49 +419,60 @@ const OrcamentoEditor: React.FC = () => {
         canvas.width = img.width;
         canvas.height = img.height;
         canvas.getContext('2d')!.drawImage(img, 0, 0);
-        const logoData = canvas.toDataURL('image/png');
-        // white rounded chip
-        doc.setFillColor(255, 255, 255);
-        doc.roundedRect(pageW - margin - 26, 7, 26, 26, 3, 3, 'F');
-        doc.addImage(logoData, 'PNG', pageW - margin - 24, 9, 22, 22);
-        logoLoaded = true;
+        logoData = canvas.toDataURL('image/png');
+        logoRatio = img.width / Math.max(1, img.height);
       } catch {
         // ignore
       }
     }
 
-    const headerLeftX = margin;
-    const headerTextMaxW = contentW - (logoLoaded ? 32 : 0);
+    const logoH = 22;
+    const logoW = Math.min(40, logoH * logoRatio);
+    const logoX = pageW - margin - logoW;
+    const logoY = y;
 
-    doc.setTextColor(255, 255, 255);
+    if (logoData) {
+      doc.addImage(logoData, 'PNG', logoX, logoY, logoW, logoH);
+    }
+
+    // Company name + tagline (left)
+    const headerLeftMaxW = contentW - (logoData ? logoW + 6 : 0);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(18);
-    const companyName = profile?.company_name || profile?.store_name || 'Sua Empresa';
-    doc.text(companyName, headerLeftX, 14);
+    doc.setTextColor(primary[0], primary[1], primary[2]);
+    doc.text(companyName, margin, y + 6);
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.setTextColor(255, 255, 255);
-    doc.text('Soluções gráficas com qualidade e prazo', headerLeftX, 19);
+    doc.setTextColor(120, 120, 130);
+    doc.text('Soluções gráficas com qualidade e prazo', margin, y + 11);
 
     // separator
-    doc.setDrawColor(255, 255, 255);
-    doc.setLineWidth(0.2);
-    doc.line(headerLeftX, 23, headerLeftX + Math.min(headerTextMaxW, 120), 23);
+    y += 15;
+    doc.setDrawColor(primary[0], primary[1], primary[2]);
+    doc.setLineWidth(0.4);
+    doc.line(margin, y, pageW - margin, y);
+    y += 4;
 
-    // contact row
+    // contact column (left, multiline)
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    const contacts = [
-      profile?.company_document ? `CNPJ: ${profile.company_document}` : '',
-      profile?.company_phone || '',
-      profile?.company_email || '',
-    ].filter(Boolean);
-    doc.text(contacts.join('   •   '), headerLeftX, 28);
-
-    let y = headerH + 8;
+    doc.setTextColor(80, 80, 90);
+    const contactLines: string[] = [];
+    if (profile?.company_document) contactLines.push(`CNPJ: ${profile.company_document}`);
+    if (profile?.company_phone) contactLines.push(`Telefone: ${profile.company_phone}`);
+    if (profile?.company_email) contactLines.push(`E-mail: ${profile.company_email}`);
+    const addr = profile?.company_full_address || [profile?.company_address, profile?.company_address_number, profile?.company_neighborhood, profile?.company_city, profile?.company_state]
+      .filter(Boolean).join(', ');
+    if (addr) contactLines.push(`Endereço: ${addr}`);
+    contactLines.forEach((ln, i) => {
+      const wrapped = doc.splitTextToSize(ln, headerLeftMaxW);
+      doc.text(wrapped, margin, y + 4 + i * 4.5);
+    });
+    y = Math.max(y + contactLines.length * 4.5 + 4, logoY + logoH + 4);
+    y += 4;
 
     // ---------- 2. QUOTE ID STRIP ----------
-    // pill badge left
     const badgeText = `ORÇAMENTO Nº ORC-${quoteNumber || '—'}`;
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
@@ -472,7 +482,6 @@ const OrcamentoEditor: React.FC = () => {
     doc.setTextColor(255, 255, 255);
     doc.text(badgeText, margin + 4, y + 1);
 
-    // dates right
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(110, 110, 120);
@@ -483,19 +492,16 @@ const OrcamentoEditor: React.FC = () => {
 
     y += 11;
 
-    // ---------- 3. CLIENT BOX ----------
-    const clientBoxH = 16;
-    doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
-    doc.roundedRect(margin, y, contentW, clientBoxH, 2, 2, 'F');
+    // ---------- 3. CLIENT ----------
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(7.5);
     doc.setTextColor(primary[0], primary[1], primary[2]);
-    doc.text('CLIENTE', margin + 4, y + 5.5);
+    doc.text('CLIENTE', margin, y);
+    doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.setTextColor(30, 30, 40);
-    doc.text(selectedClient?.name || '—', margin + 4, y + 12);
-
-    y += clientBoxH + 6;
+    doc.text(selectedClient?.name || '—', margin, y + 6);
+    y += 12;
 
     // ---------- 4. ITEMS TABLE ----------
     const tableBody = items.map(i => [
@@ -533,7 +539,6 @@ const OrcamentoEditor: React.FC = () => {
     });
 
     y = (doc as any).lastAutoTable.finalY;
-    // bottom border
     doc.setDrawColor(primary[0], primary[1], primary[2]);
     doc.setLineWidth(0.3);
     doc.line(margin, y, pageW - margin, y);
@@ -565,7 +570,6 @@ const OrcamentoEditor: React.FC = () => {
       y += 5.5;
     }
 
-    // Total chip
     y += 1;
     const totalBoxW = 70;
     const totalBoxH = 12;
@@ -580,13 +584,30 @@ const OrcamentoEditor: React.FC = () => {
     doc.text(formatCurrency(total), totalBoxX + totalBoxW - 4, y + 7.8, { align: 'right' });
     y += totalBoxH + 10;
 
-    // ---------- 6. INFO PANELS ----------
+    // ---------- 6. INFO PANELS (parse from notes) ----------
+    const parseNoteField = (labels: string[]): string => {
+      if (!notes) return '';
+      const lines = notes.split(/\r?\n/);
+      for (const ln of lines) {
+        for (const lbl of labels) {
+          const re = new RegExp(`^\\s*${lbl}\\s*[:：-]\\s*(.+)$`, 'i');
+          const m = ln.match(re);
+          if (m) return m[1].trim();
+        }
+      }
+      return '';
+    };
+
+    const prazoProducao = parseNoteField(['Prazo de produção', 'Prazo de producao', 'Produção', 'Producao']);
+    const prazoEntrega = parseNoteField(['Entrega', 'Prazo de entrega', 'Envio']);
+    const formasPagamento = parseNoteField(['Formas de pagamento', 'Pagamento', 'Forma de pagamento']);
+
     const panelGap = 4;
     const panelW = (contentW - panelGap) / 2;
     const panelH = 30;
 
     const drawPanel = (x: number, title: string, lines: string[]) => {
-      doc.setFillColor(lightGray[0], lightGray[1], lightGray[2]);
+      doc.setFillColor(softBg[0], softBg[1], softBg[2]);
       doc.roundedRect(x, y, panelW, panelH, 2.5, 2.5, 'F');
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(7.5);
@@ -595,25 +616,27 @@ const OrcamentoEditor: React.FC = () => {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(50, 50, 60);
-      lines.forEach((ln, i) => doc.text(ln, x + 4, y + 11 + i * 5));
+      lines.forEach((ln, i) => {
+        const wrapped = doc.splitTextToSize(ln, panelW - 8);
+        doc.text(wrapped[0] || '', x + 4, y + 11 + i * 5);
+      });
     };
 
     drawPanel(margin, 'PRAZO DE ENTREGA', [
-      'Produção: 5 a 7 dias úteis',
-      'Envio: 2 a 4 dias úteis',
+      prazoProducao ? `Produção: ${prazoProducao}` : 'Produção: —',
+      prazoEntrega ? `Envio: ${prazoEntrega}` : 'Envio: —',
     ]);
 
-    const paymentLines = ['PIX', 'Cartão de crédito', 'Boleto bancário'];
-    if (profile?.pix_key) paymentLines.push(`PIX: ${profile.pix_key}`);
+    const paymentLines = formasPagamento
+      ? formasPagamento.split(/[,;|]/).map(s => s.trim()).filter(Boolean)
+      : ['—'];
     drawPanel(margin + panelW + panelGap, 'FORMAS DE PAGAMENTO', paymentLines.slice(0, 4));
 
     y += panelH + 14;
 
     // ---------- 7. SIGNATURES ----------
-    // make sure signatures fit before footer
     const footerH = 18;
     if (y > pageH - footerH - 30) {
-      // push signatures up if not enough space — keep simple
       y = pageH - footerH - 28;
     }
     const sigW = (contentW - panelGap) / 2;
@@ -634,10 +657,10 @@ const OrcamentoEditor: React.FC = () => {
     doc.text(companyName, margin + sigW / 2, y + 9, { align: 'center' });
     doc.text(selectedClient?.name || '—', margin + sigW + panelGap + sigW / 2, y + 9, { align: 'center' });
 
-    // ---------- 8. FOOTER BAND ----------
-    doc.setFillColor(primary[0], primary[1], primary[2]);
+    // ---------- 8. FOOTER ----------
+    doc.setFillColor(softBg[0], softBg[1], softBg[2]);
     doc.rect(0, pageH - footerH, pageW, footerH, 'F');
-    doc.setTextColor(255, 255, 255);
+    doc.setTextColor(80, 80, 90);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     const footerContacts = [profile?.company_phone, profile?.company_email, profile?.company_full_address]
@@ -647,6 +670,7 @@ const OrcamentoEditor: React.FC = () => {
       doc.text(footerContacts, pageW / 2, pageH - footerH + 7, { align: 'center' });
     }
     doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primary[0], primary[1], primary[2]);
     doc.text('Obrigado pela preferência!', pageW / 2, pageH - footerH + 13, { align: 'center' });
 
     doc.save(`orcamento-ORC-${quoteNumber || 'novo'}.pdf`);
