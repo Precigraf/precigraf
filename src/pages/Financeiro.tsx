@@ -1,48 +1,21 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DollarSign, TrendingDown, TrendingUp, Clock, Factory } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/components/AppLayout';
 import PeriodFilter, { type PeriodKey, getDateRange } from '@/components/PeriodFilter';
 import { useOrders } from '@/hooks/useOrders';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useProducts } from '@/hooks/useProducts';
 
 const formatCurrency = (v: number) =>
   (Number.isFinite(v) ? v : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-interface CalcRow {
-  id: string;
-  product_name: string;
-  lot_quantity: number;
-  total_cost: number;
-  sale_price: number;
-  labor_cost: number;
-  energy_cost: number;
-  equipment_cost: number;
-  rent_cost: number;
-  other_operational_cost: number;
-  created_at: string;
-}
-
 const Financeiro: React.FC = () => {
-  const { user } = useAuth();
   const { orders } = useOrders();
+  const { products } = useProducts();
   const [period, setPeriod] = useState<PeriodKey>('current_month');
   const [customStart, setCustomStart] = useState<Date | undefined>();
   const [customEnd, setCustomEnd] = useState<Date | undefined>();
-  const [calcs, setCalcs] = useState<CalcRow[]>([]);
-
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const { data } = await supabase
-        .from('calculations')
-        .select('id, product_name, lot_quantity, total_cost, sale_price, labor_cost, energy_cost, equipment_cost, rent_cost, other_operational_cost, created_at')
-        .order('created_at', { ascending: false });
-      setCalcs((data ?? []) as CalcRow[]);
-    })();
-  }, [user]);
 
   const filteredOrders = useMemo(() => {
     const { start, end } = getDateRange(period, customStart, customEnd);
@@ -53,50 +26,78 @@ const Financeiro: React.FC = () => {
     });
   }, [orders, period, customStart, customEnd]);
 
-  // Operational ratio per calc (from saved calc breakdown)
-  const calcOpRatio = useMemo(() => {
-    const map = new Map<string, number>();
-    calcs.forEach(c => {
-      const op = (c.labor_cost || 0) + (c.energy_cost || 0) + (c.equipment_cost || 0) + (c.rent_cost || 0) + (c.other_operational_cost || 0);
-      const ratio = c.total_cost > 0 ? Math.min(1, op / c.total_cost) : 0;
-      map.set(c.id, ratio);
-    });
-    return map;
-  }, [calcs]);
+  // Deterministic prod/op breakdown using product price_tiers
+  const breakdown = useMemo(() => {
+    let revenue = 0;
+    let prod = 0;
+    let op = 0;
+    let pending = 0;
 
-  const totalFaturamento = filteredOrders.reduce((s, o) => s + (Number((o as any).total_revenue) || 0), 0);
-  const totalCustoTotal = filteredOrders.reduce((s, o) => s + (Number((o as any).total_cost) || 0), 0);
-  // Approximate operational portion using average ratio across calcs (fallback 0.25)
-  const avgOpRatio = calcs.length
-    ? Array.from(calcOpRatio.values()).reduce((a, b) => a + b, 0) / Math.max(1, calcOpRatio.size)
-    : 0.25;
-  const totalCustosOperacionais = totalCustoTotal * avgOpRatio;
-  const totalCustoProducao = Math.max(0, totalCustoTotal - totalCustosOperacionais);
-  const totalLucro = totalFaturamento - totalCustoTotal;
-  const totalAReceber = filteredOrders.reduce((s, o) => s + (Number((o as any).amount_pending) || 0), 0);
+    const productMap = new Map(products.map(p => [p.id, p]));
+
+    for (const o of filteredOrders) {
+      revenue += Number((o as any).total_revenue) || 0;
+      pending += Number((o as any).amount_pending) || 0;
+
+      const items: Array<{ product_id?: string | null; quantity: number; unit_value: number; name?: string }> =
+        Array.isArray(o.quotes?.items) ? (o.quotes!.items as any[]) : [];
+      let orderProd = 0;
+      let orderOp = 0;
+      for (const it of items) {
+        const qty = Number(it.quantity) || 0;
+        if (!qty) continue;
+        const p = it.product_id ? productMap.get(it.product_id) : null;
+        if (!p) continue;
+        const tiers = Array.isArray(p.price_tiers) ? (p.price_tiers as any[]) : [];
+        const tier = tiers.find(t => Number(t.quantity) === qty) || tiers[0];
+        if (!tier) continue;
+        const tierQty = Math.max(1, Number(tier.quantity) || 1);
+        const cp = tier.cost_production != null ? Number(tier.cost_production) : Number(tier.cost ?? 0);
+        const co = tier.cost_operational != null ? Number(tier.cost_operational) : 0;
+        orderProd += (cp / tierQty) * qty;
+        orderOp += (co / tierQty) * qty;
+      }
+
+      // Fallback: if order had no derivable breakdown but a total_cost, attribute to production
+      if (orderProd === 0 && orderOp === 0) {
+        orderProd = Number((o as any).total_cost) || 0;
+      }
+      prod += orderProd;
+      op += orderOp;
+    }
+
+    const profit = revenue - prod - op;
+    return { revenue, prod, op, profit, pending };
+  }, [filteredOrders, products]);
 
   const kpis = [
-    { label: 'Faturamento', value: formatCurrency(totalFaturamento), icon: DollarSign, color: 'text-green-500' },
-    { label: 'Custo de produção', value: formatCurrency(totalCustoProducao), icon: Factory, color: 'text-orange-500' },
-    { label: 'Custos operacionais', value: formatCurrency(totalCustosOperacionais), icon: TrendingDown, color: 'text-red-500' },
-    { label: 'Lucro líquido', value: formatCurrency(totalLucro), icon: TrendingUp, color: totalLucro >= 0 ? 'text-emerald-500' : 'text-red-500' },
-    { label: 'A receber', value: formatCurrency(totalAReceber), icon: Clock, color: 'text-yellow-500' },
+    { label: 'Faturamento', value: formatCurrency(breakdown.revenue), icon: DollarSign, color: 'text-green-500' },
+    { label: 'Custo de produção', value: formatCurrency(breakdown.prod), icon: Factory, color: 'text-orange-500' },
+    { label: 'Custos operacionais', value: formatCurrency(breakdown.op), icon: TrendingDown, color: 'text-red-500' },
+    { label: 'Lucro líquido', value: formatCurrency(breakdown.profit), icon: TrendingUp, color: breakdown.profit >= 0 ? 'text-emerald-500' : 'text-red-500' },
+    { label: 'A receber', value: formatCurrency(breakdown.pending), icon: Clock, color: 'text-yellow-500' },
   ];
 
+  // Variações de preço — derived from product tiers (single source of truth)
   const priceVariationRows = useMemo(() => {
-    return calcs.map(c => {
-      const op = (c.labor_cost || 0) + (c.energy_cost || 0) + (c.equipment_cost || 0) + (c.rent_cost || 0) + (c.other_operational_cost || 0);
-      const prod = Math.max(0, (c.total_cost || 0) - op);
-      return {
-        id: c.id,
-        name: c.product_name,
-        quantity: c.lot_quantity,
-        production: prod,
-        operational: op,
-        salePrice: c.sale_price,
-      };
+    const rows: Array<{ id: string; name: string; quantity: number; production: number; operational: number; salePrice: number }> = [];
+    products.forEach(p => {
+      const tiers = Array.isArray(p.price_tiers) ? p.price_tiers : [];
+      tiers.forEach((t: any, idx: number) => {
+        const cp = t.cost_production != null ? Number(t.cost_production) : Number(t.cost ?? 0);
+        const co = t.cost_operational != null ? Number(t.cost_operational) : 0;
+        rows.push({
+          id: `${p.id}-${idx}`,
+          name: p.name,
+          quantity: Number(t.quantity) || 0,
+          production: cp,
+          operational: co,
+          salePrice: Number(t.price) || 0,
+        });
+      });
     });
-  }, [calcs]);
+    return rows;
+  }, [products]);
 
   return (
     <AppLayout>
@@ -104,7 +105,7 @@ const Financeiro: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 sm:mb-6">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Financeiro</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">Visão consolidada dos pedidos e cálculos</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">Visão consolidada dos pedidos e variações de preço</p>
           </div>
           <PeriodFilter
             value={period}
@@ -134,7 +135,7 @@ const Financeiro: React.FC = () => {
 
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-sm sm:text-base font-semibold text-foreground">Variações de preço</h2>
-          <p className="text-xs text-muted-foreground">{priceVariationRows.length} cálculos</p>
+          <p className="text-xs text-muted-foreground">{priceVariationRows.length} variações</p>
         </div>
         <Card className="bg-card border-border overflow-hidden">
           <div className="overflow-x-auto">
@@ -152,7 +153,7 @@ const Financeiro: React.FC = () => {
                 {priceVariationRows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      Nenhum cálculo encontrado.
+                      Nenhuma variação cadastrada.
                     </TableCell>
                   </TableRow>
                 ) : priceVariationRows.map(r => (

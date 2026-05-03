@@ -23,10 +23,11 @@ interface TierRow {
   id: string;
   quantity: string;
   price: string;
-  cost: string;
+  costProduction: string;
+  costOperational: string;
 }
 
-const newRow = (): TierRow => ({ id: crypto.randomUUID(), quantity: '', price: '', cost: '' });
+const newRow = (): TierRow => ({ id: crypto.randomUUID(), quantity: '', price: '', costProduction: '', costOperational: '' });
 
 const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit, initialData, isLoading }) => {
   const { categories } = useCategories();
@@ -57,18 +58,24 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
 
       const existing = Array.isArray(initialData.price_tiers) ? initialData.price_tiers : [];
       if (existing.length > 0) {
-        setTiers(existing.map((t) => ({
-          id: crypto.randomUUID(),
-          quantity: String(t.quantity ?? ''),
-          price: String(t.price ?? ''),
-          cost: String(t.cost ?? ''),
-        })));
+        setTiers(existing.map((t: any) => {
+          const cp = t.cost_production != null ? Number(t.cost_production) : Number(t.cost ?? 0);
+          const co = t.cost_operational != null ? Number(t.cost_operational) : 0;
+          return {
+            id: crypto.randomUUID(),
+            quantity: String(t.quantity ?? ''),
+            price: String(t.price ?? ''),
+            costProduction: String(cp || ''),
+            costOperational: String(co || ''),
+          };
+        }));
       } else {
         setTiers([{
           id: crypto.randomUUID(),
           quantity: String(initialData.default_quantity ?? ''),
           price: String(initialData.unit_price ?? ''),
-          cost: String(initialData.cost ?? ''),
+          costProduction: String(initialData.cost ?? ''),
+          costOperational: '',
         }]);
       }
     } else {
@@ -96,7 +103,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
     for (const t of tiers) {
       const q = parseInt(t.quantity);
       const p = parseFloat(t.price.replace(',', '.'));
-      const c = parseFloat(t.cost.replace(',', '.')) || 0;
+      const cp = parseFloat(t.costProduction.replace(',', '.')) || 0;
+      const co = parseFloat(t.costOperational.replace(',', '.')) || 0;
       if (!q || q < 1) {
         toast({ title: 'Quantidade inválida', description: 'Cada variação precisa ter quantidade ≥ 1.', variant: 'destructive' });
         return;
@@ -110,7 +118,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
         return;
       }
       seenQty.add(q);
-      parsed.push({ quantity: q, price: p, cost: c });
+      parsed.push({ quantity: q, price: p, cost: cp + co, cost_production: cp, cost_operational: co });
     }
 
     if (parsed.length === 0) {
@@ -118,7 +126,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       return;
     }
 
-    // Sort by quantity ascending for consistent display
     parsed.sort((a, b) => a.quantity - b.quantity);
     const first = parsed[0];
 
@@ -206,15 +213,16 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
               <Label className="text-base">Variações de Preço *</Label>
               <p className="text-xs text-muted-foreground">Cadastre diferentes faixas de quantidade com seus respectivos preços e custos. No orçamento, você poderá escolher qual usar.</p>
             </div>
-            <div className="hidden sm:grid grid-cols-[1fr_1fr_1fr_auto] gap-2 text-xs text-muted-foreground font-medium px-1">
+            <div className="hidden sm:grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 text-xs text-muted-foreground font-medium px-1">
               <div>Quantidade</div>
               <div>Preço de Venda (R$)</div>
-              <div>Custo (R$)</div>
+              <div>Custo de produção</div>
+              <div>Custo Operacional</div>
               <div className="w-9" />
             </div>
             <div className="space-y-3 sm:space-y-2">
               {tiers.map((t) => (
-                <div key={t.id} className="rounded-lg border border-border p-3 sm:p-0 sm:border-0 sm:rounded-none grid grid-cols-2 sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 items-center">
+                <div key={t.id} className="rounded-lg border border-border p-3 sm:p-0 sm:border-0 sm:rounded-none grid grid-cols-2 sm:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 items-center">
                   <div className="space-y-1 sm:space-y-0">
                     <Label className="sm:hidden text-[11px] text-muted-foreground">Quantidade</Label>
                     <Input
@@ -239,13 +247,24 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
                     />
                   </div>
                   <div className="space-y-1 sm:space-y-0">
-                    <Label className="sm:hidden text-[11px] text-muted-foreground">Custo (R$)</Label>
+                    <Label className="sm:hidden text-[11px] text-muted-foreground">Custo de produção</Label>
                     <Input
                       type="number"
                       step="0.01"
                       min="0"
-                      value={t.cost}
-                      onChange={e => updateTier(t.id, { cost: e.target.value })}
+                      value={t.costProduction}
+                      onChange={e => updateTier(t.id, { costProduction: e.target.value })}
+                      placeholder="0,00"
+                    />
+                  </div>
+                  <div className="space-y-1 sm:space-y-0">
+                    <Label className="sm:hidden text-[11px] text-muted-foreground">Custo Operacional</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={t.costOperational}
+                      onChange={e => updateTier(t.id, { costOperational: e.target.value })}
                       placeholder="0,00"
                     />
                   </div>
@@ -256,7 +275,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
                     onClick={() => removeTier(t.id)}
                     disabled={tiers.length === 1}
                     title="Remover variação"
-                    className="text-destructive hover:text-destructive disabled:opacity-30 justify-self-end"
+                    className="text-destructive hover:text-destructive disabled:opacity-30 justify-self-end col-span-2 sm:col-span-1"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
