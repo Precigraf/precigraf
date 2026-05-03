@@ -74,7 +74,14 @@ const LandingPage: React.FC = () => {
         <div className="container mx-auto px-6 sm:px-8 lg:px-12">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             <div className="text-center lg:text-left">
-              
+              <Badge
+                variant="outline"
+                className="mb-5 border-border text-muted-foreground gap-1.5"
+              >
+                <Sparkles className="w-3 h-3" />
+                Feito para gráficas brasileiras
+              </Badge>
+
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight">
                 Precifique seus serviços gráficos com a precisão que seu lucro merece
               </h1>
@@ -114,7 +121,7 @@ const LandingPage: React.FC = () => {
             {[
               { v: '+100', l: 'usuários ativos' },
               { v: '234', l: 'cálculos feitos' },
-              { v: '5/5', l: 'avaliação média' },
+              { v: '4.9/5', l: 'avaliação média' },
               { v: '99.9%', l: 'disponibilidade' },
             ].map((s) => (
               <div key={s.l}>

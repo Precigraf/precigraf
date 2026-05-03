@@ -1,73 +1,76 @@
-## Goal
-Polish HeroMockup, refresh landing stats, redesign the budget PDF, split product cost into Produção/Operacional everywhere, and keep Financeiro fully in sync.
+# Plano de Atualização da Landing Page
 
----
+## 1. Landing como rota raiz (precigraf.com.br → /lp)
 
-## 1. HeroMockup — final polish (`src/components/landing/HeroMockup.tsx`)
-- Lower the price `clamp()` upper bound (e.g. `clamp(1.4rem, 7.5cqw, 2.25rem)`) and add `min-w-0` + `pr-1` to the price wrapper so the value never clips even on narrow containers.
-- Replace the bottom 2-col grid with `grid grid-cols-2` + `auto-rows-fr` and apply `text-[clamp(0.85rem,5cqw,1.05rem)]` + `truncate-none` so "Margem" and "Lucro" always render full values.
-- Increase internal padding to `p-6 sm:p-7`, raise card gap to `gap-5`, and tighten vertical rhythm: `space-y-5` between badge / price / bar / metric grid / live indicator.
-- Add `text-balance` to labels and ensure tabular-nums on every number.
-- No logic change — single-source-of-truth math stays.
+Atualmente o domínio raiz (`/`) está protegido e redireciona usuários não logados para `/auth`. Vamos tornar a landing a página pública padrão, mantendo o app autenticado em outra rota.
 
-## 2. Landing stats (`src/pages/LandingPage.tsx`)
-Update array values to:
-```
-+100 usuários ativos
-234 cálculos feitos
-5/5 avaliação média
-```
+**Alterações em `src/App.tsx`:**
+- `/` passa a renderizar `<LandingPage />` (rota pública).
+- Criar `/app` como rota protegida que renderiza `<Index />` (a calculadora).
+- Manter `/lp` como alias da landing (para não quebrar links existentes).
 
-## 3. PDF do Orçamento (`src/pages/OrcamentoEditor.tsx → handleExportPDF`)
-Rebuild the layout following the user spec:
-1. **Header** — white background, company name bold (primary color), tagline, separator line, contact column (CNPJ, phone, email, address) on the left, logo image on the right.
-2. **Identificação** — primary-tinted rounded badge `ORÇAMENTO Nº ###` left; data emissão / validade right.
-3. **Cliente** — small "CLIENTE" label + name.
-4. **Itens** — autoTable with primary-color header (Descrição / Qtd / Unitário / Total), zebra rows, bottom border.
-5. **Totais** — right-aligned Subtotal/Desconto/Frete + filled primary box for Total.
-6. **Painéis (lado a lado)** — left "Prazo de entrega" / right "Formas de pagamento". Both pull text from the existing `notes` field by parsing labeled lines (`Prazo de produção:`, `Entrega:`, `Formas de pagamento:`); fall back to "—" when not provided.
-7. **Assinaturas** — two underline lines side-by-side: "Assinatura do Responsável" (company name) | "Assinatura do Cliente" (client name).
-8. **Footer** — light band centered with contact + thank-you message.
+**Ajustes de navegação interna:**
+- `src/components/landing/LandingNav.tsx`: quando o usuário estiver logado, "Ir para o app" aponta para `/app` em vez de `/`.
+- `src/pages/LandingPage.tsx`: `ctaPrimary` para usuário logado vira `/app`.
+- `src/components/Header.tsx`: link do logo e item "Calculadora" passam a apontar para `/app`.
+- `src/components/AppSidebar.tsx`: ajustar item "Calculadora"/Dashboard para `/app` (verificar e atualizar somente se apontar para `/`).
+- `src/pages/Auth.tsx` e `src/pages/Cadastro.tsx`: após login/cadastro bem-sucedido, redirecionar para `/app` (em vez de `/`).
+- `src/components/ProtectedRoute.tsx`: quando não logado, redirecionar para `/` (landing) em vez de `/auth`, para manter o funil de marketing — exceto se a intenção do usuário era a área logada (nesse caso `/auth` continua sendo destino do botão "Entrar").
 
-All colors use `profile.system_color`.
+Resultado: ao acessar precigraf.com.br, o visitante vê a landing; clicar nos CTAs leva para `/cadastro` ou `/auth`.
 
-## 4. Split product cost into Produção + Operacional
-**No DB migration needed** — store both inside the existing `price_tiers` JSONB:
-```json
-{ "quantity": 100, "price": 192.75, "cost_production": 80, "cost_operational": 35 }
-```
-Keep legacy `cost` for backward compat: write `cost = cost_production + cost_operational`.
+## 2. Botão flutuante de WhatsApp
 
-### 4a. ProductForm (`src/components/gestao/ProductForm.tsx`)
-- Change tier grid to 4 columns: `Quantidade | Preço de Venda (R$) | Custo de produção | Custo Operacional` + delete button.
-- State: replace `cost` with `costProduction` + `costOperational`; total cost = sum.
-- Update validation, sort, and submit payload accordingly.
+Criar `src/components/landing/WhatsAppFloat.tsx`:
+- Botão fixo `bottom-6 right-6` (z-50), redondo, verde WhatsApp (`bg-[#25D366]`), sombra forte, hover scale.
+- Ícone do `WhatsAppIcon` já existente em `src/components/WhatsAppIcon.tsx`.
+- Link: `https://wa.me/5574981209228?text=Olá! Tenho interesse no PreciGraf.` com `target="_blank"` e `rel="noopener noreferrer"`.
+- Tooltip/label opcional "Fale conosco" visível em hover (desktop).
+- Pequeno pulso animado (`animate-ping` em ring atrás) para chamar atenção sem poluir.
+- Acessibilidade: `aria-label="Falar no WhatsApp"`.
 
-### 4b. useProducts types (`src/hooks/useProducts.ts`)
-- Extend `PriceTier` with `cost_production?: number; cost_operational?: number`.
-- When loading legacy tiers (only `cost`), default `cost_production = cost`, `cost_operational = 0`.
+Renderizar em `src/pages/LandingPage.tsx` (apenas na landing, não no app).
 
-### 4c. SaveCalculationButton (`src/components/SaveCalculationButton.tsx`)
-- Compute `unitCostProd = (paper+ink+varnish+other_material)/qty` and `unitCostOp = (labor+energy+equipment+rent+other_op)/qty`.
-- Write `price_tiers: [{ quantity, price, cost_production: unitCostProd, cost_operational: unitCostOp }]` and `cost = unitCostProd + unitCostOp`.
+## 3. Refinar `HeroMockup` com novos dados (sacola personalizada)
 
-### 4d. Quote → Order conversion (`OrcamentoEditor.handleConvertConfirm`)
-- When summing `orderTotalCost`, use `cost_production + cost_operational` from the matching tier (fallback to legacy `cost`).
-- Persist breakdown on the order via two new derived fields stored in `orders` — **no schema change**: reuse `total_cost` (sum) and add a JSON-less approach: split is recomputed from linked `quote.items` + `products.price_tiers` in Financeiro (same approach already used). No DB change required.
+Editar `src/components/landing/HeroMockup.tsx`:
 
-## 5. Financeiro (`src/pages/Financeiro.tsx`)
-- Replace the heuristic operational-ratio block with a deterministic computation:
-  - For each order, read its quote items, map to product tiers, sum `cost_production` and `cost_operational` directly.
-  - KPIs become exact: Faturamento, Custo de produção, Custos operacionais, Lucro líquido, A receber.
-- Variações de preço table: source rows from `products.price_tiers` (Quantidade | Custo de produção | Custo operacional | Preço de venda) — fully aligned with what the user filled in ProductForm/Calculator.
+**Card de inputs (esquerda):**
+- Título: "Sacola Personalizada" — "100 unidades".
+- Linhas:
+  - Papel Offset 180g — R$ 56,80
+  - Alça — R$ 11,00
+  - Mão de obra — R$ 9,25
+  - Custos operacionais — R$ 11,60
+  - Acabamento (laminação) — R$ 27,00
+- Custo total: R$ 104,05.
 
-## Files touched
-- `src/components/landing/HeroMockup.tsx`
-- `src/pages/LandingPage.tsx`
-- `src/pages/OrcamentoEditor.tsx` (PDF + cost reading on convert)
-- `src/components/gestao/ProductForm.tsx`
-- `src/hooks/useProducts.ts`
-- `src/components/SaveCalculationButton.tsx`
-- `src/pages/Financeiro.tsx`
+**Card de resultado (direita) — versão mais profissional/atraente:**
+- Manter fundo `bg-foreground text-background`, mas adicionar:
+  - Badge superior pequeno "Sugestão inteligente" com ícone `Sparkles`.
+  - Preço em maior destaque: `text-5xl sm:text-6xl`, com linha decorativa fina abaixo.
+  - Subtítulo "com margem real de **89,60%**" (negrito no número).
+  - Mini "barra de saúde" da margem (gradiente cinza→branco) preenchida ~90% para sinal visual.
+  - Grid 2 colunas refinada:
+    - Margem: 89,60%
+    - Lucro: R$ 93,22
+  - Cada card interno com borda translúcida (`border border-background/15`) + hover sutil, ícone em círculo `bg-background/15`.
+  - Rodapé com micro-linha "Recalculado em tempo real" + ponto verde piscando (status).
+- Valores atualizados: Preço final R$ 197,27, Margem 89,60%, Lucro R$ 93,22.
 
-No DB migration. All changes are backwards-compatible with existing rows.
+Sem mudanças no contraste/identidade (segue minimalista monocromático).
+
+## Resumo de Arquivos
+
+**Criados:**
+- `src/components/landing/WhatsAppFloat.tsx`
+
+**Editados:**
+- `src/App.tsx` (rotas: `/` = landing pública, `/app` = calculadora protegida)
+- `src/pages/LandingPage.tsx` (CTA logado → `/app`, montar `WhatsAppFloat`)
+- `src/components/landing/LandingNav.tsx` (logado → `/app`)
+- `src/components/landing/HeroMockup.tsx` (novos dados + refino visual do card de resultado)
+- `src/components/Header.tsx` (logo e "Calculadora" → `/app`)
+- `src/components/AppSidebar.tsx` (ajustar item raiz se necessário)
+- `src/pages/Auth.tsx`, `src/pages/Cadastro.tsx` (redirect pós-login → `/app`)
+- `src/components/ProtectedRoute.tsx` (não logado → `/` se vier de área protegida do app, mantendo `/auth` apenas via botão "Entrar")

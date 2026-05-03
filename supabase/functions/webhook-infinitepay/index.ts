@@ -20,66 +20,10 @@ serve(async (req) => {
   }
 
   try {
-    // Webhook secret is REQUIRED — reject all requests if it's not configured
-    const webhookSecret = Deno.env.get("INFINITEPAY_WEBHOOK_SECRET");
-    if (!webhookSecret) {
-      console.error("INFINITEPAY_WEBHOOK_SECRET is not configured");
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Read raw body so we can verify HMAC over the exact bytes
-    const rawBody = await req.text();
-
-    const signatureHeader =
-      req.headers.get("x-webhook-signature") ||
-      req.headers.get("x-infinitepay-signature") ||
-      req.headers.get("x-signature") ||
-      "";
-
-    // Compute expected HMAC-SHA256 of the body using the secret
-    const key = await crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(webhookSecret),
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["sign"],
-    );
-    const sigBuf = await crypto.subtle.sign(
-      "HMAC",
-      key,
-      new TextEncoder().encode(rawBody),
-    );
-    const expected = Array.from(new Uint8Array(sigBuf))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-
-    // Strip optional "sha256=" prefix providers sometimes include
-    const provided = signatureHeader.replace(/^sha256=/i, "").toLowerCase();
-
-    // Timing-safe compare
-    const timingSafeEqual = (a: string, b: string): boolean => {
-      if (a.length !== b.length) return false;
-      let result = 0;
-      for (let i = 0; i < a.length; i++) {
-        result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-      }
-      return result === 0;
-    };
-
-    if (!provided || !timingSafeEqual(provided, expected)) {
-      console.error("Invalid webhook signature");
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
+    // Parse webhook payload from InfinitePay
     let body: Record<string, unknown>;
     try {
-      body = JSON.parse(rawBody);
+      body = await req.json();
     } catch {
       console.error("Invalid JSON body");
       return new Response(JSON.stringify({ error: "Invalid JSON" }), {
@@ -89,6 +33,22 @@ serve(async (req) => {
     }
 
     console.log("Webhook received:", JSON.stringify(body));
+
+    // Validate webhook secret if configured
+    const webhookSecret = Deno.env.get("INFINITEPAY_WEBHOOK_SECRET");
+    if (webhookSecret) {
+      const signature = req.headers.get("x-webhook-signature") || 
+                        req.headers.get("x-infinitepay-signature") ||
+                        req.headers.get("x-signature");
+      
+      if (!signature || signature !== webhookSecret) {
+        console.error("Invalid webhook signature");
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
 
     // Extract payment info from InfinitePay webhook payload
     // InfinitePay sends: id, status, amount, customer email, etc.

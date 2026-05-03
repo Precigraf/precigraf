@@ -6,9 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface PriceTier {
   quantity: number;
   price: number;
-  cost: number; // = cost_production + cost_operational (kept for backward compat)
-  cost_production?: number;
-  cost_operational?: number;
+  cost: number;
 }
 
 export interface Product {
