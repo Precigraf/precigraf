@@ -442,9 +442,21 @@ export default function Suporte() {
                           {new Date(t.updated_at || t.created_at).toLocaleString('pt-BR')}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setOpenTicket(t); }}>
-                            <MessagesSquare className="w-4 h-4 mr-1" /> Abrir
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setOpenTicket(t); }}>
+                              <MessagesSquare className="w-4 h-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Abrir</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              onClick={(e) => { e.stopPropagation(); setDeleteTarget(t); }}
+                              aria-label="Excluir ticket"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
