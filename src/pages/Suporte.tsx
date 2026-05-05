@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
-import { LifeBuoy, MessageCircle, Mail, Send, Loader2, CheckCircle2, MessagesSquare } from 'lucide-react';
+import { LifeBuoy, MessageCircle, Mail, Send, Loader2, CheckCircle2, MessagesSquare, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import AppLayout from '@/components/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
