@@ -86,11 +86,11 @@ export default function Suporte() {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from('support_tickets').insert({
+    const { error } = await supabase.from('support_tickets').insert([{
       user_id: user.id,
       email: user.email ?? '',
       ...parsed.data,
-    });
+    }]);
     setSubmitting(false);
     if (error) {
       toast.error('Não foi possível enviar. Tente novamente.');
