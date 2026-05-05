@@ -90,6 +90,23 @@ export default function Suporte() {
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Ticket | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const { error } = await supabase.from('support_tickets').delete().eq('id', deleteTarget.id);
+    setDeleting(false);
+    if (error) {
+      toast.error('Não foi possível excluir.');
+      return;
+    }
+    toast.success('Ticket excluído.');
+    setTickets((prev) => prev.filter((x) => x.id !== deleteTarget.id));
+    if (openTicket?.id === deleteTarget.id) setOpenTicket(null);
+    setDeleteTarget(null);
+  };
   const scrollEndRef = useRef<HTMLDivElement | null>(null);
 
   const loadTickets = async () => {
