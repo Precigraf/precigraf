@@ -1,8 +1,5 @@
 project_id = "udeslpcxefsjtvefqcqh"
 
-[functions.webhook-infinitepay]
-verify_jwt = false
-
 [functions.export-data]
 verify_jwt = false
 

@@ -23,13 +23,6 @@ import Marketplace from "./pages/Marketplace";
 import Producao from "./pages/Producao";
 import RastreioPedido from "./pages/RastreioPedido";
 import LandingPage from "./pages/LandingPage";
-import AdminProtectedRoute from "@/components/admin/AdminProtectedRoute";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminPlans from "./pages/admin/AdminPlans";
-import AdminEmployees from "./pages/admin/AdminEmployees";
-import AdminPermissions from "./pages/admin/AdminPermissions";
-import AdminPayments from "./pages/admin/AdminPayments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,12 +57,6 @@ const App = () => (
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
               <Route path="/producao" element={<ProtectedRoute><Producao /></ProtectedRoute>} />
               <Route path="/pagamento-confirmado" element={<ProtectedRoute><PagamentoConfirmado /></ProtectedRoute>} />
-              <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-              <Route path="/admin/usuarios" element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>} />
-              <Route path="/admin/planos" element={<AdminProtectedRoute><AdminPlans /></AdminProtectedRoute>} />
-              <Route path="/admin/funcionarios" element={<AdminProtectedRoute><AdminEmployees /></AdminProtectedRoute>} />
-              <Route path="/admin/permissoes" element={<AdminProtectedRoute><AdminPermissions /></AdminProtectedRoute>} />
-              <Route path="/admin/pagamentos" element={<AdminProtectedRoute><AdminPayments /></AdminProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>
