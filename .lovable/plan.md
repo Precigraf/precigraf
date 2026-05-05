@@ -1,34 +1,59 @@
-## Página de Contato/Suporte
+# Plano: Conversa por ticket + status em tempo real
 
-Criar uma página interna `/suporte` onde o usuário envia tickets de ajuda, vê FAQ e canais diretos (WhatsApp/Email) — sem dependência de integrações externas (Zendesk/Intercom).
+## O que será entregue
 
-### O que será criado
+1. **Conversa por ticket** — usuário e equipe trocam mensagens dentro de cada ticket aberto.
+2. **Atualização em tempo real** — novas mensagens e mudanças de status aparecem sem recarregar a página (Realtime).
+3. **Botão "Marcar como concluído"** — disponível tanto para o próprio usuário (encerrar seu ticket) quanto para admins, com checkmark visível na lista.
+4. **Email de suporte alterado** para `precigraf@gmail.com` em todos os pontos da página `/suporte`.
 
-1. **Tabela `support_tickets`** (Lovable Cloud)
-   - Campos: `user_id`, `email`, `subject`, `category` (bug | dúvida | sugestão | financeiro | outro), `priority` (baixa | média | alta), `message`, `status` (aberto | em_andamento | resolvido), `created_at`, `updated_at`.
-   - RLS: usuário só vê/insere os próprios tickets; admins (via `has_role`) podem ver todos.
-   - Trigger de `updated_at`.
+## Mudanças no banco
 
-2. **Página `src/pages/Suporte.tsx`** (rota `/suporte`, protegida)
-   - **Hero curto**: "Como podemos ajudar?"
-   - **Cards de canais diretos**: WhatsApp (+55 74 98120-9228) e Email (suporte@precigraf.com.br) — ambos clicáveis.
-   - **Formulário de ticket**: assunto, categoria, prioridade, mensagem. Validação com Zod (assunto 3–120 chars, mensagem 10–2000 chars). Toast de sucesso e reset.
-   - **Histórico "Meus tickets"**: tabela com assunto, status (badge colorido), data — somente do usuário logado.
-   - **FAQ accordion**: 5–6 perguntas frequentes sobre planos, cálculos, edição, marketplace.
+Nova tabela `support_ticket_messages`:
 
-3. **Navegação**
-   - Adicionar item "Suporte" (ícone `LifeBuoy`) no `AppSidebar`.
-   - Botão flutuante WhatsApp existente continua disponível na landing.
+```text
+id              uuid PK
+ticket_id       uuid  -> support_tickets.id
+user_id         uuid  (autor da mensagem)
+author_role     text  ('user' | 'admin')
+message         text  (1..4000 chars)
+created_at      timestamptz
+```
 
-### Detalhes técnicos
+RLS:
+- SELECT: dono do ticket OU admin (`has_role(auth.uid(),'admin')`)
+- INSERT: dono do ticket OU admin; `user_id = auth.uid()`; `author_role` derivado por trigger (admin se tiver role admin, senão user)
+- UPDATE/DELETE: bloqueados
 
-- Stack: shadcn (Card, Input, Textarea, Select, Button, Accordion, Table, Badge), Zod, react-hook-form, sonner.
-- Insert via `supabase.from('support_tickets').insert(...)` — RLS garante `user_id = auth.uid()`.
-- Listagem com `useEffect` + filtro implícito por RLS.
-- Sem edge functions necessárias nesta primeira versão (notificação por email pode ser adicionada depois com Resend).
+Trigger:
+- Ao inserir mensagem: atualiza `support_tickets.updated_at` e, se autor for admin e status = `aberto`, move para `em_andamento`.
 
-### Arquivos
+Realtime: habilitar replicação para `support_ticket_messages` e `support_tickets` (`ALTER PUBLICATION supabase_realtime ADD TABLE ...`, `REPLICA IDENTITY FULL`).
 
-- **Migration**: criar tabela `support_tickets` + RLS + trigger.
-- **Novo**: `src/pages/Suporte.tsx`.
-- **Editar**: `src/App.tsx` (rota), `src/components/AppSidebar.tsx` (item de menu).
+Status já existente (`aberto`, `em_andamento`, `resolvido`) é mantido. RLS atual de `support_tickets` permite UPDATE só por admin — adicionar policy: usuário dono pode atualizar **apenas** o próprio ticket para mudar `status` de/para `resolvido` (encerrar/reabrir o próprio ticket).
+
+## Mudanças na UI (`src/pages/Suporte.tsx`)
+
+- Constante `SUPPORT_EMAIL` → `precigraf@gmail.com` (atualiza card de email e link `mailto:`).
+- Na tabela "Meus tickets", cada linha vira clicável e abre um **Dialog de conversa**:
+  - Cabeçalho: assunto, badge de status, botão "Marcar como concluído" (com ícone de check) — desabilitado se já `resolvido`.
+  - Lista de mensagens em bolhas (usuário à direita, equipe à esquerda), ordenadas por `created_at`, com data/hora.
+  - Campo de envio (Textarea + botão Enviar) com validação Zod (1–4000 chars).
+  - Indicador visual quando o ticket está `resolvido` (badge verde com check, campo de envio escondido ou bloqueado).
+- Subscriptions Supabase Realtime ao abrir o dialog:
+  - Canal `ticket:{id}` escutando `INSERT` em `support_ticket_messages` filtrado por `ticket_id`.
+  - Canal escutando `UPDATE` em `support_tickets` filtrado por `id` para refletir mudança de status na hora.
+- Lista geral de tickets também escuta `UPDATE` em `support_tickets` do usuário para atualizar status/`updated_at` em tempo real e mostrar ícone de check ao lado dos resolvidos.
+- Loading states e `toast` para erros/sucesso seguindo o padrão atual da página.
+
+## Arquivos
+
+- **Migração nova**: cria `support_ticket_messages`, RLS, trigger, e habilita Realtime em ambas as tabelas; adiciona policy de UPDATE de status para o próprio dono.
+- **Editado**: `src/pages/Suporte.tsx` (email, dialog de conversa, realtime, botão concluir).
+- Sem novas dependências; usa shadcn `Dialog`, `ScrollArea`, `Textarea`, `Button`, `Badge` já presentes.
+
+## Fora do escopo
+
+- Notificações por email a cada nova mensagem (pode ser adicionado depois via edge function).
+- Anexos de arquivos.
+- Painel administrativo dedicado (admins respondem pelo mesmo dialog acessando a tabela diretamente — uma página `/admin/suporte` pode vir em outro plano).
