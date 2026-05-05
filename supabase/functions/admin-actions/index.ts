@@ -207,6 +207,148 @@ Deno.serve(async (req) => {
         });
       }
 
+      case "get_dashboard": {
+        const PRO_MONTHLY_PRICE = 29.9;
+        const LIFETIME_PRICE = 297;
+
+        const { count: totalUsers } = await adminClient
+          .from("profiles").select("user_id", { count: "exact", head: true });
+        const { count: freeUsers } = await adminClient
+          .from("profiles").select("user_id", { count: "exact", head: true }).eq("plan", "free");
+        const { count: proUsers } = await adminClient
+          .from("profiles").select("user_id", { count: "exact", head: true }).eq("plan", "pro");
+
+        // Active monthly subscriptions
+        const { count: activeMonthly } = await adminClient
+          .from("profiles")
+          .select("user_id", { count: "exact", head: true })
+          .in("subscription_status", ["active", "trialing"]);
+
+        // Lifetime users (plan_id == lifetime)
+        const { data: lifetimePlan } = await adminClient
+          .from("subscription_plans").select("id").eq("name", "lifetime").single();
+        let lifetimeCount = 0;
+        if (lifetimePlan?.id) {
+          const { count } = await adminClient
+            .from("profiles").select("user_id", { count: "exact", head: true }).eq("plan_id", lifetimePlan.id);
+          lifetimeCount = count || 0;
+        }
+
+        const mrr = (activeMonthly || 0) * PRO_MONTHLY_PRICE;
+        const lifetimeRevenue = lifetimeCount * LIFETIME_PRICE;
+
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1); startOfMonth.setHours(0,0,0,0);
+        const { count: newThisMonth } = await adminClient
+          .from("profiles").select("user_id", { count: "exact", head: true })
+          .gte("created_at", startOfMonth.toISOString());
+
+        return jsonResponse({
+          total_users: totalUsers || 0,
+          free_users: freeUsers || 0,
+          pro_users: proUsers || 0,
+          active_monthly: activeMonthly || 0,
+          lifetime_users: lifetimeCount,
+          mrr,
+          lifetime_revenue: lifetimeRevenue,
+          total_subscription_revenue: mrr + lifetimeRevenue,
+          new_this_month: newThisMonth || 0,
+        });
+      }
+
+      case "list_employees": {
+        const { data: roles } = await adminClient
+          .from("user_roles").select("user_id, role").neq("role", "user");
+        const ids = [...new Set((roles || []).map((r: any) => r.user_id))];
+        if (ids.length === 0) return jsonResponse({ employees: [] });
+        const { data: profiles } = await adminClient
+          .from("profiles").select("user_id, email, company_name").in("user_id", ids);
+        const { data: usersData } = await adminClient
+          .from("users").select("user_id, name, status").in("user_id", ids);
+        const pmap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+        const umap = new Map((usersData || []).map((u: any) => [u.user_id, u]));
+        const grouped = new Map<string, string[]>();
+        for (const r of roles || []) {
+          if (!grouped.has(r.user_id)) grouped.set(r.user_id, []);
+          grouped.get(r.user_id)!.push(r.role);
+        }
+        const employees = ids.map((id) => ({
+          user_id: id,
+          email: pmap.get(id)?.email,
+          name: umap.get(id)?.name,
+          status: umap.get(id)?.status,
+          roles: grouped.get(id) || [],
+        }));
+        return jsonResponse({ employees });
+      }
+
+      case "list_roles": {
+        const { data, error } = await adminClient
+          .from("user_roles").select("user_id, role").order("created_at", { ascending: false });
+        if (error) return jsonResponse({ error: error.message }, 500);
+        return jsonResponse({ roles: data || [] });
+      }
+
+      case "assign_role": {
+        const { target_user_id, role } = params;
+        if (!target_user_id || !role) return jsonResponse({ error: "Missing parameters" }, 400);
+        const { error } = await adminClient.from("user_roles")
+          .insert({ user_id: target_user_id, role })
+          .select().maybeSingle();
+        if (error && !error.message.includes("duplicate")) {
+          return jsonResponse({ error: error.message }, 500);
+        }
+        await adminClient.from("security_logs").insert({
+          user_id: userId, event_type: "admin_role_assigned",
+          event_description: `Admin assigned role ${role} to ${target_user_id}`,
+          metadata: { target_user_id, role },
+        });
+        return jsonResponse({ success: true });
+      }
+
+      case "revoke_role": {
+        const { target_user_id, role } = params;
+        if (!target_user_id || !role) return jsonResponse({ error: "Missing parameters" }, 400);
+        if (target_user_id === userId && role === "admin") {
+          return jsonResponse({ error: "Você não pode remover seu próprio acesso de admin" }, 400);
+        }
+        const { error } = await adminClient.from("user_roles")
+          .delete().eq("user_id", target_user_id).eq("role", role);
+        if (error) return jsonResponse({ error: error.message }, 500);
+        await adminClient.from("security_logs").insert({
+          user_id: userId, event_type: "admin_role_revoked",
+          event_description: `Admin revoked role ${role} from ${target_user_id}`,
+          metadata: { target_user_id, role },
+        });
+        return jsonResponse({ success: true });
+      }
+
+      case "list_payments": {
+        const { data: pending } = await adminClient
+          .from("pending_payments")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(200);
+        const { data: subs } = await adminClient
+          .from("profiles")
+          .select("user_id, email, subscription_status, subscription_current_period_end, subscription_canceled_at, stripe_subscription_id, stripe_customer_id")
+          .not("stripe_subscription_id", "is", null)
+          .order("subscription_current_period_end", { ascending: false, nullsFirst: false })
+          .limit(200);
+        return jsonResponse({ pending_payments: pending || [], subscriptions: subs || [] });
+      }
+
+      case "list_plans": {
+        const { data: plans } = await adminClient.from("subscription_plans").select("*");
+        const stats: any[] = [];
+        for (const p of plans || []) {
+          const { count } = await adminClient
+            .from("profiles").select("user_id", { count: "exact", head: true }).eq("plan_id", p.id);
+          stats.push({ ...p, subscriber_count: count || 0 });
+        }
+        return jsonResponse({ plans: stats });
+      }
+
       case "get_security_logs": {
         const { page = 1, event_type, limit = 50 } = params;
         const offset = (page - 1) * limit;
