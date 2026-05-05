@@ -86,10 +86,14 @@ export default function Suporte() {
       return;
     }
     setSubmitting(true);
+    const d = parsed.data;
     const { error } = await supabase.from('support_tickets').insert([{
       user_id: user.id,
       email: user.email ?? '',
-      ...parsed.data,
+      subject: d.subject,
+      category: d.category,
+      priority: d.priority,
+      message: d.message,
     }]);
     setSubmitting(false);
     if (error) {
