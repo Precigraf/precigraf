@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { z } from 'zod';
-import { LifeBuoy, MessageCircle, Mail, Send, Loader2, CheckCircle2, MessagesSquare } from 'lucide-react';
+import { LifeBuoy, MessageCircle, Mail, Send, Loader2, CheckCircle2, MessagesSquare, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import AppLayout from '@/components/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -86,6 +90,23 @@ export default function Suporte() {
   const [reply, setReply] = useState('');
   const [sending, setSending] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Ticket | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const { error } = await supabase.from('support_tickets').delete().eq('id', deleteTarget.id);
+    setDeleting(false);
+    if (error) {
+      toast.error('Não foi possível excluir.');
+      return;
+    }
+    toast.success('Ticket excluído.');
+    setTickets((prev) => prev.filter((x) => x.id !== deleteTarget.id));
+    if (openTicket?.id === deleteTarget.id) setOpenTicket(null);
+    setDeleteTarget(null);
+  };
   const scrollEndRef = useRef<HTMLDivElement | null>(null);
 
   const loadTickets = async () => {
@@ -421,9 +442,21 @@ export default function Suporte() {
                           {new Date(t.updated_at || t.created_at).toLocaleString('pt-BR')}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setOpenTicket(t); }}>
-                            <MessagesSquare className="w-4 h-4 mr-1" /> Abrir
-                          </Button>
+                          <div className="flex justify-end gap-1">
+                            <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setOpenTicket(t); }}>
+                              <MessagesSquare className="w-4 h-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Abrir</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              onClick={(e) => { e.stopPropagation(); setDeleteTarget(t); }}
+                              aria-label="Excluir ticket"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -578,6 +611,29 @@ export default function Suporte() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && !deleting && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir ticket?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Todas as mensagens deste ticket serão removidas permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDelete(); }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
+
   );
 }
