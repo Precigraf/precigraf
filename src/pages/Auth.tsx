@@ -23,60 +23,6 @@ const Auth = forwardRef<HTMLDivElement>((_, ref) => {
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
-  // Handle payment success from InfinitePay redirect - SECURE VERSION
-  // Security: Relies solely on server-side CSRF token validation, not client referrer
-  const handlePaymentSuccess = useCallback(async () => {
-    // Get CSRF token from sessionStorage (set before redirect to InfinitePay)
-    const csrfToken = sessionStorage.getItem('payment_csrf_token');
-    
-    // Only process if we have a CSRF token - server-side validation handles security
-    // The verify_and_complete_payment RPC validates token expiration, status, and user ownership
-    if (csrfToken) {
-      setPaymentProcessing(true);
-      
-      try {
-        // Verify payment server-side using the secure database function
-        const { data, error } = await supabase.rpc('verify_and_complete_payment', {
-          p_csrf_token: csrfToken
-        });
-
-        if (error) {
-          console.error('Error verifying payment:', error);
-          toast.error('Erro ao verificar pagamento. Entre em contato com o suporte.');
-        } else if (data) {
-          // Cast to expected type since RPC returns Json
-          const result = data as { success: boolean; message?: string; error?: string };
-          
-          if (result.success) {
-            toast.success('🎉 Pagamento confirmado! Seu plano vitalício foi ativado.', {
-              duration: 5000,
-            });
-          } else {
-            // Token invalid/expired is expected for non-payment visits - only log, don't show error
-            if (result.error !== 'Token inválido ou expirado') {
-              console.error('Payment verification failed:', result.error);
-              toast.error(result.error || 'Erro ao ativar plano. Entre em contato com o suporte.');
-            }
-          }
-        }
-
-        // Clear CSRF token from sessionStorage
-        sessionStorage.removeItem('payment_csrf_token');
-        
-        // Also clean up old localStorage key if it exists (migration cleanup)
-        localStorage.removeItem('pending_upgrade_user_id');
-      } catch (err) {
-        console.error('Error processing payment:', err);
-        toast.error('Erro ao processar pagamento.');
-      } finally {
-        setPaymentProcessing(false);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    handlePaymentSuccess();
-  }, [handlePaymentSuccess]);
 
   // Redirect if already logged in
   const handleRedirect = useCallback(() => {
