@@ -1,59 +1,86 @@
-# Plano: Conversa por ticket + status em tempo real
+## Plano de evolução
 
-## O que será entregue
+Vou implementar em três entregas independentes (você aprova e eu sigo na ordem) + um ajuste rápido na landing page agora.
 
-1. **Conversa por ticket** — usuário e equipe trocam mensagens dentro de cada ticket aberto.
-2. **Atualização em tempo real** — novas mensagens e mudanças de status aparecem sem recarregar a página (Realtime).
-3. **Botão "Marcar como concluído"** — disponível tanto para o próprio usuário (encerrar seu ticket) quanto para admins, com checkmark visível na lista.
-4. **Email de suporte alterado** para `precigraf@gmail.com` em todos os pontos da página `/suporte`.
+---
 
-## Mudanças no banco
+### A. Ajuste imediato na Landing Page
 
-Nova tabela `support_ticket_messages`:
+Hoje o Hero usa um grid 2 colunas (texto à esquerda, mockup à direita). Vou reorganizar para:
 
-```text
-id              uuid PK
-ticket_id       uuid  -> support_tickets.id
-user_id         uuid  (autor da mensagem)
-author_role     text  ('user' | 'admin')
-message         text  (1..4000 chars)
-created_at      timestamptz
-```
+- Bloco superior: título, subtítulo, CTAs e badge **centralizados** (texto, botões e disclaimer alinhados ao centro em todos os tamanhos).
+- Bloco inferior: o `HeroMockup` (cards "Sacola Personalizada" + "Sugestão inteligente") em **layout horizontal** ocupando largura cheia, com os dois cards lado a lado em desktop e empilhados só no mobile.
 
-RLS:
-- SELECT: dono do ticket OU admin (`has_role(auth.uid(),'admin')`)
-- INSERT: dono do ticket OU admin; `user_id = auth.uid()`; `author_role` derivado por trigger (admin se tiver role admin, senão user)
-- UPDATE/DELETE: bloqueados
+Arquivos: `src/pages/LandingPage.tsx` (seção HERO) e pequenos ajustes no `HeroMockup.tsx` para garantir bom uso da largura total (manter `lg:grid-cols-5` 3+2 já existente, só remover a "moldura" estreita).
 
-Trigger:
-- Ao inserir mensagem: atualiza `support_tickets.updated_at` e, se autor for admin e status = `aberto`, move para `em_andamento`.
+---
 
-Realtime: habilitar replicação para `support_ticket_messages` e `support_tickets` (`ALTER PUBLICATION supabase_realtime ADD TABLE ...`, `REPLICA IDENTITY FULL`).
+### 1. Retenção e engajamento (Fase 1)
 
-Status já existente (`aberto`, `em_andamento`, `resolvido`) é mantido. RLS atual de `support_tickets` permite UPDATE só por admin — adicionar policy: usuário dono pode atualizar **apenas** o próprio ticket para mudar `status` de/para `resolvido` (encerrar/reabrir o próprio ticket).
+**1.1 Central de notificações (in-app, tempo real)**
+- Tabela `notifications` (`user_id`, `type`, `title`, `body`, `link`, `read_at`, `created_at`) com RLS por dono.
+- Realtime habilitado na tabela.
+- Componente `NotificationBell` no `Header` com badge de não lidas, popover com lista, marcar como lida e link.
+- Eventos que geram notificação: nova mensagem de suporte (admin → usuário), orçamento aprovado pelo cliente, pedido movido no Kanban, lembrete de cobrança.
 
-## Mudanças na UI (`src/pages/Suporte.tsx`)
+**1.2 Aprovação pública de orçamento**
+- Coluna `public_token` (uuid) em `quotes` + tabela `quote_responses` (`quote_id`, `action: approved|changes_requested`, `comment`, `created_at`).
+- Página `/orcamento/:token` (pública, sem login): mostra cliente, itens, totais, condições, e botões **Aprovar** / **Solicitar ajustes** (com campo de comentário).
+- Trigger: ao aprovar → muda status do quote para `aprovado` e cria automaticamente o Pedido vinculado no Kanban (coluna inicial). Notifica o usuário.
+- Botão "Copiar link de aprovação" na tela do orçamento.
 
-- Constante `SUPPORT_EMAIL` → `precigraf@gmail.com` (atualiza card de email e link `mailto:`).
-- Na tabela "Meus tickets", cada linha vira clicável e abre um **Dialog de conversa**:
-  - Cabeçalho: assunto, badge de status, botão "Marcar como concluído" (com ícone de check) — desabilitado se já `resolvido`.
-  - Lista de mensagens em bolhas (usuário à direita, equipe à esquerda), ordenadas por `created_at`, com data/hora.
-  - Campo de envio (Textarea + botão Enviar) com validação Zod (1–4000 chars).
-  - Indicador visual quando o ticket está `resolvido` (badge verde com check, campo de envio escondido ou bloqueado).
-- Subscriptions Supabase Realtime ao abrir o dialog:
-  - Canal `ticket:{id}` escutando `INSERT` em `support_ticket_messages` filtrado por `ticket_id`.
-  - Canal escutando `UPDATE` em `support_tickets` filtrado por `id` para refletir mudança de status na hora.
-- Lista geral de tickets também escuta `UPDATE` em `support_tickets` do usuário para atualizar status/`updated_at` em tempo real e mostrar ícone de check ao lado dos resolvidos.
-- Loading states e `toast` para erros/sucesso seguindo o padrão atual da página.
+**1.3 Lembretes automáticos**
+- Edge function agendada (`pg_cron` diário) que varre orçamentos `enviado` há > N dias sem resposta e cria notificação "cobrar cliente"; idem para pedidos parados na mesma coluna.
+- Configurável: dias de inatividade no `profiles` (default 5).
 
-## Arquivos
+---
 
-- **Migração nova**: cria `support_ticket_messages`, RLS, trigger, e habilita Realtime em ambas as tabelas; adiciona policy de UPDATE de status para o próprio dono.
-- **Editado**: `src/pages/Suporte.tsx` (email, dialog de conversa, realtime, botão concluir).
-- Sem novas dependências; usa shadcn `Dialog`, `ScrollArea`, `Textarea`, `Button`, `Badge` já presentes.
+### 3. Profissionalização da saída comercial (Fase 2)
 
-## Fora do escopo
+**3.1 PDF profissional de orçamento**
+- Geração via `jspdf` + `jspdf-autotable` (client-side, sem edge function).
+- Layout: cabeçalho com `logo_url` + dados do `profiles` (razão, CNPJ, telefone, email), bloco do cliente, tabela de itens (descrição/qtd/un/total), totais, condições de pagamento, validade, observações, rodapé com link público de aprovação + QR Code (`qrcode` lib).
+- Botão "Baixar PDF" e "Visualizar" no `OrcamentoEditor` e na lista.
 
-- Notificações por email a cada nova mensagem (pode ser adicionado depois via edge function).
-- Anexos de arquivos.
-- Painel administrativo dedicado (admins respondem pelo mesmo dialog acessando a tabela diretamente — uma página `/admin/suporte` pode vir em outro plano).
+**3.2 Compartilhamento direto**
+- Botões "Enviar por WhatsApp" (abre `wa.me` com mensagem pronta + link público) e "Enviar por email" (edge function com template branded usando o domínio custom já configurado).
+- Registra envio em `quote_events` para auditoria.
+
+---
+
+### 4. Financeiro mais robusto (Fase 3)
+
+**4.1 Contas a receber**
+- Tabela `receivables` (`order_id`, `amount`, `due_date`, `paid_at`, `amount_paid`, `status: pendente|parcial|pago|atrasado`).
+- Ao confirmar pedido → gera receivable(s) conforme condição (à vista / parcelado).
+- Tela `/financeiro/receber` com filtros por status, vencimento, cliente. Ação "Marcar como pago" (com data e valor).
+
+**4.2 Fluxo de caixa projetado**
+- Card no `Dashboard` e tela dedicada: 30/60/90 dias.
+- Entradas previstas = receivables pendentes + (orçamentos `enviado` × taxa histórica de aprovação do usuário).
+- Saídas previstas = `expenses` recorrentes + lançamentos futuros.
+- Gráfico de linha (saldo projetado) usando `recharts` (já no projeto).
+
+**4.3 Categorização automática de despesas com IA**
+- Botão "Sugerir categoria" em `expenses` usando Lovable AI (`google/gemini-2.5-flash`) — recebe descrição e retorna categoria entre as existentes do usuário.
+- Endpoint via edge function `suggest-expense-category`.
+
+---
+
+### Detalhes técnicos relevantes
+
+- Todas as tabelas novas: RLS forçado, policies por `auth.uid() = user_id`, sem acesso anônimo (exceto `quotes` via `public_token` que terá policy específica baseada no token).
+- Pro CRM já é gate: receivables, aprovação pública e PDF profissional ficam atrás do `useUserPlan().isPro` (mantém regra existente).
+- Realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE notifications`.
+- Sem novas dependências pesadas: apenas `jspdf`, `jspdf-autotable`, `qrcode` (leves, client-side).
+
+---
+
+### Ordem de execução proposta
+
+1. Ajuste do Hero (agora, junto com a Fase 1).
+2. Fase 1 — Retenção (notificações + aprovação pública + lembretes).
+3. Fase 2 — PDF + envio.
+4. Fase 3 — Financeiro (receivables + fluxo + IA categoria).
+
+Confirma essa ordem? Se preferir paralelizar ou trocar prioridade, me diga antes de aprovar.

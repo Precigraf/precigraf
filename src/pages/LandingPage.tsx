@@ -72,44 +72,42 @@ const LandingPage: React.FC = () => {
       {/* HERO */}
       <section className="relative pt-32 sm:pt-40 pb-16 sm:pb-24 overflow-hidden">
         <div className="container mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <div className="text-center lg:text-left">
-              <Badge
-                variant="outline"
-                className="mb-5 border-border text-muted-foreground gap-1.5"
-              >
-                <Sparkles className="w-3 h-3" />
-                Feito para gráficas brasileiras
-              </Badge>
+          <div className="max-w-3xl mx-auto text-center">
+            <Badge
+              variant="outline"
+              className="mb-5 border-border text-muted-foreground gap-1.5"
+            >
+              <Sparkles className="w-3 h-3" />
+              Feito para gráficas brasileiras
+            </Badge>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight">
-                Precifique seus serviços gráficos com a precisão que seu lucro merece
-              </h1>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight">
+              Precifique seus serviços gráficos com a precisão que seu lucro merece
+            </h1>
 
-              <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-xl mx-auto lg:mx-0">
-                A calculadora completa para gráficas calcularem custos, margens e
-                preços finais — sem planilhas confusas e sem prejuízo.
-              </p>
+            <p className="mt-5 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+              A calculadora completa para gráficas calcularem custos, margens e
+              preços finais — sem planilhas confusas e sem prejuízo.
+            </p>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-                <Button asChild size="lg" className="h-12 px-7 text-base">
-                  <Link to={ctaPrimary}>
-                    {ctaPrimaryLabel} <ArrowRight className="w-4 h-4" />
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="lg" className="h-12 px-7 text-base">
-                  <a href="#como-funciona">Ver como funciona</a>
-                </Button>
-              </div>
-
-              <p className="mt-4 text-xs text-muted-foreground">
-                Sem cartão de crédito • Acesso imediato
-              </p>
+            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+              <Button asChild size="lg" className="h-12 px-7 text-base">
+                <Link to={ctaPrimary}>
+                  {ctaPrimaryLabel} <ArrowRight className="w-4 h-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="lg" className="h-12 px-7 text-base">
+                <a href="#como-funciona">Ver como funciona</a>
+              </Button>
             </div>
 
-            <div>
-              <HeroMockup />
-            </div>
+            <p className="mt-4 text-xs text-muted-foreground">
+              Sem cartão de crédito • Acesso imediato
+            </p>
+          </div>
+
+          <div className="mt-14 sm:mt-20 max-w-6xl mx-auto">
+            <HeroMockup />
           </div>
         </div>
       </section>
