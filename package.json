@@ -9,7 +9,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "verify:published-tracking": "node scripts/verify-published-tracking-route.mjs"
+    "verify:published-tracking": "node scripts/verify-published-tracking-route.mjs",
+    "verify:quote-approval": "node scripts/verify-quote-approval-route.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
