@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useOrders, KANBAN_COLUMNS, type Order } from '@/hooks/useOrders';
 import { useProducts } from '@/hooks/useProducts';
-import { PUBLIC_BASE_URL, buildOrderTrackingUrl } from '@/lib/publicUrl';
+import { buildOrderTrackingUrl } from '@/lib/publicUrl';
 
 
 interface OrderDetailsModalProps {
