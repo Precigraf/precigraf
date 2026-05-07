@@ -24,6 +24,8 @@ import Producao from "./pages/Producao";
 import RastreioPedido from "./pages/RastreioPedido";
 import LandingPage from "./pages/LandingPage";
 import Suporte from "./pages/Suporte";
+import AprovacaoOrcamento from "./pages/AprovacaoOrcamento";
+import ContasReceber from "./pages/ContasReceber";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +61,8 @@ const App = () => (
               <Route path="/producao" element={<ProtectedRoute><Producao /></ProtectedRoute>} />
               <Route path="/pagamento-confirmado" element={<ProtectedRoute><PagamentoConfirmado /></ProtectedRoute>} />
               <Route path="/suporte" element={<ProtectedRoute><Suporte /></ProtectedRoute>} />
+              <Route path="/financeiro/receber" element={<ProtectedRoute><ContasReceber /></ProtectedRoute>} />
+              <Route path="/orcamento/:token" element={<AprovacaoOrcamento />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>

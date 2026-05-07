@@ -218,6 +218,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          metadata: Json | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          metadata?: Json | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          metadata?: Json | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_status_history: {
         Row: {
           created_at: string
@@ -261,6 +297,7 @@ export type Database = {
           created_at: string
           id: string
           kanban_position: number
+          last_reminder_at: string | null
           order_number: number | null
           quote_id: string
           status: string
@@ -277,6 +314,7 @@ export type Database = {
           created_at?: string
           id?: string
           kanban_position?: number
+          last_reminder_at?: string | null
           order_number?: number | null
           quote_id: string
           status?: string
@@ -293,6 +331,7 @@ export type Database = {
           created_at?: string
           id?: string
           kanban_position?: number
+          last_reminder_at?: string | null
           order_number?: number | null
           quote_id?: string
           status?: string
@@ -464,6 +503,7 @@ export type Database = {
           plan: string
           plan_id: string
           profile_image_url: string | null
+          reminder_days: number
           store_name: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -498,6 +538,7 @@ export type Database = {
           plan?: string
           plan_id?: string
           profile_image_url?: string | null
+          reminder_days?: number
           store_name?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -532,6 +573,7 @@ export type Database = {
           plan?: string
           plan_id?: string
           profile_image_url?: string | null
+          reminder_days?: number
           store_name?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -554,6 +596,33 @@ export type Database = {
           },
         ]
       }
+      quote_responses: {
+        Row: {
+          action: string
+          comment: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          quote_id: string
+        }
+        Insert: {
+          action: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          quote_id: string
+        }
+        Update: {
+          action?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          quote_id?: string
+        }
+        Relationships: []
+      }
       quotes: {
         Row: {
           calculation_id: string | null
@@ -564,8 +633,10 @@ export type Database = {
           discount_value: number | null
           id: string
           items: Json | null
+          last_reminder_at: string | null
           notes: string | null
           product_name: string | null
+          public_token: string
           quantity: number | null
           quote_number: number | null
           raw_data: Json | null
@@ -587,8 +658,10 @@ export type Database = {
           discount_value?: number | null
           id?: string
           items?: Json | null
+          last_reminder_at?: string | null
           notes?: string | null
           product_name?: string | null
+          public_token?: string
           quantity?: number | null
           quote_number?: number | null
           raw_data?: Json | null
@@ -610,8 +683,10 @@ export type Database = {
           discount_value?: number | null
           id?: string
           items?: Json | null
+          last_reminder_at?: string | null
           notes?: string | null
           product_name?: string | null
+          public_token?: string
           quantity?: number | null
           quote_number?: number | null
           raw_data?: Json | null
@@ -668,6 +743,54 @@ export type Database = {
           identifier?: string
           request_count?: number | null
           window_start?: string | null
+        }
+        Relationships: []
+      }
+      receivables: {
+        Row: {
+          amount: number
+          amount_paid: number
+          created_at: string
+          due_date: string
+          id: string
+          installment_number: number
+          installment_total: number
+          notes: string | null
+          order_id: string
+          paid_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          amount_paid?: number
+          created_at?: string
+          due_date: string
+          id?: string
+          installment_number?: number
+          installment_total?: number
+          notes?: string | null
+          order_id: string
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          amount_paid?: number
+          created_at?: string
+          due_date?: string
+          id?: string
+          installment_number?: number
+          installment_total?: number
+          notes?: string | null
+          order_id?: string
+          paid_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -925,8 +1048,20 @@ export type Database = {
         }
         Returns: Json
       }
+      create_notification: {
+        Args: {
+          p_body?: string
+          p_link?: string
+          p_metadata?: Json
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       get_free_plan_id: { Args: never; Returns: string }
       get_order_by_tracking_token: { Args: { p_token: string }; Returns: Json }
+      get_quote_by_token: { Args: { p_token: string }; Returns: Json }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -949,6 +1084,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      respond_to_quote_by_token: {
+        Args: { p_action: string; p_comment?: string; p_token: string }
+        Returns: Json
       }
       update_subscription_status: {
         Args: {
