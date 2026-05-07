@@ -26,6 +26,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { buildQuoteApprovalUrl } from '@/lib/publicUrl';
 
 
 interface QuoteItem {
