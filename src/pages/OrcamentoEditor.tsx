@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, FileDown, Package as PackageIcon, Plus, Trash2, X, UserPlus, CalendarIcon, Search, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Save, FileDown, Package as PackageIcon, Plus, Trash2, X, UserPlus, CalendarIcon, Search, MessageCircle, Link2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -570,6 +570,20 @@ const OrcamentoEditor: React.FC = () => {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                if (!quoteId) return;
+                const { data } = await supabase.from('quotes').select('public_token').eq('id', quoteId).single();
+                if (!data?.public_token) { toast({ title: 'Salve o orçamento primeiro', variant: 'destructive' }); return; }
+                const url = `${window.location.origin}/orcamento/${data.public_token}`;
+                await navigator.clipboard.writeText(url);
+                toast({ title: 'Link de aprovação copiado!', description: url });
+              }}
+              disabled={!quoteId}
+            >
+              <Link2 className="w-4 h-4 mr-2" /> Link de aprovação
+            </Button>
             <Button variant="outline" onClick={handleSendWhatsApp} disabled={!quoteId || !selectedClient?.whatsapp} className="text-green-600 border-green-600/40 hover:bg-green-500/10 hover:text-green-700">
               <MessageCircle className="w-4 h-4 mr-2" /> Enviar WhatsApp
             </Button>
