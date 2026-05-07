@@ -10,8 +10,8 @@ import { toast } from 'sonner';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useOrders, KANBAN_COLUMNS, type Order } from '@/hooks/useOrders';
 import { useProducts } from '@/hooks/useProducts';
+import { PUBLIC_BASE_URL, buildOrderTrackingUrl } from '@/lib/publicUrl';
 
-const TRACKING_BASE_URL = 'https://precigraf.com.br';
 
 interface OrderDetailsModalProps {
   open: boolean;
