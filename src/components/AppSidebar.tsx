@@ -1,9 +1,10 @@
-import { LayoutDashboard, Calculator, Users, FileText, Package, LogOut, Settings, Sun, Moon, Store, Box, Wallet, Factory, LifeBuoy } from 'lucide-react';
+import { LayoutDashboard, Calculator, Users, FileText, Package, LogOut, Settings, Sun, Moon, Store, Box, Wallet, Factory, LifeBuoy, Receipt } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useNavigate } from 'react-router-dom';
 import LogoIcon from '@/components/LogoIcon';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
+import NotificationBell from '@/components/NotificationBell';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +28,7 @@ const navItems = [
   { title: 'Pedidos', url: '/pedidos', icon: Package },
   { title: 'Produção', url: '/producao', icon: Factory },
   { title: 'Financeiro', url: '/financeiro', icon: Wallet },
+  { title: 'A Receber', url: '/financeiro/receber', icon: Receipt },
   { title: 'Calculadora', url: '/app', icon: Calculator },
   { title: 'Marketplace', url: '/marketplace', icon: Store },
   { title: 'Suporte', url: '/suporte', icon: LifeBuoy },
@@ -97,6 +99,7 @@ export function AppSidebar() {
           >
             {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </Button>
+          {user && <NotificationBell />}
           {!collapsed && (
             <>
               <Button
