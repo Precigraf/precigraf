@@ -30,10 +30,18 @@ export function useReceivables() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('receivables')
-        .select('*, orders(order_number, clients(name))')
+        .select('*')
         .order('due_date', { ascending: true });
       if (error) throw error;
-      return data as Receivable[];
+      const list = (data ?? []) as unknown as Receivable[];
+      const orderIds = Array.from(new Set(list.map((r) => r.order_id).filter(Boolean)));
+      if (orderIds.length === 0) return list;
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('id, order_number, clients(name)')
+        .in('id', orderIds);
+      const map = new Map((orders ?? []).map((o: any) => [o.id, { order_number: o.order_number, clients: o.clients as any }]));
+      return list.map((r) => ({ ...r, orders: map.get(r.order_id) ?? null }));
     },
     enabled: !!user,
   });
