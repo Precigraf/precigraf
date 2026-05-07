@@ -10,8 +10,8 @@ import { toast } from 'sonner';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useOrders, KANBAN_COLUMNS, type Order } from '@/hooks/useOrders';
 import { useProducts } from '@/hooks/useProducts';
+import { buildOrderTrackingUrl } from '@/lib/publicUrl';
 
-const TRACKING_BASE_URL = 'https://precigraf.com.br';
 
 interface OrderDetailsModalProps {
   open: boolean;
@@ -150,7 +150,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
               <div className="flex gap-2">
                 <Input
                   readOnly
-                  value={`${TRACKING_BASE_URL}/pedido/${order.tracking_token}`}
+                  value={buildOrderTrackingUrl(order.tracking_token)}
                   onClick={(e) => (e.target as HTMLInputElement).select()}
                   className="font-mono text-xs"
                 />
@@ -159,7 +159,7 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
                   variant="outline"
                   size="icon"
                   onClick={() => {
-                    const url = `${TRACKING_BASE_URL}/pedido/${order.tracking_token}`;
+                    const url = buildOrderTrackingUrl(order.tracking_token!);
                     navigator.clipboard.writeText(url);
                     toast.success('Link copiado!');
                   }}

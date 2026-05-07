@@ -26,6 +26,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCompanyProfile } from '@/hooks/useCompanyProfile';
+import { buildQuoteApprovalUrl } from '@/lib/publicUrl';
 
 
 interface QuoteItem {
@@ -576,7 +577,7 @@ const OrcamentoEditor: React.FC = () => {
                 if (!quoteId) return;
                 const { data } = await supabase.from('quotes').select('public_token').eq('id', quoteId).single();
                 if (!data?.public_token) { toast({ title: 'Salve o orçamento primeiro', variant: 'destructive' }); return; }
-                const url = `https://precigraf.com.br/orcamento/${data.public_token}`;
+                const url = buildQuoteApprovalUrl(data.public_token);
                 await navigator.clipboard.writeText(url);
                 toast({ title: 'Link de aprovação copiado!', description: url });
               }}
