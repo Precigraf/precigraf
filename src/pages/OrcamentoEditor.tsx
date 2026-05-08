@@ -122,6 +122,33 @@ const OrcamentoEditor: React.FC = () => {
     })();
   }, [id, isNew, navigate, toast]);
 
+  // Realtime: sync status when client responds via public link
+  useEffect(() => {
+    if (!quoteId) return;
+    const channel = supabase
+      .channel(`quote-${quoteId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'quotes', filter: `id=eq.${quoteId}` },
+        (payload) => {
+          const next = (payload.new as { status?: string } | null)?.status;
+          if (!next) return;
+          setStatus((prev) => {
+            if (prev === next) return prev;
+            if (next === 'approved') toast({ title: 'Cliente aprovou o orçamento' });
+            else if (next === 'rejected') toast({ title: 'Cliente recusou o orçamento', variant: 'destructive' });
+            else if (next === 'ajustes_solicitados') toast({ title: 'Cliente solicitou ajustes' });
+            qc.invalidateQueries({ queryKey: ['quotes'] });
+            qc.invalidateQueries({ queryKey: ['orders'] });
+            qc.invalidateQueries({ queryKey: ['receivables'] });
+            return next;
+          });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [quoteId, toast, qc]);
+
   const selectedClient = clients.find(c => c.id === clientId);
 
   const filteredClients = useMemo(() => {
