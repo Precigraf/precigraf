@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCategories } from '@/hooks/useCategories';
 import { useToast } from '@/hooks/use-toast';
+import { useSupplyStock, useProductSupplies } from '@/hooks/useSupplyStock';
 import type { Product, ProductInput, PriceTier } from '@/hooks/useProducts';
 
 interface ProductFormProps {
@@ -26,7 +27,14 @@ interface TierRow {
   cost: string;
 }
 
+interface SupplyRow {
+  id: string;
+  supply_id: string;
+  quantity_per_unit: string;
+}
+
 const newRow = (): TierRow => ({ id: crypto.randomUUID(), quantity: '', price: '', cost: '' });
+const newSupplyRow = (): SupplyRow => ({ id: crypto.randomUUID(), supply_id: '', quantity_per_unit: '' });
 
 const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit, initialData, isLoading }) => {
   const { categories } = useCategories();
