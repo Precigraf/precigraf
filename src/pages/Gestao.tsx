@@ -14,6 +14,7 @@ import { useRevenueChart } from '@/hooks/useRevenueChart';
 
 import { useNavigate } from 'react-router-dom';
 import PeriodFilter, { type PeriodKey, getDateRange } from '@/components/PeriodFilter';
+import StockAlerts from '@/components/StockAlerts';
 
 const formatCurrency = (v: number) => (Number.isFinite(v) ? v : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -68,6 +69,10 @@ const Gestao: React.FC = () => {
         <div className="mb-5 sm:mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-foreground">Dashboard</h1>
           <p className="text-xs sm:text-sm text-muted-foreground">Visão geral do seu negócio</p>
+        </div>
+
+        <div className="mb-4">
+          <StockAlerts />
         </div>
 
         {/* Painel "Meu Plano" */}
