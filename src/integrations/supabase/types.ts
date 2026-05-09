@@ -412,6 +412,55 @@ export type Database = {
         }
         Relationships: []
       }
+      product_supplies: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          quantity_per_unit: number
+          supply_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity_per_unit: number
+          supply_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity_per_unit?: number
+          supply_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_supplies_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_supplies_supply_id_fkey"
+            columns: ["supply_id"]
+            isOneToOne: false
+            referencedRelation: "supply_low_stock"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_supplies_supply_id_fkey"
+            columns: ["supply_id"]
+            isOneToOne: false
+            referencedRelation: "supply_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category_id: string | null
@@ -851,6 +900,105 @@ export type Database = {
         }
         Relationships: []
       }
+      supply_movements: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string | null
+          quantity: number
+          reason: string | null
+          supply_id: string
+          type: string
+          unit_cost: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          quantity: number
+          reason?: string | null
+          supply_id: string
+          type: string
+          unit_cost?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          quantity?: number
+          reason?: string | null
+          supply_id?: string
+          type?: string
+          unit_cost?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supply_movements_supply_id_fkey"
+            columns: ["supply_id"]
+            isOneToOne: false
+            referencedRelation: "supply_low_stock"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supply_movements_supply_id_fkey"
+            columns: ["supply_id"]
+            isOneToOne: false
+            referencedRelation: "supply_stock"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supply_stock: {
+        Row: {
+          created_at: string
+          expiry_date: string | null
+          id: string
+          is_active: boolean
+          min_alert: number
+          name: string
+          notes: string | null
+          quantity: number
+          type: string
+          unit: string
+          unit_cost: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean
+          min_alert?: number
+          name: string
+          notes?: string | null
+          quantity?: number
+          type: string
+          unit?: string
+          unit_cost?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          is_active?: boolean
+          min_alert?: number
+          name?: string
+          notes?: string | null
+          quantity?: number
+          type?: string
+          unit?: string
+          unit_cost?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       support_ticket_messages: {
         Row: {
           author_role: string
@@ -1008,6 +1156,45 @@ export type Database = {
         }
         Relationships: []
       }
+      supply_low_stock: {
+        Row: {
+          alert_type: string | null
+          expiry_date: string | null
+          id: string | null
+          min_alert: number | null
+          name: string | null
+          quantity: number | null
+          type: string | null
+          unit: string | null
+          unit_cost: number | null
+          user_id: string | null
+        }
+        Insert: {
+          alert_type?: never
+          expiry_date?: string | null
+          id?: string | null
+          min_alert?: number | null
+          name?: string | null
+          quantity?: number | null
+          type?: string | null
+          unit?: string | null
+          unit_cost?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          alert_type?: never
+          expiry_date?: string | null
+          id?: string | null
+          min_alert?: number | null
+          name?: string | null
+          quantity?: number | null
+          type?: string | null
+          unit?: string | null
+          unit_cost?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       activate_monthly_subscription: {
@@ -1047,6 +1234,19 @@ export type Database = {
           p_user_email?: string
         }
         Returns: Json
+      }
+      consume_supplies_for_order: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
+      consume_supply: {
+        Args: {
+          p_order_id?: string
+          p_quantity: number
+          p_reason?: string
+          p_supply_id: string
+        }
+        Returns: undefined
       }
       create_notification: {
         Args: {
@@ -1088,6 +1288,15 @@ export type Database = {
       respond_to_quote_by_token: {
         Args: { p_action: string; p_comment?: string; p_token: string }
         Returns: Json
+      }
+      restock_supply: {
+        Args: {
+          p_quantity: number
+          p_reason?: string
+          p_supply_id: string
+          p_unit_cost?: number
+        }
+        Returns: undefined
       }
       update_subscription_status: {
         Args: {

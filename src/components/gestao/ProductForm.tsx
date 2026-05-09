@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCategories } from '@/hooks/useCategories';
 import { useToast } from '@/hooks/use-toast';
+import { useSupplyStock, useProductSupplies } from '@/hooks/useSupplyStock';
 import type { Product, ProductInput, PriceTier } from '@/hooks/useProducts';
 
 interface ProductFormProps {
@@ -26,11 +27,20 @@ interface TierRow {
   cost: string;
 }
 
+interface SupplyRow {
+  id: string;
+  supply_id: string;
+  quantity_per_unit: string;
+}
+
 const newRow = (): TierRow => ({ id: crypto.randomUUID(), quantity: '', price: '', cost: '' });
+const newSupplyRow = (): SupplyRow => ({ id: crypto.randomUUID(), supply_id: '', quantity_per_unit: '' });
 
 const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit, initialData, isLoading }) => {
   const { categories } = useCategories();
   const { toast } = useToast();
+  const { supplies } = useSupplyStock();
+  const { links: existingLinks, save: saveLinks } = useProductSupplies(initialData?.id ?? null);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -42,6 +52,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
   const [tiers, setTiers] = useState<TierRow[]>([newRow()]);
   const [isActive, setIsActive] = useState(true);
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [supplyRows, setSupplyRows] = useState<SupplyRow[]>([]);
 
   useEffect(() => {
     if (initialData) {
@@ -76,8 +87,27 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       setMaterial(''); setFinish(''); setProductionTime('');
       setIsActive(true); setCategoryId(null);
       setTiers([newRow()]);
+      setSupplyRows([]);
     }
   }, [initialData, open]);
+
+  useEffect(() => {
+    if (initialData && existingLinks.length > 0) {
+      setSupplyRows(existingLinks.map((l) => ({
+        id: crypto.randomUUID(),
+        supply_id: l.supply_id,
+        quantity_per_unit: String(l.quantity_per_unit),
+      })));
+    } else if (initialData) {
+      setSupplyRows([]);
+    }
+  }, [initialData, existingLinks.length]);
+
+  const updateSupplyRow = (id: string, patch: Partial<SupplyRow>) => {
+    setSupplyRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  };
+  const addSupplyRow = () => setSupplyRows((prev) => [...prev, newSupplyRow()]);
+  const removeSupplyRow = (id: string) => setSupplyRows((prev) => prev.filter((r) => r.id !== id));
 
   const updateTier = (id: string, patch: Partial<TierRow>) => {
     setTiers((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
@@ -137,6 +167,14 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       price_tiers: parsed,
       category_id: categoryId,
     });
+
+    // Save supply links only when editing existing product
+    if (initialData?.id) {
+      const links = supplyRows
+        .filter((r) => r.supply_id && parseFloat(r.quantity_per_unit.replace(',', '.')) > 0)
+        .map((r) => ({ supply_id: r.supply_id, quantity_per_unit: parseFloat(r.quantity_per_unit.replace(',', '.')) }));
+      saveLinks.mutate(links);
+    }
   };
 
   return (
@@ -273,6 +311,34 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
               <Plus className="w-4 h-4 mr-2" /> Adicionar variação
             </Button>
           </div>
+
+          {initialData?.id && supplies.length > 0 && (
+            <div className="space-y-2 pt-2 border-t border-border">
+              <div>
+                <Label className="text-base">Insumos consumidos por unidade</Label>
+                <p className="text-xs text-muted-foreground">Ao aprovar pedidos, o estoque destes insumos será descontado.</p>
+              </div>
+              <div className="space-y-2">
+                {supplyRows.map((row) => (
+                  <div key={row.id} className="grid grid-cols-[1fr_100px_auto] gap-2 items-center">
+                    <Select value={row.supply_id} onValueChange={(v) => updateSupplyRow(row.id, { supply_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="Selecione um insumo" /></SelectTrigger>
+                      <SelectContent>
+                        {supplies.map((s) => (<SelectItem key={s.id} value={s.id}>{s.name} ({s.unit})</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <Input type="number" step="0.01" min="0" placeholder="Qtd/un" value={row.quantity_per_unit} onChange={(e) => updateSupplyRow(row.id, { quantity_per_unit: e.target.value })} />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => removeSupplyRow(row.id)} className="text-destructive hover:text-destructive">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={addSupplyRow} className="w-full">
+                <Plus className="w-4 h-4 mr-2" /> Adicionar insumo
+              </Button>
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-border">
             <div className="flex items-center gap-3">
