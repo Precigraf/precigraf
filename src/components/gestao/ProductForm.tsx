@@ -39,6 +39,8 @@ const newSupplyRow = (): SupplyRow => ({ id: crypto.randomUUID(), supply_id: '',
 const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit, initialData, isLoading }) => {
   const { categories } = useCategories();
   const { toast } = useToast();
+  const { supplies } = useSupplyStock();
+  const { links: existingLinks, save: saveLinks } = useProductSupplies(initialData?.id ?? null);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -50,6 +52,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
   const [tiers, setTiers] = useState<TierRow[]>([newRow()]);
   const [isActive, setIsActive] = useState(true);
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [supplyRows, setSupplyRows] = useState<SupplyRow[]>([]);
 
   useEffect(() => {
     if (initialData) {
@@ -84,8 +87,27 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       setMaterial(''); setFinish(''); setProductionTime('');
       setIsActive(true); setCategoryId(null);
       setTiers([newRow()]);
+      setSupplyRows([]);
     }
   }, [initialData, open]);
+
+  useEffect(() => {
+    if (initialData && existingLinks.length > 0) {
+      setSupplyRows(existingLinks.map((l) => ({
+        id: crypto.randomUUID(),
+        supply_id: l.supply_id,
+        quantity_per_unit: String(l.quantity_per_unit),
+      })));
+    } else if (initialData) {
+      setSupplyRows([]);
+    }
+  }, [initialData, existingLinks.length]);
+
+  const updateSupplyRow = (id: string, patch: Partial<SupplyRow>) => {
+    setSupplyRows((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  };
+  const addSupplyRow = () => setSupplyRows((prev) => [...prev, newSupplyRow()]);
+  const removeSupplyRow = (id: string) => setSupplyRows((prev) => prev.filter((r) => r.id !== id));
 
   const updateTier = (id: string, patch: Partial<TierRow>) => {
     setTiers((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
