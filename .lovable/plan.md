@@ -1,68 +1,79 @@
-## Plano de implementação
+# Plano — Controle de Estoque de Insumos
 
-### 1. Remover "A Receber" do menu lateral
-- `src/components/AppSidebar.tsx`: remover o item `{ title: 'A Receber', url: '/financeiro/receber', icon: Receipt }` do array `navItems`.
-- A rota `/financeiro/receber` permanece registrada em `App.tsx` (acessível via link direto), apenas escondida do menu — alinhado a "remover do menu".
+## 1. Migração do banco
 
-### 2. Sincronizar custos no Financeiro ao aprovar via link público
-Hoje a função `respond_to_quote_by_token` cria o pedido com `total_cost = 0`, por isso o Financeiro só mostra faturamento/lucro/a receber sem o custo real.
+### Tabelas
+- **`supply_stock`** — conforme proposto (id, user_id, name, type [paper/ink/other], unit, quantity, unit_cost, min_alert, expiry_date, notes, is_active, timestamps) com CHECKs de não-negativo e RLS owner-only.
+- **`supply_movements`** — id, supply_id (FK cascade), user_id (FK cascade), `order_id UUID REFERENCES public.orders(id) ON DELETE SET NULL`, type (in/out), quantity (>0), unit_cost, reason, created_at. RLS owner-only.
+- **`product_supplies`** (nova) — vínculo entre produto e insumos consumidos por unidade:
+  - `id, user_id, product_id, supply_id, quantity_per_unit numeric NOT NULL`
+  - RLS owner-only. Permite que ao aprovar pedido, o sistema saiba quais insumos descontar.
 
-**Migração SQL** — atualizar `respond_to_quote_by_token` para calcular o custo real do pedido a partir dos `items` do orçamento, cruzando com a tabela `products` (mesma lógica do `handleConvertConfirm` no editor):
-- Para cada item com `product_id`, buscar `products.cost`, `products.default_quantity` e `products.price_tiers`.
-- Procurar tier com `quantity == item.quantity`; se existir usar `tier.cost`, senão usar `(product.cost / default_quantity) * item.quantity`.
-- Somar tudo em `v_total_cost` e gravar em `orders.total_cost` ao inserir o pedido.
-- Também criar uma linha em `receivables` (única parcela, vencimento hoje + 7 dias) para que apareça em Contas a Receber, espelhando o fluxo manual.
+### Índices
+Conforme proposto + `idx_product_supplies_product`.
 
-### 3. Status do orçamento em tempo real no editor
-Quando o cliente aprova/recusa pelo link, a tela `/orcamentos/:id` aberta pelo dono deve refletir na hora.
+### Trigger `updated_at`
+Reutilizar `public.update_updated_at_column()` já existente (não criar função duplicada).
 
-- Migração: `ALTER PUBLICATION supabase_realtime ADD TABLE public.quotes;` e `ALTER TABLE public.quotes REPLICA IDENTITY FULL;`.
-- `src/pages/OrcamentoEditor.tsx`: adicionar `useEffect` que abre canal `supabase.channel('quote-' + quoteId)` escutando `postgres_changes` em `public.quotes` filtrando por `id=eq.${quoteId}`. No callback, atualizar `status`, invalidar queries `quotes` e `orders` e mostrar toast ("Cliente aprovou o orçamento" / "Cliente solicitou ajustes" / "Cliente recusou").
+## 2. Funções (RPC)
 
-### 4. Layout da página de aprovação igual ao PDF + tema claro + botão Recusar
+### `consume_supply(p_supply_id, p_quantity, p_order_id default null, p_reason default null)`
+- Valida propriedade e saldo.
+- `UPDATE supply_stock SET quantity = quantity - p_quantity`.
+- **Insere automaticamente em `supply_movements`** (type='out') na mesma transação — histórico garantido.
+- Retorna void.
 
-**`src/pages/AprovacaoOrcamento.tsx` — reescrever o visual** para espelhar o PDF gerado em `OrcamentoEditor.handleExportPDF`:
+### `restock_supply(p_supply_id, p_quantity, p_unit_cost default null, p_reason default null)`
+- Soma ao estoque e registra movimento `in`. Útil para entradas via UI.
 
-```text
-┌─────────────────────────────────────────┐
-│ [LOGO]  COMPANY NAME (bold)             │
-│         endereço · telefone · email     │
-├─────────────────────────────────────────┤
-│ Orçamento ORC-123          DD/MM/AAAA   │
-│ Cliente: Nome  ·  WhatsApp · Email      │
-│                                         │
-│ ┌─ Itens ──────────────────────────┐    │
-│ │ Produto      Qtd   Unit   Total  │    │
-│ │ ...                              │    │
-│ └──────────────────────────────────┘    │
-│                Subtotal   R$ ...        │
-│                Desconto  -R$ ...        │
-│                Frete     +R$ ...        │
-│                TOTAL      R$ ...        │
-│ Observações: ...                        │
-│ Válido até DD/MM/AAAA                   │
-└─────────────────────────────────────────┘
-[ Aprovar ] [ Solicitar ajustes ] [ Recusar ]
+### `consume_supplies_for_order(p_order_id)`
+- Para cada item do pedido (via quote.items → product_id), busca `product_supplies` e chama `consume_supply` para cada insumo vinculado, multiplicando `quantity_per_unit * item.quantity`.
+- Chamada quando pedido é aprovado (no `respond_to_quote_by_token` e ao criar pedido manualmente).
+- Não falha o pedido se faltar estoque — apenas registra log e cria notificação de "estoque insuficiente" (decisão: descontar até zero, nunca negativo, e notificar).
+
+## 3. View `supply_low_stock`
+```sql
+CREATE VIEW public.supply_low_stock
+WITH (security_invoker = true) AS
+SELECT ... FROM supply_stock WHERE is_active AND (...);
 ```
+`security_invoker = true` garante que RLS do usuário se aplique automaticamente.
 
-- Forçar tema claro: envolver a página em `<div className="light bg-white text-slate-900 min-h-screen">` e remover dependência do `ThemeProvider` global; usar paleta neutra fixa (slate/white/gray) ao invés de `bg-card/border-border`.
-- Tabela de itens estilo PDF (linhas com borda inferior, cabeçalho cinza claro, valores tabulares à direita).
-- Cabeçalho do vendedor com logo + nome em destaque + linha cinza separadora, idêntico ao PDF.
-- **Novo botão "Recusar orçamento"** (vermelho destrutivo) ao lado de Aprovar/Solicitar ajustes. Comentário opcional, igual ao de ajustes mas obrigatório.
+Ajuste no `CASE`: priorizar `out_of_stock`, depois `expiring_soon` se aplicável e quantidade ok, depois `low`.
 
-**Backend para Recusar** — atualizar `respond_to_quote_by_token`:
-- Aceitar `p_action IN ('approved','changes_requested','rejected')`.
-- Para `rejected`: setar `quotes.status = 'rejected'`, criar notificação `quote_rejected` (link `/orcamentos/:id`), **não criar pedido**.
+## 4. Trigger de notificação
+`AFTER UPDATE ON supply_stock` — quando `quantity` cruza `min_alert` para baixo (OLD.quantity > min_alert AND NEW.quantity <= min_alert), chama `create_notification(user_id, 'supply_low_stock', 'Estoque baixo: <nome>', ...)` alimentando o sino existente.
 
-### Detalhes técnicos
+## 5. Frontend
 
-- Migrações criadas via tool de migração Supabase (uma única migration cobrindo: nova `respond_to_quote_by_token`, REPLICA IDENTITY FULL e publication realtime para `quotes`).
-- A página `/orcamento/:token` continua pública (sem auth) e a RPC `get_quote_by_token` já retorna tudo necessário (logo_url, company_name, items, totais).
-- O cálculo de custo na função SQL precisa lidar com `price_tiers jsonb` — usar `jsonb_array_elements` filtrando por `(elem->>'quantity')::int = item_quantity`.
-- Toast em tempo real no editor via `sonner` já importado.
+### Nova página `/estoque`
+- Listagem com filtro por tipo (papel/tinta/outros), busca, badge de status (ok/baixo/zerado/vencendo).
+- Modal CRUD de insumo (nome, tipo, unidade, quantidade inicial, custo unitário, alerta mínimo, validade).
+- Botão "Entrada" e "Saída" → chama `restock_supply` / `consume_supply` com motivo.
+- Aba "Movimentações" mostrando histórico (`supply_movements` join `supply_stock`).
 
-### Arquivos a editar
-- `src/components/AppSidebar.tsx` (remover item)
-- `src/pages/OrcamentoEditor.tsx` (subscription realtime)
-- `src/pages/AprovacaoOrcamento.tsx` (reescrever UI claro + Recusar)
-- 1 migration SQL nova
+### Vínculo Produto ↔ Insumo
+Em `ProductForm.tsx`, nova seção "Insumos consumidos por unidade" — permite adicionar linhas (insumo + quantidade).
+
+### Integração com Pedidos
+Ao criar pedido via aprovação pública (`respond_to_quote_by_token`) ou conversão manual, chamar `consume_supplies_for_order(order_id)` ao final.
+
+### Sidebar
+Adicionar item "Estoque" no `AppSidebar.tsx` (ícone Package, entre Produtos e Marketplace).
+
+### Componente `StockAlerts.tsx` (novo)
+Não tocar em `SmartAlerts.tsx` (calculadora). Criar `StockAlerts.tsx` que lê `supply_low_stock` e exibe banner no Dashboard quando houver alertas.
+
+## 6. Detalhes técnicos relevantes
+
+- Todas as RPCs com `SECURITY DEFINER SET search_path TO 'public'` (padrão do projeto).
+- Hook `useSupplyStock.ts` com TanStack Query + Realtime channel em `supply_stock`.
+- `is_active=false` em vez de DELETE para preservar histórico de movimentos.
+- Migração não toca dados existentes — apenas cria estrutura nova.
+
+## 7. Fora de escopo (não fazer agora)
+- Variação de custo médio ponderado (manter `unit_cost` simples).
+- Reservas de estoque ao gerar orçamento (só desconta na aprovação).
+- Importação CSV de insumos.
+
+Aprovar para eu implementar tudo isso em uma única migração + UI completa.
