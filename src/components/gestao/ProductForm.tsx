@@ -167,6 +167,14 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       price_tiers: parsed,
       category_id: categoryId,
     });
+
+    // Save supply links only when editing existing product
+    if (initialData?.id) {
+      const links = supplyRows
+        .filter((r) => r.supply_id && parseFloat(r.quantity_per_unit.replace(',', '.')) > 0)
+        .map((r) => ({ supply_id: r.supply_id, quantity_per_unit: parseFloat(r.quantity_per_unit.replace(',', '.')) }));
+      saveLinks.mutate(links);
+    }
   };
 
   return (
