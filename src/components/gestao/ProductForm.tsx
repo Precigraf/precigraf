@@ -157,6 +157,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
     parsed.sort((a, b) => a.quantity - b.quantity);
     const first = parsed[0];
 
+    const supplyPayload: SupplyLinkPayload[] = supplyRows
+      .filter((r) => r.supply_id && parseFloat(r.quantity_per_unit.replace(',', '.')) > 0)
+      .map((r) => ({ supply_id: r.supply_id, quantity_per_unit: parseFloat(r.quantity_per_unit.replace(',', '.')) }));
+
     onSubmit({
       name: name.trim(),
       description: description.trim() || null,
@@ -171,15 +175,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       is_active: isActive,
       price_tiers: parsed,
       category_id: categoryId,
-    });
-
-    // Save supply links only when editing existing product
-    if (initialData?.id) {
-      const links = supplyRows
-        .filter((r) => r.supply_id && parseFloat(r.quantity_per_unit.replace(',', '.')) > 0)
-        .map((r) => ({ supply_id: r.supply_id, quantity_per_unit: parseFloat(r.quantity_per_unit.replace(',', '.')) }));
-      saveLinks.mutate(links);
-    }
+    }, supplyPayload);
   };
 
   return (
