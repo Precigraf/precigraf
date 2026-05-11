@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
-import { Plus, Search, Edit2, Trash2, Package, FolderPlus } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Package, FolderPlus, Boxes } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import AppLayout from '@/components/AppLayout';
-import ProductForm from '@/components/gestao/ProductForm';
+import ProductForm, { type SupplyLinkPayload } from '@/components/gestao/ProductForm';
 import CategoryManager from '@/components/gestao/CategoryManager';
 import { useProducts, type Product } from '@/hooks/useProducts';
 import { useCategories } from '@/hooks/useCategories';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 
 const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -17,11 +22,31 @@ const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'curren
 const Produtos: React.FC = () => {
   const { products, isLoading, createProduct, updateProduct, deleteProduct } = useProducts();
   const { categories } = useCategories();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const [catOpen, setCatOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [filterCat, setFilterCat] = useState<string | null>(null);
+
+  // Count of supply links per product (ajuste 3)
+  const supplyCounts = useQuery({
+    queryKey: ['product-supplies-counts', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_supplies' as any)
+        .select('product_id');
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      ((data ?? []) as any[]).forEach((row) => {
+        counts[row.product_id] = (counts[row.product_id] ?? 0) + 1;
+      });
+      return counts;
+    },
+    enabled: !!user,
+  });
 
   const filtered = products.filter(p => {
     if (!p.name.toLowerCase().includes(search.toLowerCase())) return false;
@@ -32,15 +57,40 @@ const Produtos: React.FC = () => {
   const openNew = () => { setEditing(null); setOpen(true); };
   const openEdit = (p: Product) => { setEditing(p); setOpen(true); };
 
-  const handleSubmit = (payload: any) => {
-    if (editing) {
-      updateProduct.mutate({ id: editing.id, ...payload }, {
-        onSuccess: () => setOpen(false),
-      });
-    } else {
-      createProduct.mutate(payload, {
-        onSuccess: () => setOpen(false),
-      });
+  const persistSupplyLinks = async (productId: string, links: SupplyLinkPayload[]) => {
+    if (!user) return;
+    // Replace existing links: delete all then insert new
+    const { error: delErr } = await supabase
+      .from('product_supplies' as any)
+      .delete()
+      .eq('product_id', productId);
+    if (delErr) throw delErr;
+    if (links.length > 0) {
+      const rows = links.map((l) => ({
+        user_id: user.id,
+        product_id: productId,
+        supply_id: l.supply_id,
+        quantity_per_unit: l.quantity_per_unit,
+      }));
+      const { error } = await supabase.from('product_supplies' as any).insert(rows as any);
+      if (error) throw error;
+    }
+    qc.invalidateQueries({ queryKey: ['product-supplies-counts'] });
+    qc.invalidateQueries({ queryKey: ['product-supplies', productId] });
+  };
+
+  const handleSubmit = async (payload: any, supplies: SupplyLinkPayload[]) => {
+    try {
+      if (editing) {
+        const updated = await updateProduct.mutateAsync({ id: editing.id, ...payload });
+        await persistSupplyLinks(updated.id, supplies);
+      } else {
+        const created = await createProduct.mutateAsync(payload);
+        await persistSupplyLinks(created.id, supplies);
+      }
+      setOpen(false);
+    } catch (e: any) {
+      toast({ title: 'Erro ao salvar insumos', description: e?.message ?? 'Tente novamente', variant: 'destructive' });
     }
   };
 
@@ -102,6 +152,7 @@ const Produtos: React.FC = () => {
           <div className="space-y-3">
             {filtered.map(p => {
               const catName = getCategoryName(p.category_id);
+              const linkedCount = supplyCounts.data?.[p.id] ?? 0;
               return (
                 <Card key={p.id} className="p-4 bg-card border-border">
                   <div className="flex items-start justify-between gap-4">
@@ -112,6 +163,12 @@ const Produtos: React.FC = () => {
                           <h3 className="font-semibold text-foreground truncate">{p.name}</h3>
                           {!p.is_active && <Badge variant="outline" className="text-xs">Inativo</Badge>}
                           {catName && <Badge variant="secondary" className="text-xs">{catName}</Badge>}
+                          {linkedCount > 0 && (
+                            <Badge variant="outline" className="text-xs gap-1">
+                              <Boxes className="w-3 h-3" />
+                              {linkedCount} insumo{linkedCount !== 1 ? 's' : ''}
+                            </Badge>
+                          )}
                         </div>
                         {p.description && <p className="text-sm text-muted-foreground line-clamp-1">{p.description}</p>}
                         {Array.isArray(p.price_tiers) && p.price_tiers.length > 1 ? (
