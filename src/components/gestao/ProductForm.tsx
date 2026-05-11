@@ -12,10 +12,15 @@ import { useToast } from '@/hooks/use-toast';
 import { useSupplyStock, useProductSupplies } from '@/hooks/useSupplyStock';
 import type { Product, ProductInput, PriceTier } from '@/hooks/useProducts';
 
+export interface SupplyLinkPayload {
+  supply_id: string;
+  quantity_per_unit: number;
+}
+
 interface ProductFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: ProductInput) => void;
+  onSubmit: (data: ProductInput, supplies: SupplyLinkPayload[]) => void;
   initialData?: Product | null;
   isLoading?: boolean;
 }
