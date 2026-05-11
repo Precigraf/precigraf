@@ -99,6 +99,20 @@ const Estoque: React.FC = () => {
           </Card>
         </div>
 
+        <Card className="p-3 sm:p-4 mb-4 bg-primary/5 border-primary/20">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <div className="text-xs sm:text-sm text-foreground space-y-1">
+              <p className="font-semibold">Como funciona o controle de estoque</p>
+              <ol className="list-decimal list-inside text-muted-foreground space-y-0.5">
+                <li>Cadastre seus insumos aqui (papel, tinta, embalagem, cola, alça…).</li>
+                <li>Em <strong className="text-foreground">Produtos</strong>, vincule quais insumos cada produto consome por unidade.</li>
+                <li>Quando o cliente aprovar o orçamento, o estoque é descontado automaticamente.</li>
+              </ol>
+            </div>
+          </div>
+        </Card>
+
         <Tabs defaultValue="list">
           <TabsList className="mb-4">
             <TabsTrigger value="list">Insumos</TabsTrigger>
