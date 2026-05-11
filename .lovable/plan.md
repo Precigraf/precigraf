@@ -1,79 +1,47 @@
-# Plano — Controle de Estoque de Insumos
+## Boa notícia: a infraestrutura já existe
 
-## 1. Migração do banco
+O fluxo que você descreve **já está implementado** no projeto. Só precisamos te orientar sobre como usar e fazer 2 ajustes pequenos para o fluxo ficar 100% claro.
 
-### Tabelas
-- **`supply_stock`** — conforme proposto (id, user_id, name, type [paper/ink/other], unit, quantity, unit_cost, min_alert, expiry_date, notes, is_active, timestamps) com CHECKs de não-negativo e RLS owner-only.
-- **`supply_movements`** — id, supply_id (FK cascade), user_id (FK cascade), `order_id UUID REFERENCES public.orders(id) ON DELETE SET NULL`, type (in/out), quantity (>0), unit_cost, reason, created_at. RLS owner-only.
-- **`product_supplies`** (nova) — vínculo entre produto e insumos consumidos por unidade:
-  - `id, user_id, product_id, supply_id, quantity_per_unit numeric NOT NULL`
-  - RLS owner-only. Permite que ao aprovar pedido, o sistema saiba quais insumos descontar.
+## Como funciona hoje
 
-### Índices
-Conforme proposto + `idx_product_supplies_product`.
+```text
+1. Estoque (/estoque)
+   └─ usuário cadastra: papel, tinta, alça, cola, embalagem...
+      (nome, tipo, unidade, quantidade, custo, alerta mínimo)
 
-### Trigger `updated_at`
-Reutilizar `public.update_updated_at_column()` já existente (não criar função duplicada).
+2. Produto (/gestao → Produtos → Editar)
+   └─ seção "Insumos consumidos por unidade"
+      ex.: Sacola Kraft → 1 sacola + 0,5g cola + 1 alça
 
-## 2. Funções (RPC)
-
-### `consume_supply(p_supply_id, p_quantity, p_order_id default null, p_reason default null)`
-- Valida propriedade e saldo.
-- `UPDATE supply_stock SET quantity = quantity - p_quantity`.
-- **Insere automaticamente em `supply_movements`** (type='out') na mesma transação — histórico garantido.
-- Retorna void.
-
-### `restock_supply(p_supply_id, p_quantity, p_unit_cost default null, p_reason default null)`
-- Soma ao estoque e registra movimento `in`. Útil para entradas via UI.
-
-### `consume_supplies_for_order(p_order_id)`
-- Para cada item do pedido (via quote.items → product_id), busca `product_supplies` e chama `consume_supply` para cada insumo vinculado, multiplicando `quantity_per_unit * item.quantity`.
-- Chamada quando pedido é aprovado (no `respond_to_quote_by_token` e ao criar pedido manualmente).
-- Não falha o pedido se faltar estoque — apenas registra log e cria notificação de "estoque insuficiente" (decisão: descontar até zero, nunca negativo, e notificar).
-
-## 3. View `supply_low_stock`
-```sql
-CREATE VIEW public.supply_low_stock
-WITH (security_invoker = true) AS
-SELECT ... FROM supply_stock WHERE is_active AND (...);
+3. Orçamento aprovado pelo cliente (link público)
+   └─ trigger respond_to_quote_by_token → consume_supplies_for_order
+      └─ para cada item: quantity_per_unit × item.quantity
+      └─ registra saída em supply_movements + atualiza supply_stock
+      └─ se cruzar min_alert: notificação automática
 ```
-`security_invoker = true` garante que RLS do usuário se aplique automaticamente.
 
-Ajuste no `CASE`: priorizar `out_of_stock`, depois `expiring_soon` se aplicável e quantidade ok, depois `low`.
+## Passo a passo para o usuário
 
-## 4. Trigger de notificação
-`AFTER UPDATE ON supply_stock` — quando `quantity` cruza `min_alert` para baixo (OLD.quantity > min_alert AND NEW.quantity <= min_alert), chama `create_notification(user_id, 'supply_low_stock', 'Estoque baixo: <nome>', ...)` alimentando o sino existente.
+1. **Cadastrar insumos em `/estoque`** — papel, tinta, embalagem etc. com quantidade inicial, unidade e alerta mínimo.
+2. **Editar cada produto em `/gestao`** — usar a seção "Insumos consumidos por unidade" para vincular quanto cada produto consome de cada insumo (por unidade do produto).
+3. **Pronto.** Quando o cliente aprovar pelo link público, o estoque desconta sozinho e o histórico aparece em `/estoque → Movimentações`.
 
-## 5. Frontend
+## Ajustes que vou fazer
 
-### Nova página `/estoque`
-- Listagem com filtro por tipo (papel/tinta/outros), busca, badge de status (ok/baixo/zerado/vencendo).
-- Modal CRUD de insumo (nome, tipo, unidade, quantidade inicial, custo unitário, alerta mínimo, validade).
-- Botão "Entrada" e "Saída" → chama `restock_supply` / `consume_supply` com motivo.
-- Aba "Movimentações" mostrando histórico (`supply_movements` join `supply_stock`).
+1. **Liberar a seção de insumos também na criação do produto** (hoje só aparece ao editar, porque precisa do `product_id`). Solução: salvar o produto, pegar o id e mostrar a seção em sequência — ou exibir aviso "Salve o produto antes de vincular insumos".
+2. **Banner explicativo na página `/estoque`** com 3 passos (cadastrar → vincular ao produto → aprovar orçamento) para o usuário entender o fluxo na primeira visita.
+3. **Mostrar resumo de insumos vinculados** no card/listagem de produto (ex.: "3 insumos vinculados") para o usuário saber rapidamente quais produtos já estão configurados.
 
-### Vínculo Produto ↔ Insumo
-Em `ProductForm.tsx`, nova seção "Insumos consumidos por unidade" — permite adicionar linhas (insumo + quantidade).
+## Fora de escopo (a confirmar depois, se quiser)
 
-### Integração com Pedidos
-Ao criar pedido via aprovação pública (`respond_to_quote_by_token`) ou conversão manual, chamar `consume_supplies_for_order(order_id)` ao final.
+- **Consumo diferente por variação de preço (price tier)** — hoje o consumo é linear (`qty_per_unit × quantidade do pedido`). Se a tiragem de 1000 unidades usa uma chapa de papel diferente da de 100, precisaríamos de uma tabela `product_supplies_by_tier`. Posso implementar se for o caso — me avise.
+- Reserva de estoque ao gerar orçamento (hoje só desconta na aprovação).
 
-### Sidebar
-Adicionar item "Estoque" no `AppSidebar.tsx` (ícone Package, entre Produtos e Marketplace).
+## Detalhes técnicos
 
-### Componente `StockAlerts.tsx` (novo)
-Não tocar em `SmartAlerts.tsx` (calculadora). Criar `StockAlerts.tsx` que lê `supply_low_stock` e exibe banner no Dashboard quando houver alertas.
+- Tabela `product_supplies` (id, user_id, product_id, supply_id, quantity_per_unit) já criada com RLS owner-only.
+- RPC `consume_supplies_for_order(order_id)` já chamada dentro de `respond_to_quote_by_token` quando `action='approved'`.
+- View `supply_low_stock` com `security_invoker = true` + trigger `notify_supply_low_stock` ativos.
+- Hook `useProductSupplies(productId)` em `src/hooks/useSupplyStock.ts` faz CRUD do vínculo.
 
-## 6. Detalhes técnicos relevantes
-
-- Todas as RPCs com `SECURITY DEFINER SET search_path TO 'public'` (padrão do projeto).
-- Hook `useSupplyStock.ts` com TanStack Query + Realtime channel em `supply_stock`.
-- `is_active=false` em vez de DELETE para preservar histórico de movimentos.
-- Migração não toca dados existentes — apenas cria estrutura nova.
-
-## 7. Fora de escopo (não fazer agora)
-- Variação de custo médio ponderado (manter `unit_cost` simples).
-- Reservas de estoque ao gerar orçamento (só desconta na aprovação).
-- Importação CSV de insumos.
-
-Aprovar para eu implementar tudo isso em uma única migração + UI completa.
+Aprove e eu aplico os 3 ajustes acima.

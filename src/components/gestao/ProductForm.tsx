@@ -12,10 +12,15 @@ import { useToast } from '@/hooks/use-toast';
 import { useSupplyStock, useProductSupplies } from '@/hooks/useSupplyStock';
 import type { Product, ProductInput, PriceTier } from '@/hooks/useProducts';
 
+export interface SupplyLinkPayload {
+  supply_id: string;
+  quantity_per_unit: number;
+}
+
 interface ProductFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: ProductInput) => void;
+  onSubmit: (data: ProductInput, supplies: SupplyLinkPayload[]) => void;
   initialData?: Product | null;
   isLoading?: boolean;
 }
@@ -152,6 +157,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
     parsed.sort((a, b) => a.quantity - b.quantity);
     const first = parsed[0];
 
+    const supplyPayload: SupplyLinkPayload[] = supplyRows
+      .filter((r) => r.supply_id && parseFloat(r.quantity_per_unit.replace(',', '.')) > 0)
+      .map((r) => ({ supply_id: r.supply_id, quantity_per_unit: parseFloat(r.quantity_per_unit.replace(',', '.')) }));
+
     onSubmit({
       name: name.trim(),
       description: description.trim() || null,
@@ -166,15 +175,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       is_active: isActive,
       price_tiers: parsed,
       category_id: categoryId,
-    });
-
-    // Save supply links only when editing existing product
-    if (initialData?.id) {
-      const links = supplyRows
-        .filter((r) => r.supply_id && parseFloat(r.quantity_per_unit.replace(',', '.')) > 0)
-        .map((r) => ({ supply_id: r.supply_id, quantity_per_unit: parseFloat(r.quantity_per_unit.replace(',', '.')) }));
-      saveLinks.mutate(links);
-    }
+    }, supplyPayload);
   };
 
   return (
@@ -312,33 +313,40 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
             </Button>
           </div>
 
-          {initialData?.id && supplies.length > 0 && (
-            <div className="space-y-2 pt-2 border-t border-border">
-              <div>
-                <Label className="text-base">Insumos consumidos por unidade</Label>
-                <p className="text-xs text-muted-foreground">Ao aprovar pedidos, o estoque destes insumos será descontado.</p>
-              </div>
-              <div className="space-y-2">
-                {supplyRows.map((row) => (
-                  <div key={row.id} className="grid grid-cols-[1fr_100px_auto] gap-2 items-center">
-                    <Select value={row.supply_id} onValueChange={(v) => updateSupplyRow(row.id, { supply_id: v })}>
-                      <SelectTrigger><SelectValue placeholder="Selecione um insumo" /></SelectTrigger>
-                      <SelectContent>
-                        {supplies.map((s) => (<SelectItem key={s.id} value={s.id}>{s.name} ({s.unit})</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                    <Input type="number" step="0.01" min="0" placeholder="Qtd/un" value={row.quantity_per_unit} onChange={(e) => updateSupplyRow(row.id, { quantity_per_unit: e.target.value })} />
-                    <Button type="button" variant="ghost" size="icon" onClick={() => removeSupplyRow(row.id)} className="text-destructive hover:text-destructive">
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-              <Button type="button" variant="outline" size="sm" onClick={addSupplyRow} className="w-full">
-                <Plus className="w-4 h-4 mr-2" /> Adicionar insumo
-              </Button>
+          <div className="space-y-2 pt-2 border-t border-border">
+            <div>
+              <Label className="text-base">Insumos consumidos por unidade</Label>
+              <p className="text-xs text-muted-foreground">Ao aprovar pedidos, o estoque destes insumos será descontado automaticamente (quantidade × unidades do pedido).</p>
             </div>
-          )}
+            {supplies.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic border border-dashed border-border rounded-md p-3 text-center">
+                Cadastre seus insumos em <strong>Estoque</strong> para poder vinculá-los a este produto.
+              </p>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  {supplyRows.map((row) => (
+                    <div key={row.id} className="grid grid-cols-[1fr_100px_auto] gap-2 items-center">
+                      <Select value={row.supply_id} onValueChange={(v) => updateSupplyRow(row.id, { supply_id: v })}>
+                        <SelectTrigger><SelectValue placeholder="Selecione um insumo" /></SelectTrigger>
+                        <SelectContent>
+                          {supplies.map((s) => (<SelectItem key={s.id} value={s.id}>{s.name} ({s.unit})</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                      <Input type="number" step="0.01" min="0" placeholder="Qtd/un" value={row.quantity_per_unit} onChange={(e) => updateSupplyRow(row.id, { quantity_per_unit: e.target.value })} />
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeSupplyRow(row.id)} className="text-destructive hover:text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={addSupplyRow} className="w-full">
+                  <Plus className="w-4 h-4 mr-2" /> Adicionar insumo
+                </Button>
+              </>
+            )}
+          </div>
+
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-border">
             <div className="flex items-center gap-3">
