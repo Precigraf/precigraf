@@ -313,11 +313,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
             </Button>
           </div>
 
-          {initialData?.id && supplies.length > 0 && (
+          {supplies.length > 0 && (
             <div className="space-y-2 pt-2 border-t border-border">
               <div>
                 <Label className="text-base">Insumos consumidos por unidade</Label>
-                <p className="text-xs text-muted-foreground">Ao aprovar pedidos, o estoque destes insumos será descontado.</p>
+                <p className="text-xs text-muted-foreground">Ao aprovar pedidos, o estoque destes insumos será descontado automaticamente (quantidade × unidades do pedido).</p>
               </div>
               <div className="space-y-2">
                 {supplyRows.map((row) => (
