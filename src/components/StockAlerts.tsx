@@ -10,7 +10,6 @@ const StockAlerts: React.FC = () => {
 
   const out = alerts.filter((a) => a.alert_type === 'out_of_stock');
   const low = alerts.filter((a) => a.alert_type === 'low');
-  const exp = alerts.filter((a) => a.alert_type === 'expiring_soon');
 
   return (
     <Link to="/estoque" className="block">
@@ -21,7 +20,6 @@ const StockAlerts: React.FC = () => {
             <strong>Estoque:</strong>{' '}
             {out.length > 0 && <>{out.length} zerado{out.length > 1 ? 's' : ''} · </>}
             {low.length > 0 && <>{low.length} baixo{low.length > 1 ? 's' : ''} · </>}
-            {exp.length > 0 && <>{exp.length} vencendo · </>}
             <span className="underline">ver detalhes</span>
           </span>
           <AlertTriangle className="w-4 h-4 shrink-0" />

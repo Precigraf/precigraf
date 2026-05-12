@@ -23,7 +23,6 @@ const SupplyForm: React.FC<Props> = ({ open, onOpenChange, onSubmit, initialData
   const [quantity, setQuantity] = useState('0');
   const [unitCost, setUnitCost] = useState('0');
   const [minAlert, setMinAlert] = useState('0');
-  const [expiry, setExpiry] = useState('');
   const [notes, setNotes] = useState('');
   const [isActive, setIsActive] = useState(true);
 
@@ -35,13 +34,12 @@ const SupplyForm: React.FC<Props> = ({ open, onOpenChange, onSubmit, initialData
       setQuantity(String(initialData.quantity));
       setUnitCost(String(initialData.unit_cost));
       setMinAlert(String(initialData.min_alert));
-      setExpiry(initialData.expiry_date ?? '');
       setNotes(initialData.notes ?? '');
       setIsActive(initialData.is_active);
     } else {
       setName(''); setType('paper'); setUnit('un');
       setQuantity('0'); setUnitCost('0'); setMinAlert('0');
-      setExpiry(''); setNotes(''); setIsActive(true);
+      setNotes(''); setIsActive(true);
     }
   }, [initialData, open]);
 
@@ -55,7 +53,7 @@ const SupplyForm: React.FC<Props> = ({ open, onOpenChange, onSubmit, initialData
       quantity: parseFloat(quantity.replace(',', '.')) || 0,
       unit_cost: parseFloat(unitCost.replace(',', '.')) || 0,
       min_alert: parseFloat(minAlert.replace(',', '.')) || 0,
-      expiry_date: expiry || null,
+      expiry_date: null,
       notes: notes.trim() || null,
       is_active: isActive,
     });
@@ -100,15 +98,9 @@ const SupplyForm: React.FC<Props> = ({ open, onOpenChange, onSubmit, initialData
               <Input type="number" step="0.01" min="0" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Alerta mínimo</Label>
-              <Input type="number" step="0.01" min="0" value={minAlert} onChange={(e) => setMinAlert(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Validade</Label>
-              <Input type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)} />
-            </div>
+          <div className="space-y-2">
+            <Label>Alerta mínimo</Label>
+            <Input type="number" step="0.01" min="0" value={minAlert} onChange={(e) => setMinAlert(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label>Observações</Label>

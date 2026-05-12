@@ -21,6 +21,7 @@ import ClientForm from '@/components/gestao/ClientForm';
 import ConvertToOrderModal, { type ConvertToOrderData } from '@/components/gestao/ConvertToOrderModal';
 import { useClients } from '@/hooks/useClients';
 import { useProducts, type Product } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -61,6 +62,7 @@ const OrcamentoEditor: React.FC = () => {
   const qc = useQueryClient();
   const { clients, createClient } = useClients();
   const { products } = useProducts();
+  const { categories } = useCategories();
   const { profile } = useCompanyProfile();
 
   const isNew = !id || id === 'novo';
@@ -80,6 +82,7 @@ const OrcamentoEditor: React.FC = () => {
   const [items, setItems] = useState<QuoteItem[]>([]);
   const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [productSearch, setProductSearch] = useState('');
+  const [productFilterCat, setProductFilterCat] = useState<string | null>(null);
   const [tierPickerProduct, setTierPickerProduct] = useState<Product | null>(null);
 
   const [notes, setNotes] = useState('');
@@ -158,8 +161,11 @@ const OrcamentoEditor: React.FC = () => {
 
   const filteredProducts = useMemo(() => {
     const q = productSearch.toLowerCase();
-    return products.filter(p => p.name.toLowerCase().includes(q));
-  }, [products, productSearch]);
+    return products.filter(p => {
+      if (productFilterCat && p.category_id !== productFilterCat) return false;
+      return p.name.toLowerCase().includes(q);
+    });
+  }, [products, productSearch, productFilterCat]);
 
   // Financial summary
   const subtotal = useMemo(() => items.reduce((s, i) => s + i.quantity * i.unit_value, 0), [items]);
@@ -812,6 +818,27 @@ const OrcamentoEditor: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input autoFocus value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Buscar produto..." className="pl-10" />
               </div>
+              {categories.length > 0 && (
+                <div className="flex gap-1.5 flex-wrap">
+                  <Badge
+                    variant={productFilterCat === null ? 'default' : 'outline'}
+                    className="cursor-pointer text-xs"
+                    onClick={() => setProductFilterCat(null)}
+                  >
+                    Todas
+                  </Badge>
+                  {categories.map(cat => (
+                    <Badge
+                      key={cat.id}
+                      variant={productFilterCat === cat.id ? 'default' : 'outline'}
+                      className="cursor-pointer text-xs"
+                      onClick={() => setProductFilterCat(productFilterCat === cat.id ? null : cat.id)}
+                    >
+                      {cat.name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
               <div className="max-h-72 overflow-y-auto space-y-1">
                 {filteredProducts.length === 0 ? (
                   <div className="text-center py-6 text-sm text-muted-foreground">

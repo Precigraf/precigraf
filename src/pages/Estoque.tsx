@@ -66,8 +66,6 @@ const Estoque: React.FC = () => {
     if (!s.is_active) return <Badge variant="outline" className="text-xs">Inativo</Badge>;
     if (s.quantity === 0) return <Badge className="text-xs bg-destructive text-destructive-foreground">Zerado</Badge>;
     if (s.min_alert > 0 && s.quantity <= s.min_alert) return <Badge className="text-xs bg-warning text-warning-foreground">Baixo</Badge>;
-    if (s.expiry_date && new Date(s.expiry_date) <= new Date(Date.now() + 30 * 86400000))
-      return <Badge variant="outline" className="text-xs border-warning text-warning">Vence em 30d</Badge>;
     return null;
   };
 
@@ -162,7 +160,6 @@ const Estoque: React.FC = () => {
                             <span><span className="text-foreground font-medium">{s.quantity}</span> {s.unit}</span>
                             <span>custo: {formatBRL(s.unit_cost)}</span>
                             {s.min_alert > 0 && <span>mín: {s.min_alert}</span>}
-                            {s.expiry_date && <span>val: {new Date(s.expiry_date).toLocaleDateString('pt-BR')}</span>}
                           </div>
                         </div>
                       </div>
