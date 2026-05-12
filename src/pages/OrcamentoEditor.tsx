@@ -818,6 +818,27 @@ const OrcamentoEditor: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input autoFocus value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Buscar produto..." className="pl-10" />
               </div>
+              {categories.length > 0 && (
+                <div className="flex gap-1.5 flex-wrap">
+                  <Badge
+                    variant={productFilterCat === null ? 'default' : 'outline'}
+                    className="cursor-pointer text-xs"
+                    onClick={() => setProductFilterCat(null)}
+                  >
+                    Todas
+                  </Badge>
+                  {categories.map(cat => (
+                    <Badge
+                      key={cat.id}
+                      variant={productFilterCat === cat.id ? 'default' : 'outline'}
+                      className="cursor-pointer text-xs"
+                      onClick={() => setProductFilterCat(productFilterCat === cat.id ? null : cat.id)}
+                    >
+                      {cat.name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
               <div className="max-h-72 overflow-y-auto space-y-1">
                 {filteredProducts.length === 0 ? (
                   <div className="text-center py-6 text-sm text-muted-foreground">
