@@ -63,6 +63,7 @@ const OrcamentoEditor: React.FC = () => {
   const { clients, createClient } = useClients();
   const { products } = useProducts();
   const { categories } = useCategories();
+  const { profile } = useCompanyProfile();
 
   const isNew = !id || id === 'novo';
 
