@@ -82,6 +82,7 @@ const OrcamentoEditor: React.FC = () => {
   const [items, setItems] = useState<QuoteItem[]>([]);
   const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [productSearch, setProductSearch] = useState('');
+  const [productFilterCat, setProductFilterCat] = useState<string | null>(null);
   const [tierPickerProduct, setTierPickerProduct] = useState<Product | null>(null);
 
   const [notes, setNotes] = useState('');
@@ -160,8 +161,11 @@ const OrcamentoEditor: React.FC = () => {
 
   const filteredProducts = useMemo(() => {
     const q = productSearch.toLowerCase();
-    return products.filter(p => p.name.toLowerCase().includes(q));
-  }, [products, productSearch]);
+    return products.filter(p => {
+      if (productFilterCat && p.category_id !== productFilterCat) return false;
+      return p.name.toLowerCase().includes(q);
+    });
+  }, [products, productSearch, productFilterCat]);
 
   // Financial summary
   const subtotal = useMemo(() => items.reduce((s, i) => s + i.quantity * i.unit_value, 0), [items]);
