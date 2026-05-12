@@ -21,6 +21,7 @@ import ClientForm from '@/components/gestao/ClientForm';
 import ConvertToOrderModal, { type ConvertToOrderData } from '@/components/gestao/ConvertToOrderModal';
 import { useClients } from '@/hooks/useClients';
 import { useProducts, type Product } from '@/hooks/useProducts';
+import { useCategories } from '@/hooks/useCategories';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -61,7 +62,7 @@ const OrcamentoEditor: React.FC = () => {
   const qc = useQueryClient();
   const { clients, createClient } = useClients();
   const { products } = useProducts();
-  const { profile } = useCompanyProfile();
+  const { categories } = useCategories();
 
   const isNew = !id || id === 'novo';
 
