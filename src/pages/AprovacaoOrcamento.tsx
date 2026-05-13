@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, X, Loader2, FileText, Ban } from 'lucide-react';
+import { Check, Loader2, FileText, Ban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -102,11 +104,11 @@ const AprovacaoOrcamento: React.FC = () => {
   if (!quote) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-        <div className="bg-white border border-gray-200 rounded-lg p-8 text-center max-w-md shadow-sm">
+        <Card className="bg-white border-gray-200 p-8 text-center max-w-md shadow-sm">
           <FileText className="w-10 h-10 text-gray-400 mx-auto mb-3" />
           <h1 className="text-lg font-semibold text-gray-900">Orçamento não encontrado</h1>
           <p className="text-sm text-gray-500 mt-2">O link pode ter expirado ou estar incorreto.</p>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -119,77 +121,91 @@ const AprovacaoOrcamento: React.FC = () => {
     .join(' · ');
   const clientInfo = [quote.client.whatsapp, quote.client.email].filter(Boolean).join(' · ');
 
+  const statusBadge = () => {
+    const map: Record<string, { label: string; cls: string }> = {
+      enviado: { label: 'Aguardando resposta', cls: 'bg-blue-100 text-blue-700 border-blue-200' },
+      approved: { label: 'Aprovado', cls: 'bg-green-100 text-green-700 border-green-200' },
+      aprovado: { label: 'Aprovado', cls: 'bg-green-100 text-green-700 border-green-200' },
+      rejected: { label: 'Recusado', cls: 'bg-red-100 text-red-700 border-red-200' },
+      recusado: { label: 'Recusado', cls: 'bg-red-100 text-red-700 border-red-200' },
+      changes_requested: { label: 'Ajustes solicitados', cls: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+    };
+    const s = map[quote.status] ?? { label: quote.status, cls: 'bg-gray-100 text-gray-700 border-gray-200' };
+    return <Badge className={`${s.cls} hover:${s.cls}`}>{s.label}</Badge>;
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4 text-gray-900">
-      <div className="max-w-3xl mx-auto">
-        {/* PDF-like document */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-8 sm:p-10">
-          {/* Header */}
-          <div className="flex items-start gap-4 pb-5 border-b border-gray-300">
-            {quote.seller.logo_url ? (
-              <img
-                src={quote.seller.logo_url}
-                alt="logo"
-                className="w-16 h-16 object-contain rounded"
-              />
-            ) : (
-              <div className="w-16 h-16 rounded bg-gray-900 text-white flex items-center justify-center text-xl font-bold">
-                {quote.seller.company_name.charAt(0)}
-              </div>
-            )}
-            <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-bold text-gray-900 truncate">{quote.seller.company_name}</h1>
-              {sellerInfo && <p className="text-xs text-gray-500 mt-1 break-words">{sellerInfo}</p>}
+    <div className="min-h-screen bg-gray-100 text-gray-900">
+      <div className="max-w-3xl mx-auto px-4 py-8 md:py-12 space-y-5">
+        {/* Header */}
+        <header className="text-center">
+          {quote.seller.logo_url ? (
+            <img
+              src={quote.seller.logo_url}
+              alt="logo"
+              className="w-16 h-16 object-contain rounded mx-auto mb-3"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded bg-gray-900 text-white flex items-center justify-center text-xl font-bold mx-auto mb-3">
+              {quote.seller.company_name.charAt(0)}
             </div>
-          </div>
+          )}
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900">{quote.seller.company_name}</h1>
+          {sellerInfo && <p className="text-xs text-gray-500 mt-1 break-words">{sellerInfo}</p>}
+          <p className="text-sm text-gray-600 mt-3 font-medium">
+            Orçamento ORC-{quote.quote_number ?? '—'}
+          </p>
+        </header>
 
-          {/* Title row */}
-          <div className="flex items-baseline justify-between mt-6 mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Orçamento ORC-{quote.quote_number ?? '—'}
-            </h2>
-            <span className="text-sm text-gray-500">
-              {new Date(quote.created_at).toLocaleDateString('pt-BR')}
+        {/* Card: Cliente */}
+        <Card className="p-5 md:p-6 bg-white border-gray-200 shadow-sm">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <div className="text-xs text-gray-500 uppercase font-semibold tracking-wide">Cliente</div>
+              <h2 className="text-lg font-semibold text-gray-900 mt-1">{quote.client.name}</h2>
+              {clientInfo && <p className="text-xs text-gray-500 mt-0.5">{clientInfo}</p>}
+            </div>
+            {statusBadge()}
+          </div>
+          <div className="mt-4 pt-3 border-t border-gray-200 flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-500">
+            <span>
+              Emitido em <span className="text-gray-700 font-medium">{new Date(quote.created_at).toLocaleDateString('pt-BR')}</span>
             </span>
+            {quote.valid_until && (
+              <span>
+                Válido até{' '}
+                <span className="text-gray-700 font-medium">
+                  {new Date(quote.valid_until + 'T00:00:00').toLocaleDateString('pt-BR')}
+                </span>
+              </span>
+            )}
           </div>
+        </Card>
 
-          {/* Client */}
-          <div className="mb-6 text-sm text-gray-700">
-            <p>
-              <span className="text-gray-500">Cliente:</span>{' '}
-              <span className="font-medium">{quote.client.name}</span>
-            </p>
-            {clientInfo && <p className="text-xs text-gray-500 mt-0.5">{clientInfo}</p>}
-          </div>
+        {/* Card: Itens */}
+        <Card className="p-5 md:p-6 bg-white border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Itens do Orçamento</h3>
+          <ul className="divide-y divide-gray-200">
+            {quote.items.map((it, i) => (
+              <li key={i} className="py-3 flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900 break-words">{it.name}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {it.quantity} × {fmt(it.unit_value)}
+                  </p>
+                </div>
+                <span className="text-sm font-semibold text-gray-900 tabular-nums shrink-0">
+                  {fmt(it.quantity * it.unit_value)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
 
-          {/* Items table */}
-          <div className="border border-gray-200 rounded overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-100 text-gray-700">
-                <tr>
-                  <th className="text-left font-semibold px-3 py-2">Produto</th>
-                  <th className="text-right font-semibold px-3 py-2 w-16">Qtd</th>
-                  <th className="text-right font-semibold px-3 py-2 w-28">Unit.</th>
-                  <th className="text-right font-semibold px-3 py-2 w-28">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {quote.items.map((it, i) => (
-                  <tr key={i} className="border-t border-gray-200">
-                    <td className="px-3 py-2 text-gray-900">{it.name}</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-gray-700">{it.quantity}</td>
-                    <td className="px-3 py-2 text-right tabular-nums text-gray-700">{fmt(it.unit_value)}</td>
-                    <td className="px-3 py-2 text-right tabular-nums font-medium text-gray-900">
-                      {fmt(it.quantity * it.unit_value)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Totals */}
-          <div className="mt-4 ml-auto max-w-xs space-y-1 text-sm">
+        {/* Card: Resumo Financeiro */}
+        <Card className="p-5 md:p-6 bg-white border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Resumo</h3>
+          <div className="space-y-2 text-sm">
             <div className="flex justify-between text-gray-600">
               <span>Subtotal</span>
               <span className="tabular-nums">{fmt(quote.subtotal)}</span>
@@ -206,98 +222,91 @@ const AprovacaoOrcamento: React.FC = () => {
                 <span className="tabular-nums">+{fmt(quote.shipping_value)}</span>
               </div>
             )}
-            <div className="flex justify-between text-lg font-bold pt-2 mt-2 border-t-2 border-gray-900 text-gray-900">
+            <div className="flex justify-between text-lg font-bold pt-3 mt-2 border-t-2 border-gray-900 text-gray-900">
               <span>Total</span>
               <span className="tabular-nums">{fmt(quote.total_value)}</span>
             </div>
           </div>
+        </Card>
 
-          {quote.notes && (
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <p className="text-xs font-semibold text-gray-500 uppercase mb-1">Observações</p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{quote.notes}</p>
-            </div>
-          )}
+        {/* Card: Observações */}
+        {quote.notes && (
+          <Card className="p-5 md:p-6 bg-white border-gray-200 shadow-sm">
+            <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">Observações</h3>
+            <p className="text-sm text-gray-700 whitespace-pre-wrap">{quote.notes}</p>
+          </Card>
+        )}
 
-          {quote.valid_until && (
-            <p className="text-xs text-gray-500 mt-6">
-              Válido até {new Date(quote.valid_until + 'T00:00:00').toLocaleDateString('pt-BR')}
-            </p>
-          )}
-        </div>
-
-        {/* Action area */}
-        <div className="mt-4">
-          {done ? (
-            <div className="bg-white border border-gray-200 rounded-lg p-6 text-center shadow-sm">
-              {done === 'approved' && (
-                <>
-                  <div className="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-3">
-                    <Check className="w-6 h-6" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900">Orçamento aprovado!</h3>
-                  <p className="text-sm text-gray-500 mt-1">Obrigado. Em breve entraremos em contato.</p>
-                </>
-              )}
-              {done === 'changes_requested' && (
-                <>
-                  <div className="w-12 h-12 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center mx-auto mb-3">
-                    <FileText className="w-6 h-6" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900">Solicitação enviada</h3>
-                  <p className="text-sm text-gray-500 mt-1">Recebemos seu pedido de ajustes.</p>
-                </>
-              )}
-              {done === 'rejected' && (
-                <>
-                  <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3">
-                    <Ban className="w-6 h-6" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900">Orçamento recusado</h3>
-                  <p className="text-sm text-gray-500 mt-1">Resposta registrada. Obrigado pelo retorno.</p>
-                </>
-              )}
+        {/* Card: Ação */}
+        {done ? (
+          <Card className="p-6 bg-white border-gray-200 shadow-sm text-center">
+            {done === 'approved' && (
+              <>
+                <div className="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-3">
+                  <Check className="w-6 h-6" />
+                </div>
+                <h3 className="font-semibold text-gray-900">Orçamento aprovado!</h3>
+                <p className="text-sm text-gray-500 mt-1">Obrigado. Em breve entraremos em contato.</p>
+              </>
+            )}
+            {done === 'changes_requested' && (
+              <>
+                <div className="w-12 h-12 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center mx-auto mb-3">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <h3 className="font-semibold text-gray-900">Solicitação enviada</h3>
+                <p className="text-sm text-gray-500 mt-1">Recebemos seu pedido de ajustes.</p>
+              </>
+            )}
+            {done === 'rejected' && (
+              <>
+                <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-3">
+                  <Ban className="w-6 h-6" />
+                </div>
+                <h3 className="font-semibold text-gray-900">Orçamento recusado</h3>
+                <p className="text-sm text-gray-500 mt-1">Resposta registrada. Obrigado pelo retorno.</p>
+              </>
+            )}
+          </Card>
+        ) : quote.already_responded ? (
+          <Card className="p-6 bg-white border-gray-200 shadow-sm text-center">
+            <p className="text-sm text-gray-500">Este orçamento já foi respondido.</p>
+          </Card>
+        ) : (
+          <Card className="p-5 md:p-6 bg-white border-gray-200 shadow-sm space-y-3">
+            <h3 className="text-lg font-semibold text-gray-900">Sua resposta</h3>
+            <Textarea
+              placeholder="Comentário (obrigatório se solicitar ajustes ou recusar)"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={3}
+              className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <Button
+                onClick={() => respond('approved')}
+                disabled={submitting}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Check className="w-4 h-4 mr-1" /> Aprovar
+              </Button>
+              <Button
+                onClick={() => respond('changes_requested')}
+                disabled={submitting}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white border-0"
+              >
+                <FileText className="w-4 h-4 mr-1" /> Solicitar ajustes
+              </Button>
+              <Button
+                onClick={() => respond('rejected')}
+                disabled={submitting}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                <Ban className="w-4 h-4 mr-1" /> Recusar
+              </Button>
             </div>
-          ) : quote.already_responded ? (
-            <div className="bg-white border border-gray-200 rounded-lg p-6 text-center shadow-sm">
-              <p className="text-sm text-gray-500">Este orçamento já foi respondido.</p>
-            </div>
-          ) : (
-            <div className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm space-y-3">
-              <Textarea
-                placeholder="Comentário (obrigatório se solicitar ajustes ou recusar)"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={3}
-                className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <Button
-                  onClick={() => respond('approved')}
-                  disabled={submitting}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Check className="w-4 h-4 mr-1" /> Aprovar
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => respond('changes_requested')}
-                  disabled={submitting}
-                  className="border-gray-300 text-gray-900 hover:bg-gray-50"
-                >
-                  <FileText className="w-4 h-4 mr-1" /> Solicitar ajustes
-                </Button>
-                <Button
-                  onClick={() => respond('rejected')}
-                  disabled={submitting}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                >
-                  <Ban className="w-4 h-4 mr-1" /> Recusar
-                </Button>
-              </div>
-            </div>
-          )}
-        </div>
+          </Card>
+        )}
       </div>
     </div>
   );
