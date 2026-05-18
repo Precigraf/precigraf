@@ -25,6 +25,7 @@ import RastreioPedido from "./pages/RastreioPedido";
 import LandingPage from "./pages/LandingPage";
 import Suporte from "./pages/Suporte";
 import AprovacaoOrcamento from "./pages/AprovacaoOrcamento";
+import PortalCliente from "./pages/PortalCliente";
 import ContasReceber from "./pages/ContasReceber";
 import Estoque from "./pages/Estoque";
 import NotFound from "./pages/NotFound";
