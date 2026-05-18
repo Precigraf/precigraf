@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, Search, Mail, Edit2, Trash2, MapPin, Eye, Link2 } from 'lucide-react';
+import { Plus, Search, Mail, Edit2, Trash2, MapPin, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { buildClientPortalUrl } from '@/lib/publicUrl';
-import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -42,31 +40,6 @@ const Clientes: React.FC = () => {
   const openWhatsApp = (phone: string) => {
     const clean = phone.replace(/\D/g, '');
     window.open(`https://wa.me/55${clean}`, '_blank');
-  };
-
-  const copyPortalLink = async (client: Client) => {
-    if (!client.portal_token) {
-      toast.error('Token do portal indisponível. Recarregue a página.');
-      return;
-    }
-    const url = buildClientPortalUrl(client.portal_token);
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success('Link do portal copiado!');
-    } catch {
-      window.prompt('Copie o link do portal:', url);
-    }
-  };
-
-  const sendPortalByWhatsApp = (client: Client) => {
-    if (!client.whatsapp || !client.portal_token) {
-      toast.error('Cliente sem WhatsApp ou token do portal.');
-      return;
-    }
-    const url = buildClientPortalUrl(client.portal_token);
-    const text = encodeURIComponent(`Olá ${client.name}! Este é o seu portal: ${url}`);
-    const clean = client.whatsapp.replace(/\D/g, '');
-    window.open(`https://wa.me/55${clean}?text=${text}`, '_blank');
   };
 
   return (
@@ -122,25 +95,6 @@ const Clientes: React.FC = () => {
                         title="Abrir WhatsApp"
                       >
                         <WhatsAppIcon className="w-4 h-4" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => copyPortalLink(client)}
-                      title="Copiar link do portal do cliente"
-                    >
-                      <Link2 className="w-4 h-4" />
-                    </Button>
-                    {client.whatsapp && client.portal_token && (
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => sendPortalByWhatsApp(client)}
-                        title="Enviar portal por WhatsApp"
-                        className="border-[#25D366]/40 bg-white hover:bg-[#25D366]/10 text-[#25D366] hover:text-[#25D366]"
-                      >
-                        <Link2 className="w-4 h-4" />
                       </Button>
                     )}
                     <Button variant="ghost" size="icon" onClick={() => setViewingClient(client)} title="Visualizar cadastro">

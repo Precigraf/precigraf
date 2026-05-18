@@ -15,7 +15,3 @@ export const buildQuoteApprovalUrl = (token: string): string =>
 
 export const buildOrderTrackingUrl = (token: string): string =>
   buildPublicUrl(`/pedido/${token}`);
-
-export const buildClientPortalUrl = (token: string): string =>
-  buildPublicUrl(`/cliente/${token}`);
-
