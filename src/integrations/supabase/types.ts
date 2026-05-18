@@ -104,6 +104,45 @@ export type Database = {
         }
         Relationships: []
       }
+      client_files: {
+        Row: {
+          client_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          mime_type: string | null
+          order_id: string | null
+          uploaded_by: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number
+          id?: string
+          mime_type?: string | null
+          order_id?: string | null
+          uploaded_by: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          mime_type?: string | null
+          order_id?: string | null
+          uploaded_by?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           address: string | null
@@ -118,6 +157,7 @@ export type Database = {
           name: string
           neighborhood: string | null
           notes: string | null
+          portal_token: string
           state: string | null
           updated_at: string
           user_id: string
@@ -136,6 +176,7 @@ export type Database = {
           name: string
           neighborhood?: string | null
           notes?: string | null
+          portal_token?: string
           state?: string | null
           updated_at?: string
           user_id: string
@@ -154,6 +195,7 @@ export type Database = {
           name?: string
           neighborhood?: string | null
           notes?: string | null
+          portal_token?: string
           state?: string | null
           updated_at?: string
           user_id?: string
@@ -1259,6 +1301,11 @@ export type Database = {
         }
         Returns: string
       }
+      get_client_portal: { Args: { p_token: string }; Returns: Json }
+      get_client_portal_file_meta: {
+        Args: { p_file_id: string; p_token: string }
+        Returns: Json
+      }
       get_free_plan_id: { Args: never; Returns: string }
       get_order_by_tracking_token: { Args: { p_token: string }; Returns: Json }
       get_quote_by_token: { Args: { p_token: string }; Returns: Json }
@@ -1274,6 +1321,10 @@ export type Database = {
         Returns: boolean
       }
       increment_edit_count: { Args: { p_user_id: string }; Returns: undefined }
+      list_client_portal_files: {
+        Args: { p_order_id?: string; p_token: string }
+        Returns: Json
+      }
       log_security_event: {
         Args: {
           p_description: string
@@ -1284,6 +1335,17 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      register_client_portal_upload: {
+        Args: {
+          p_file_name: string
+          p_file_path: string
+          p_mime: string
+          p_order_id: string
+          p_size: number
+          p_token: string
+        }
+        Returns: Json
       }
       respond_to_quote_by_token: {
         Args: { p_action: string; p_comment?: string; p_token: string }
