@@ -124,6 +124,25 @@ const Clientes: React.FC = () => {
                         <WhatsAppIcon className="w-4 h-4" />
                       </Button>
                     )}
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => copyPortalLink(client)}
+                      title="Copiar link do portal do cliente"
+                    >
+                      <Link2 className="w-4 h-4" />
+                    </Button>
+                    {client.whatsapp && client.portal_token && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => sendPortalByWhatsApp(client)}
+                        title="Enviar portal por WhatsApp"
+                        className="border-[#25D366]/40 bg-white hover:bg-[#25D366]/10 text-[#25D366] hover:text-[#25D366]"
+                      >
+                        <Link2 className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" onClick={() => setViewingClient(client)} title="Visualizar cadastro">
                       <Eye className="w-4 h-4" />
                     </Button>
