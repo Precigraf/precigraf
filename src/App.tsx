@@ -66,6 +66,7 @@ const App = () => (
               <Route path="/financeiro/receber" element={<ProtectedRoute><ContasReceber /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><Estoque /></ProtectedRoute>} />
               <Route path="/orcamento/:token" element={<AprovacaoOrcamento />} />
+              <Route path="/cliente/:token" element={<PortalCliente />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>
