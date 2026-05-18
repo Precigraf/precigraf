@@ -25,6 +25,7 @@ import RastreioPedido from "./pages/RastreioPedido";
 import LandingPage from "./pages/LandingPage";
 import Suporte from "./pages/Suporte";
 import AprovacaoOrcamento from "./pages/AprovacaoOrcamento";
+import PortalCliente from "./pages/PortalCliente";
 import ContasReceber from "./pages/ContasReceber";
 import Estoque from "./pages/Estoque";
 import NotFound from "./pages/NotFound";
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="/financeiro/receber" element={<ProtectedRoute><ContasReceber /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><Estoque /></ProtectedRoute>} />
               <Route path="/orcamento/:token" element={<AprovacaoOrcamento />} />
+              <Route path="/cliente/:token" element={<PortalCliente />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>

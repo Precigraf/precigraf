@@ -5,3 +5,10 @@ verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.client-portal-upload]
+verify_jwt = false
+
+[functions.client-portal-file-url]
+verify_jwt = false
+
