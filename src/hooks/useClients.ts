@@ -18,6 +18,7 @@ export interface Client {
   city: string | null;
   state: string | null;
   notes: string | null;
+  portal_token?: string | null;
   created_at: string;
   updated_at: string;
 }
