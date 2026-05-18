@@ -44,6 +44,31 @@ const Clientes: React.FC = () => {
     window.open(`https://wa.me/55${clean}`, '_blank');
   };
 
+  const copyPortalLink = async (client: Client) => {
+    if (!client.portal_token) {
+      toast.error('Token do portal indisponível. Recarregue a página.');
+      return;
+    }
+    const url = buildClientPortalUrl(client.portal_token);
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Link do portal copiado!');
+    } catch {
+      window.prompt('Copie o link do portal:', url);
+    }
+  };
+
+  const sendPortalByWhatsApp = (client: Client) => {
+    if (!client.whatsapp || !client.portal_token) {
+      toast.error('Cliente sem WhatsApp ou token do portal.');
+      return;
+    }
+    const url = buildClientPortalUrl(client.portal_token);
+    const text = encodeURIComponent(`Olá ${client.name}! Este é o seu portal: ${url}`);
+    const clean = client.whatsapp.replace(/\D/g, '');
+    window.open(`https://wa.me/55${clean}?text=${text}`, '_blank');
+  };
+
   return (
     <AppLayout>
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-4xl">
