@@ -189,6 +189,8 @@ const CostCalculator: React.FC = () => {
       if (ri.packagingData) setPackagingData(ri.packagingData);
       if (ri.otherMaterialsItems) setOtherMaterialsItems(ri.otherMaterialsItems);
       if (ri.operationalCostsData) setOperationalCostsData(ri.operationalCostsData);
+      if (ri.taxesFees) setTaxesFees(ri.taxesFees);
+      else setTaxesFees(DEFAULT_TAXES_FEES);
     } else {
       // Fallback para registros antigos sem raw_inputs
       setPaperData({ packageValue: calculation.paper_cost, packageQuantity: 1, quantityUsed: 1 });
