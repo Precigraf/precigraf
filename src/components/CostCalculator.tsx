@@ -627,6 +627,13 @@ const CostCalculator: React.FC = () => {
             />
           </FormSection>
 
+          {/* Seção 6: Taxas e Impostos */}
+          <TaxesFeesInput
+            data={taxesFees}
+            onChange={setTaxesFees}
+            basePrice={calculations.baseSellingPrice}
+          />
+
         </div>
 
         {/* Coluna Direita - Resultados */}
