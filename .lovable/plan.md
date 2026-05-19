@@ -1,70 +1,57 @@
-## Objetivo
+## 1) Calculadora — Taxas, Juros e Impostos
 
-Voltar a página `/orcamento/:token` (`src/pages/AprovacaoOrcamento.tsx`) para um layout em **cards** no mesmo padrão visual da página de Rastreio do Pedido (`src/pages/RastreioPedido.tsx`), e ajustar a cor do botão **Solicitar ajustes** para amarelo com fonte branca.
+Nova seção **"Taxas e Impostos"** no `CostCalculator.tsx`, abaixo da margem de lucro, com os campos:
 
-## Mudanças
+- Taxa de cartão (%)
+- Juros de parcelamento (%)
+- Impostos (%)
+- Outras taxas (lista livre: nome + %)
 
-### 1. `src/pages/AprovacaoOrcamento.tsx` — refatorar layout
-
-Substituir o atual "documento estilo PDF" por uma estrutura em cards, mantendo:
-- Tema claro forçado (já existente)
-- Mesmos dados (vendedor, cliente, itens, totais, observações, validade)
-- Mesma lógica de resposta (`respond_to_quote_by_token`) e estados (`loading`, `done`, `already_responded`)
-- 3 botões: Aprovar / Solicitar ajustes / Recusar
-
-Nova estrutura visual (semelhante a `RastreioPedido.tsx`):
-
+**Fórmula (Adicionar por cima do preço):**
 ```text
-┌─ Header centralizado ─────────────────┐
-│  Logo + Nome da empresa               │
-│  "Orçamento ORC-123"                  │
-└───────────────────────────────────────┘
-
-┌─ Card: Dados do Cliente ──────────────┐
-│  Nome, contato, data, validade,       │
-│  badge de status                      │
-└───────────────────────────────────────┘
-
-┌─ Card: Itens do Orçamento ────────────┐
-│  Lista divide-y (igual Rastreio):     │
-│  Nome  ........... Qtd × Unit = Total │
-└───────────────────────────────────────┘
-
-┌─ Card: Resumo Financeiro ─────────────┐
-│  Subtotal / Desconto / Frete / TOTAL  │
-└───────────────────────────────────────┘
-
-┌─ Card: Observações (se houver) ───────┐
-└───────────────────────────────────────┘
-
-┌─ Card: Sua resposta ──────────────────┐
-│  [ Textarea comentário ]              │
-│  [Aprovar] [Solicitar ajustes] [Recusar]│
-└───────────────────────────────────────┘
+Preço Base   = Custo Total / (1 - Margem%)
+Acréscimos%  = Cartão% + Juros% + Impostos% + Σ(Outras%)
+Preço Final  = Preço Base × (1 + Acréscimos%)
+Lucro Real   = Preço Final - Custo Total - (Preço Final × Acréscimos%)
 ```
 
-- Container: `max-w-3xl mx-auto px-4 py-8 md:py-12`
-- Cada bloco usa `<Card className="p-5 md:p-6 bg-white border-gray-200 shadow-sm">` (forçando claro, já que o componente Card respeita tema)
-- Espaçamento `space-y-5` entre cards
-- Mantém o tratamento de `done` e `already_responded` em um card final
+No `ResultPanel.tsx` aparece a quebra: Preço Base, Acréscimos (detalhado), Preço Final e Lucro Real.
 
-### 2. Botão "Solicitar ajustes" — cor amarela com fonte branca
+Persistência: novos campos em `raw_inputs` (jsonb já existente em `calculations`) — **sem migration**. Carregam de volta ao editar/duplicar.
 
-Trocar:
-```tsx
-className="border-gray-300 text-gray-900 hover:bg-gray-50"
-```
-Por:
-```tsx
-className="bg-yellow-500 hover:bg-yellow-600 text-white border-0"
-```
-(removendo `variant="outline"`)
+## 2) Link de Aprovação — Status em PT-BR
+
+Em `src/pages/AprovacaoOrcamento.tsx`, ampliar o `statusBadge` para cobrir os status reais do banco:
+
+- `pending` → "Aguardando resposta"
+- `sent` / `enviado` → "Aguardando resposta"
+- `draft` → "Rascunho"
+- `approved` / `aprovado` → "Aprovado"
+- `rejected` / `recusado` → "Recusado"
+- `changes_requested` → "Ajustes solicitados"
+- `expired` → "Expirado"
+
+Fallback genérico também em PT-BR ("Status indisponível") em vez do valor cru.
+
+## 3) Upload do Logotipo — Acelerar
+
+Em `useCompanyProfile.ts` + `Perfil.tsx`:
+
+- **Preview imediato** via `URL.createObjectURL(file)` — usuário vê a imagem na hora, sem esperar upload.
+- **Compressão client-side** antes do upload: redimensionar para máx. 512×512px e converter para WebP (~80% qualidade) usando `<canvas>`. Arquivos típicos caem de 1–5 MB para ~30–80 KB.
+- **Upload em background**: não bloqueia a UI; toast de sucesso ao concluir.
+- **Cache-busting**: anexar `?v=timestamp` à URL salva para a nova imagem aparecer sem refresh.
+- Remover o `await updateProfile.mutateAsync` em série — fazer upload e update do perfil de forma otimizada (single round-trip).
+
+Sem alterações de schema ou storage policies.
 
 ## Arquivos afetados
 
-- `src/pages/AprovacaoOrcamento.tsx` (refatoração visual completa, mesma lógica)
+- `src/components/CostCalculator.tsx` (estado + cálculo + persistência)
+- `src/components/ResultPanel.tsx` (exibição da quebra)
+- `src/components/TaxesFeesInput.tsx` (novo — UI dos campos)
+- `src/pages/AprovacaoOrcamento.tsx` (map de status PT-BR)
+- `src/hooks/useCompanyProfile.ts` (compressão + upload otimizado)
+- `src/pages/Perfil.tsx` (preview otimista com objectURL)
 
-## Fora do escopo
-
-- Não altera RPC, banco, rotas, ou comportamento de aprovação.
-- Não altera tema global nem outros componentes.
+Fora de escopo: alterar a fórmula base do custo/margem, mudar storage bucket, novos campos no banco.
