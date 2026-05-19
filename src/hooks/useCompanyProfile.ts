@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { compressImage } from '@/lib/imageCompress';
 
 export interface CompanyProfile {
   store_name: string | null;
@@ -60,16 +61,23 @@ export function useCompanyProfile() {
 
   const uploadLogo = async (file: File): Promise<string> => {
     if (!user) throw new Error('Not authenticated');
-    const ext = file.name.split('.').pop();
+
+    // Comprime no client antes (muito mais rápido para subir)
+    const blob = await compressImage(file, 512, 0.82).catch(() => file);
+    const ext = blob.type === 'image/webp' ? 'webp'
+      : blob.type === 'image/png' ? 'png'
+      : blob.type === 'image/svg+xml' ? 'svg'
+      : 'jpg';
     const path = `${user.id}/logo.${ext}`;
-    
+
     const { error: uploadError } = await supabase.storage
       .from('armazenamento')
-      .upload(path, file, { upsert: true });
+      .upload(path, blob, { upsert: true, contentType: blob.type, cacheControl: '3600' });
     if (uploadError) throw uploadError;
 
     const { data } = supabase.storage.from('armazenamento').getPublicUrl(path);
-    return data.publicUrl;
+    // Cache-busting para refletir nova imagem imediatamente
+    return `${data.publicUrl}?v=${Date.now()}`;
   };
 
   return {

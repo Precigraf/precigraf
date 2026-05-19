@@ -104,16 +104,22 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: 'Arquivo muito grande', description: 'Máximo 2MB.', variant: 'destructive' });
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Arquivo muito grande', description: 'Máximo 5MB.', variant: 'destructive' });
       return;
     }
+    // Preview imediato via objectURL (sem esperar upload)
+    const localUrl = URL.createObjectURL(file);
+    setLogoPreview(localUrl);
     setUploading(true);
     try {
       const url = await uploadLogo(file);
       setLogoPreview(url);
       await updateProfile.mutateAsync({ logo_url: url });
+      URL.revokeObjectURL(localUrl);
     } catch (err: any) {
+      setLogoPreview(profile?.logo_url || null);
+      URL.revokeObjectURL(localUrl);
       toast({ title: 'Erro no upload', description: err.message, variant: 'destructive' });
     } finally {
       setUploading(false);

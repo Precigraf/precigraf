@@ -123,14 +123,19 @@ const AprovacaoOrcamento: React.FC = () => {
 
   const statusBadge = () => {
     const map: Record<string, { label: string; cls: string }> = {
+      pending: { label: 'Aguardando resposta', cls: 'bg-blue-100 text-blue-700 border-blue-200' },
+      sent: { label: 'Aguardando resposta', cls: 'bg-blue-100 text-blue-700 border-blue-200' },
       enviado: { label: 'Aguardando resposta', cls: 'bg-blue-100 text-blue-700 border-blue-200' },
+      draft: { label: 'Rascunho', cls: 'bg-gray-100 text-gray-700 border-gray-200' },
       approved: { label: 'Aprovado', cls: 'bg-green-100 text-green-700 border-green-200' },
       aprovado: { label: 'Aprovado', cls: 'bg-green-100 text-green-700 border-green-200' },
       rejected: { label: 'Recusado', cls: 'bg-red-100 text-red-700 border-red-200' },
       recusado: { label: 'Recusado', cls: 'bg-red-100 text-red-700 border-red-200' },
       changes_requested: { label: 'Ajustes solicitados', cls: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
+      expired: { label: 'Expirado', cls: 'bg-gray-100 text-gray-700 border-gray-200' },
+      expirado: { label: 'Expirado', cls: 'bg-gray-100 text-gray-700 border-gray-200' },
     };
-    const s = map[quote.status] ?? { label: quote.status, cls: 'bg-gray-100 text-gray-700 border-gray-200' };
+    const s = map[quote.status] ?? { label: 'Status indisponível', cls: 'bg-gray-100 text-gray-700 border-gray-200' };
     return <Badge className={`${s.cls} hover:${s.cls}`}>{s.label}</Badge>;
   };
 

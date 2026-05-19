@@ -22,6 +22,9 @@ interface ResultPanelProps {
   operationalTotal: number;
   fixedProfit: number;
   hasOperationalCosts?: boolean;
+  feesPercentage?: number;
+  feesAmount?: number;
+  baseSellingPrice?: number;
   saveData?: {
     paper: number;
     ink: number;
@@ -58,6 +61,9 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   operationalTotal,
   fixedProfit,
   hasOperationalCosts = true,
+  feesPercentage = 0,
+  feesAmount = 0,
+  baseSellingPrice = 0,
   saveData,
   onSaved,
   onApplySuggestedMargin,
@@ -81,7 +87,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   const safeQuantity = Math.max(0, Math.floor(quantity || 0));
   const unitProductionCost = safeQuantity > 0 ? productionCost / safeQuantity : 0;
   const unitProfit = safeQuantity > 0 ? desiredProfit / safeQuantity : 0;
-  const netProfit = finalSellingPrice - productionCost;
+  const netProfit = finalSellingPrice - productionCost - feesAmount;
   const unitNetProfit = safeQuantity > 0 ? netProfit / safeQuantity : 0;
 
   const realMarginPercentage = productionCost > 0 
@@ -144,6 +150,23 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
           </span>
         </div>
       </div>
+
+      {/* Taxas e Impostos */}
+      {feesPercentage > 0 && (
+        <div className="bg-warning/10 border border-warning/30 rounded-xl p-4 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium text-foreground">Preço base (sem taxas)</span>
+            <span className="font-semibold text-foreground">{formatCurrency(baseSellingPrice)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">
+              Acréscimo de taxas ({feesPercentage.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%)
+            </span>
+            <span className="font-semibold text-warning">+ {formatCurrency(feesAmount)}</span>
+          </div>
+        </div>
+      )}
+
 
       {/* Resumo de Valores */}
       <div className="space-y-3">

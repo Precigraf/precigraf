@@ -26,6 +26,7 @@ import {
   DEFAULT_OPERATIONAL_COSTS_DATA,
   calculateAllOperationalCosts 
 } from './OperationalCosts';
+import TaxesFeesInput, { TaxesFeesData, DEFAULT_TAXES_FEES, totalFeesPercentage } from './TaxesFeesInput';
 
 // Interface para cálculo em edição
 interface EditingCalculation {
@@ -108,6 +109,9 @@ const CostCalculator: React.FC = () => {
   const [profitMargin, setProfitMargin] = useState(0);
   const [fixedProfit, setFixedProfit] = useState(0);
 
+  // Taxas e impostos (acrescidos sobre o preço final)
+  const [taxesFees, setTaxesFees] = useState<TaxesFeesData>(DEFAULT_TAXES_FEES);
+
 
   // Handler para quantidade com validação
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,6 +189,8 @@ const CostCalculator: React.FC = () => {
       if (ri.packagingData) setPackagingData(ri.packagingData);
       if (ri.otherMaterialsItems) setOtherMaterialsItems(ri.otherMaterialsItems);
       if (ri.operationalCostsData) setOperationalCostsData(ri.operationalCostsData);
+      if (ri.taxesFees) setTaxesFees(ri.taxesFees);
+      else setTaxesFees(DEFAULT_TAXES_FEES);
     } else {
       // Fallback para registros antigos sem raw_inputs
       setPaperData({ packageValue: calculation.paper_cost, packageQuantity: 1, quantityUsed: 1 });
@@ -229,6 +235,7 @@ const CostCalculator: React.FC = () => {
     setOperationalCostsData(DEFAULT_OPERATIONAL_COSTS_DATA);
     setProfitMargin(0);
     setFixedProfit(0);
+    setTaxesFees(DEFAULT_TAXES_FEES);
     setProductPreset('custom');
     toast.info('Edição cancelada');
   }, []);
@@ -339,9 +346,8 @@ const CostCalculator: React.FC = () => {
         desiredProfit: 0,
         baseSellingPrice: 0,
         unitBaseSellingPrice: 0,
-        marketplaceCommission: 0,
-        marketplaceFixedFees: 0,
-        marketplaceTotalFees: 0,
+        feesPercentage: 0,
+        feesAmount: 0,
         finalSellingPrice: 0,
         unitPrice: 0,
         unitRawMaterialsCost: 0,
@@ -378,8 +384,12 @@ const CostCalculator: React.FC = () => {
     // Preço base de venda por unidade (sem taxas)
     const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
 
-    // Preço unitário final (sem marketplace)
-    const unitPrice = unitBaseSellingPrice;
+    // Acréscimos de taxas e impostos (sobre o preço base)
+    const feesPct = totalFeesPercentage(taxesFees);
+    const feesMultiplier = 1 + feesPct / 100;
+
+    // Preço unitário final (com taxas embutidas como acréscimo)
+    const unitPrice = unitBaseSellingPrice * feesMultiplier;
 
     // PREÇO FINAL = Preço unitário × Quantidade
     const finalSellingPrice = unitPrice * safeLotQuantity;
@@ -388,9 +398,11 @@ const CostCalculator: React.FC = () => {
     const operationalCost = operationalTotal;
     const productionCost = unitProductionCost * safeLotQuantity;
     const desiredProfit = unitDesiredProfit * safeLotQuantity;
+    const baseSellingPrice = unitBaseSellingPrice * safeLotQuantity;
+    const feesAmount = finalSellingPrice - baseSellingPrice;
 
-    // Lucro líquido
-    const netProfit = finalSellingPrice - productionCost;
+    // Lucro líquido = preço final - custo - taxas (cliente paga as taxas, mas elas saem do bruto)
+    const netProfit = finalSellingPrice - productionCost - feesAmount;
 
     return {
       rawMaterialsCost,
@@ -399,8 +411,10 @@ const CostCalculator: React.FC = () => {
       productionCost,
       isFixedProfit,
       desiredProfit,
-      baseSellingPrice: unitBaseSellingPrice * safeLotQuantity,
+      baseSellingPrice,
       unitBaseSellingPrice,
+      feesPercentage: feesPct,
+      feesAmount,
       finalSellingPrice,
       unitPrice,
       unitRawMaterialsCost,
@@ -415,6 +429,7 @@ const CostCalculator: React.FC = () => {
     calculatedOperationalCosts.totalAppliedCost,
     profitMargin,
     fixedProfit,
+    taxesFees,
   ]);
 
   // Valores para salvar (compatibilidade com banco de dados)
@@ -612,6 +627,13 @@ const CostCalculator: React.FC = () => {
             />
           </FormSection>
 
+          {/* Seção 6: Taxas e Impostos */}
+          <TaxesFeesInput
+            data={taxesFees}
+            onChange={setTaxesFees}
+            basePrice={calculations.baseSellingPrice}
+          />
+
         </div>
 
         {/* Coluna Direita - Resultados */}
@@ -632,6 +654,9 @@ const CostCalculator: React.FC = () => {
             fixedProfit={fixedProfit}
             hasOperationalCosts={hasOperationalCosts}
             saveData={saveDataValues}
+            feesPercentage={calculations.feesPercentage}
+            feesAmount={calculations.feesAmount}
+            baseSellingPrice={calculations.baseSellingPrice}
             rawInputs={{
               paperData,
               handleData,
@@ -639,6 +664,7 @@ const CostCalculator: React.FC = () => {
               packagingData,
               otherMaterialsItems,
               operationalCostsData,
+              taxesFees,
             }}
             onSaved={handleCalculationSaved}
             onApplySuggestedMargin={handleSuggestMargin}
