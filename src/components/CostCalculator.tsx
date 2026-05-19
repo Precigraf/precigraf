@@ -385,8 +385,12 @@ const CostCalculator: React.FC = () => {
     // Preço base de venda por unidade (sem taxas)
     const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
 
-    // Preço unitário final (sem marketplace)
-    const unitPrice = unitBaseSellingPrice;
+    // Acréscimos de taxas e impostos (sobre o preço base)
+    const feesPct = totalFeesPercentage(taxesFees);
+    const feesMultiplier = 1 + feesPct / 100;
+
+    // Preço unitário final (com taxas embutidas como acréscimo)
+    const unitPrice = unitBaseSellingPrice * feesMultiplier;
 
     // PREÇO FINAL = Preço unitário × Quantidade
     const finalSellingPrice = unitPrice * safeLotQuantity;
@@ -395,9 +399,11 @@ const CostCalculator: React.FC = () => {
     const operationalCost = operationalTotal;
     const productionCost = unitProductionCost * safeLotQuantity;
     const desiredProfit = unitDesiredProfit * safeLotQuantity;
+    const baseSellingPrice = unitBaseSellingPrice * safeLotQuantity;
+    const feesAmount = finalSellingPrice - baseSellingPrice;
 
-    // Lucro líquido
-    const netProfit = finalSellingPrice - productionCost;
+    // Lucro líquido = preço final - custo - taxas (cliente paga as taxas, mas elas saem do bruto)
+    const netProfit = finalSellingPrice - productionCost - feesAmount;
 
     return {
       rawMaterialsCost,
@@ -406,8 +412,10 @@ const CostCalculator: React.FC = () => {
       productionCost,
       isFixedProfit,
       desiredProfit,
-      baseSellingPrice: unitBaseSellingPrice * safeLotQuantity,
+      baseSellingPrice,
       unitBaseSellingPrice,
+      feesPercentage: feesPct,
+      feesAmount,
       finalSellingPrice,
       unitPrice,
       unitRawMaterialsCost,
@@ -422,6 +430,7 @@ const CostCalculator: React.FC = () => {
     calculatedOperationalCosts.totalAppliedCost,
     profitMargin,
     fixedProfit,
+    taxesFees,
   ]);
 
   // Valores para salvar (compatibilidade com banco de dados)
