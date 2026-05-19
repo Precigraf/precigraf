@@ -151,6 +151,23 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         </div>
       </div>
 
+      {/* Taxas e Impostos */}
+      {feesPercentage > 0 && (
+        <div className="bg-warning/10 border border-warning/30 rounded-xl p-4 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium text-foreground">Preço base (sem taxas)</span>
+            <span className="font-semibold text-foreground">{formatCurrency(baseSellingPrice)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">
+              Acréscimo de taxas ({feesPercentage.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}%)
+            </span>
+            <span className="font-semibold text-warning">+ {formatCurrency(feesAmount)}</span>
+          </div>
+        </div>
+      )}
+
+
       {/* Resumo de Valores */}
       <div className="space-y-3">
         <div className="bg-secondary/50 rounded-lg p-3">
