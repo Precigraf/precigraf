@@ -654,6 +654,9 @@ const CostCalculator: React.FC = () => {
             fixedProfit={fixedProfit}
             hasOperationalCosts={hasOperationalCosts}
             saveData={saveDataValues}
+            feesPercentage={calculations.feesPercentage}
+            feesAmount={calculations.feesAmount}
+            baseSellingPrice={calculations.baseSellingPrice}
             rawInputs={{
               paperData,
               handleData,
@@ -661,6 +664,7 @@ const CostCalculator: React.FC = () => {
               packagingData,
               otherMaterialsItems,
               operationalCostsData,
+              taxesFees,
             }}
             onSaved={handleCalculationSaved}
             onApplySuggestedMargin={handleSuggestMargin}
