@@ -26,6 +26,7 @@ import {
   DEFAULT_OPERATIONAL_COSTS_DATA,
   calculateAllOperationalCosts 
 } from './OperationalCosts';
+import TaxesFeesInput, { TaxesFeesData, DEFAULT_TAXES_FEES, totalFeesPercentage } from './TaxesFeesInput';
 
 // Interface para cálculo em edição
 interface EditingCalculation {
