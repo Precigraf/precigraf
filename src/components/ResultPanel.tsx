@@ -87,7 +87,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   const safeQuantity = Math.max(0, Math.floor(quantity || 0));
   const unitProductionCost = safeQuantity > 0 ? productionCost / safeQuantity : 0;
   const unitProfit = safeQuantity > 0 ? desiredProfit / safeQuantity : 0;
-  const netProfit = finalSellingPrice - productionCost;
+  const netProfit = finalSellingPrice - productionCost - feesAmount;
   const unitNetProfit = safeQuantity > 0 ? netProfit / safeQuantity : 0;
 
   const realMarginPercentage = productionCost > 0 
