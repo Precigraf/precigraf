@@ -109,6 +109,9 @@ const CostCalculator: React.FC = () => {
   const [profitMargin, setProfitMargin] = useState(0);
   const [fixedProfit, setFixedProfit] = useState(0);
 
+  // Taxas e impostos (acrescidos sobre o preço final)
+  const [taxesFees, setTaxesFees] = useState<TaxesFeesData>(DEFAULT_TAXES_FEES);
+
 
   // Handler para quantidade com validação
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
