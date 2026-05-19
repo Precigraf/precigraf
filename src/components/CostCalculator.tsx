@@ -235,6 +235,7 @@ const CostCalculator: React.FC = () => {
     setOperationalCostsData(DEFAULT_OPERATIONAL_COSTS_DATA);
     setProfitMargin(0);
     setFixedProfit(0);
+    setTaxesFees(DEFAULT_TAXES_FEES);
     setProductPreset('custom');
     toast.info('Edição cancelada');
   }, []);
