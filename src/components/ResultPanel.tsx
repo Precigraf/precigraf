@@ -22,6 +22,9 @@ interface ResultPanelProps {
   operationalTotal: number;
   fixedProfit: number;
   hasOperationalCosts?: boolean;
+  feesPercentage?: number;
+  feesAmount?: number;
+  baseSellingPrice?: number;
   saveData?: {
     paper: number;
     ink: number;
