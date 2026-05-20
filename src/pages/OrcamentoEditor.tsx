@@ -500,7 +500,7 @@ const OrcamentoEditor: React.FC = () => {
 
     // Items table
     const tableBody = items.map(i => [
-      i.name,
+      i.description ? `${i.name}\n${i.description}` : i.name,
       String(i.quantity),
       formatCurrency(i.unit_value),
       formatCurrency(i.quantity * i.unit_value),
