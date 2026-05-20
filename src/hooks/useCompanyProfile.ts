@@ -62,21 +62,31 @@ export function useCompanyProfile() {
   const uploadLogo = async (file: File): Promise<string> => {
     if (!user) throw new Error('Not authenticated');
 
-    // Comprime no client antes (muito mais rápido para subir)
-    const blob = await compressImage(file, 512, 0.82).catch(() => file);
-    const ext = blob.type === 'image/webp' ? 'webp'
-      : blob.type === 'image/png' ? 'png'
-      : blob.type === 'image/svg+xml' ? 'svg'
-      : 'jpg';
+    // Mantém o arquivo original — preserva formato, dimensões e qualidade
+    const mime = file.type || 'application/octet-stream';
+    const nameExt = (file.name.split('.').pop() || '').toLowerCase();
+    const mimeExtMap: Record<string, string> = {
+      'image/webp': 'webp',
+      'image/png': 'png',
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/svg+xml': 'svg',
+      'image/gif': 'gif',
+      'image/avif': 'avif',
+      'image/bmp': 'bmp',
+      'image/x-icon': 'ico',
+      'image/vnd.microsoft.icon': 'ico',
+      'image/tiff': 'tiff',
+    };
+    const ext = mimeExtMap[mime] || nameExt || 'bin';
     const path = `${user.id}/logo.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from('armazenamento')
-      .upload(path, blob, { upsert: true, contentType: blob.type, cacheControl: '3600' });
+      .upload(path, file, { upsert: true, contentType: mime, cacheControl: '3600' });
     if (uploadError) throw uploadError;
 
     const { data } = supabase.storage.from('armazenamento').getPublicUrl(path);
-    // Cache-busting para refletir nova imagem imediatamente
     return `${data.publicUrl}?v=${Date.now()}`;
   };
 
