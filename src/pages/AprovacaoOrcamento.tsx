@@ -14,7 +14,7 @@ type QuoteData = {
   status: string;
   product_name: string | null;
   description: string | null;
-  items: Array<{ name: string; quantity: number; unit_value: number }>;
+  items: Array<{ name: string; description?: string; quantity: number; unit_value: number }>;
   subtotal: number;
   discount_value: number;
   discount_type: string;
