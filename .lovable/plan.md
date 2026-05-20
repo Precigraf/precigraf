@@ -1,57 +1,23 @@
-## 1) Calculadora — Taxas, Juros e Impostos
+# Mostrar descrição (especificações) dos itens no orçamento
 
-Nova seção **"Taxas e Impostos"** no `CostCalculator.tsx`, abaixo da margem de lucro, com os campos:
+Adicionar uma descrição opcional por item do orçamento, exibida no link de aprovação do cliente e nas exportações (PDF e WhatsApp).
 
-- Taxa de cartão (%)
-- Juros de parcelamento (%)
-- Impostos (%)
-- Outras taxas (lista livre: nome + %)
+## Mudanças
 
-**Fórmula (Adicionar por cima do preço):**
-```text
-Preço Base   = Custo Total / (1 - Margem%)
-Acréscimos%  = Cartão% + Juros% + Impostos% + Σ(Outras%)
-Preço Final  = Preço Base × (1 + Acréscimos%)
-Lucro Real   = Preço Final - Custo Total - (Preço Final × Acréscimos%)
-```
+### 1) Editor de Orçamento (`src/pages/OrcamentoEditor.tsx`)
+- Adicionar campo `description?: string` na interface `QuoteItem`.
+- Ao inserir um produto do catálogo (`insertProductWithTier`), preencher automaticamente `description` com `product.description` (quando existir).
+- Adicionar uma `Textarea` compacta (rows=2) abaixo de cada linha de item, rotulada "Especificações / Descrição (opcional)", editável.
+- Persistência: nenhum schema novo — o campo já vai dentro do JSONB `quotes.items`.
 
-No `ResultPanel.tsx` aparece a quebra: Preço Base, Acréscimos (detalhado), Preço Final e Lucro Real.
+### 2) Link público de aprovação (`src/pages/AprovacaoOrcamento.tsx`)
+- Atualizar o tipo `QuoteData.items` para incluir `description?: string`.
+- Renderizar a descrição em texto menor, cinza, abaixo do nome do item (somente quando preenchida), preservando quebras de linha (`whitespace-pre-wrap`).
 
-Persistência: novos campos em `raw_inputs` (jsonb já existente em `calculations`) — **sem migration**. Carregam de volta ao editar/duplicar.
+### 3) Exportações (`src/pages/OrcamentoEditor.tsx`)
+- Mensagem WhatsApp: incluir descrição em linha indentada após cada item, quando presente.
+- PDF (`tableBody`): adicionar a descrição em itálico/cinza abaixo do nome do produto na mesma célula.
 
-## 2) Link de Aprovação — Status em PT-BR
-
-Em `src/pages/AprovacaoOrcamento.tsx`, ampliar o `statusBadge` para cobrir os status reais do banco:
-
-- `pending` → "Aguardando resposta"
-- `sent` / `enviado` → "Aguardando resposta"
-- `draft` → "Rascunho"
-- `approved` / `aprovado` → "Aprovado"
-- `rejected` / `recusado` → "Recusado"
-- `changes_requested` → "Ajustes solicitados"
-- `expired` → "Expirado"
-
-Fallback genérico também em PT-BR ("Status indisponível") em vez do valor cru.
-
-## 3) Upload do Logotipo — Acelerar
-
-Em `useCompanyProfile.ts` + `Perfil.tsx`:
-
-- **Preview imediato** via `URL.createObjectURL(file)` — usuário vê a imagem na hora, sem esperar upload.
-- **Compressão client-side** antes do upload: redimensionar para máx. 512×512px e converter para WebP (~80% qualidade) usando `<canvas>`. Arquivos típicos caem de 1–5 MB para ~30–80 KB.
-- **Upload em background**: não bloqueia a UI; toast de sucesso ao concluir.
-- **Cache-busting**: anexar `?v=timestamp` à URL salva para a nova imagem aparecer sem refresh.
-- Remover o `await updateProfile.mutateAsync` em série — fazer upload e update do perfil de forma otimizada (single round-trip).
-
-Sem alterações de schema ou storage policies.
-
-## Arquivos afetados
-
-- `src/components/CostCalculator.tsx` (estado + cálculo + persistência)
-- `src/components/ResultPanel.tsx` (exibição da quebra)
-- `src/components/TaxesFeesInput.tsx` (novo — UI dos campos)
-- `src/pages/AprovacaoOrcamento.tsx` (map de status PT-BR)
-- `src/hooks/useCompanyProfile.ts` (compressão + upload otimizado)
-- `src/pages/Perfil.tsx` (preview otimista com objectURL)
-
-Fora de escopo: alterar a fórmula base do custo/margem, mudar storage bucket, novos campos no banco.
+## Fora de escopo
+- Nenhuma alteração no banco (campo cabe no JSONB existente).
+- Sem alterar a função RPC `get_quote_by_token` — ela já devolve o array `items` íntegro.
