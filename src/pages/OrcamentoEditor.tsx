@@ -397,7 +397,10 @@ const OrcamentoEditor: React.FC = () => {
     const lines = [
       `Olá ${selectedClient.name}! Segue seu orçamento *${code}*:`,
       '',
-      ...items.map(i => `• ${i.name} — ${i.quantity}x ${formatCurrency(i.unit_value)} = ${formatCurrency(i.quantity * i.unit_value)}`),
+      ...items.flatMap(i => [
+        `• ${i.name} — ${i.quantity}x ${formatCurrency(i.unit_value)} = ${formatCurrency(i.quantity * i.unit_value)}`,
+        ...(i.description ? [`   _${i.description.replace(/\n/g, ' ')}_`] : []),
+      ]),
       '',
       `Subtotal: ${formatCurrency(subtotal)}`,
       discountAmount > 0 ? `Desconto: -${formatCurrency(discountAmount)}` : '',
