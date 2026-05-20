@@ -725,6 +725,17 @@ const OrcamentoEditor: React.FC = () => {
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
+                      <div className="col-span-12">
+                        <Label className="text-xs">Especificações / Descrição (opcional)</Label>
+                        <Textarea
+                          value={item.description || ''}
+                          onChange={e => updateItem(idx, { description: e.target.value })}
+                          placeholder="Ex: tamanho, material, acabamento, cores..."
+                          rows={2}
+                          maxLength={500}
+                          className="resize-none"
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
