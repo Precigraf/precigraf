@@ -12,14 +12,13 @@ export interface OtherFee {
 
 export interface TaxesFeesData {
   cardFee: number;          // %
-  installmentInterest: number; // %
+  installmentInterest?: number; // deprecated — kept for backward compat
   taxes: number;            // %
   otherFees: OtherFee[];
 }
 
 export const DEFAULT_TAXES_FEES: TaxesFeesData = {
   cardFee: 0,
-  installmentInterest: 0,
   taxes: 0,
   otherFees: [],
 };
