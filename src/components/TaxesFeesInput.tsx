@@ -96,20 +96,13 @@ const TaxesFeesInput: React.FC<Props> = ({ data, onChange, basePrice }) => {
       icon={<Percent className="w-5 h-5 text-primary" />}
       subtitle="Acrescidos sobre o preço final (cliente paga)"
     >
-      <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-4">
         <PctInput
           label="Taxa de cartão"
           icon={<CreditCard className="w-3.5 h-3.5" />}
           value={data.cardFee}
           onChange={(v) => onChange({ ...data, cardFee: v })}
           hint="Ex: 3,5% da maquininha"
-        />
-        <PctInput
-          label="Juros de parcelamento"
-          icon={<Percent className="w-3.5 h-3.5" />}
-          value={data.installmentInterest}
-          onChange={(v) => onChange({ ...data, installmentInterest: v })}
-          hint="Ex: 2% para parcelar sem juros"
         />
         <PctInput
           label="Impostos"
