@@ -14,7 +14,7 @@ type QuoteData = {
   status: string;
   product_name: string | null;
   description: string | null;
-  items: Array<{ name: string; quantity: number; unit_value: number }>;
+  items: Array<{ name: string; description?: string; quantity: number; unit_value: number }>;
   subtotal: number;
   discount_value: number;
   discount_type: string;
@@ -195,7 +195,10 @@ const AprovacaoOrcamento: React.FC = () => {
               <li key={i} className="py-3 flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900 break-words">{it.name}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  {it.description && (
+                    <p className="text-xs text-gray-600 mt-1 whitespace-pre-wrap break-words">{it.description}</p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
                     {it.quantity} × {fmt(it.unit_value)}
                   </p>
                 </div>

@@ -34,6 +34,7 @@ interface QuoteItem {
   id: string;
   product_id?: string | null;
   name: string;
+  description?: string;
   quantity: number;
   unit_value: number;
 }
@@ -184,6 +185,7 @@ const OrcamentoEditor: React.FC = () => {
       id: crypto.randomUUID(),
       product_id: p.id,
       name: p.name,
+      description: p.description || '',
       quantity: qty,
       unit_value: unitVal,
     }]);
@@ -395,7 +397,10 @@ const OrcamentoEditor: React.FC = () => {
     const lines = [
       `Olá ${selectedClient.name}! Segue seu orçamento *${code}*:`,
       '',
-      ...items.map(i => `• ${i.name} — ${i.quantity}x ${formatCurrency(i.unit_value)} = ${formatCurrency(i.quantity * i.unit_value)}`),
+      ...items.flatMap(i => [
+        `• ${i.name} — ${i.quantity}x ${formatCurrency(i.unit_value)} = ${formatCurrency(i.quantity * i.unit_value)}`,
+        ...(i.description ? [`   _${i.description.replace(/\n/g, ' ')}_`] : []),
+      ]),
       '',
       `Subtotal: ${formatCurrency(subtotal)}`,
       discountAmount > 0 ? `Desconto: -${formatCurrency(discountAmount)}` : '',
@@ -495,7 +500,7 @@ const OrcamentoEditor: React.FC = () => {
 
     // Items table
     const tableBody = items.map(i => [
-      i.name,
+      i.description ? `${i.name}\n${i.description}` : i.name,
       String(i.quantity),
       formatCurrency(i.unit_value),
       formatCurrency(i.quantity * i.unit_value),
@@ -722,6 +727,17 @@ const OrcamentoEditor: React.FC = () => {
                         <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} className="text-destructive hover:text-destructive">
                           <Trash2 className="w-4 h-4" />
                         </Button>
+                      </div>
+                      <div className="col-span-12">
+                        <Label className="text-xs">Especificações / Descrição (opcional)</Label>
+                        <Textarea
+                          value={item.description || ''}
+                          onChange={e => updateItem(idx, { description: e.target.value })}
+                          placeholder="Ex: tamanho, material, acabamento, cores..."
+                          rows={2}
+                          maxLength={500}
+                          className="resize-none"
+                        />
                       </div>
                     </div>
                   ))}
