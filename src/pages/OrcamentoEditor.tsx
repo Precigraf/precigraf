@@ -34,6 +34,7 @@ interface QuoteItem {
   id: string;
   product_id?: string | null;
   name: string;
+  description?: string;
   quantity: number;
   unit_value: number;
 }
