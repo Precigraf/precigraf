@@ -268,7 +268,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
                           </div>
                           <div className="flex flex-col gap-2">
                             <label>
-                              <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={handleLogoUpload} />
+                              <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
                               <Button variant="outline" size="sm" asChild disabled={uploading}>
                                 <span className="cursor-pointer">
                                   <Upload className="w-4 h-4 mr-1" />
