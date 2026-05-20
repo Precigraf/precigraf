@@ -185,6 +185,7 @@ const OrcamentoEditor: React.FC = () => {
       id: crypto.randomUUID(),
       product_id: p.id,
       name: p.name,
+      description: p.description || '',
       quantity: qty,
       unit_value: unitVal,
     }]);
