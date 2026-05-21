@@ -8,6 +8,7 @@ export interface CompanyProfile {
   store_name: string | null;
   system_color: string | null;
   logo_url: string | null;
+  logo_scale: number | null;
   company_name: string | null;
   company_document: string | null;
   company_phone: string | null;
