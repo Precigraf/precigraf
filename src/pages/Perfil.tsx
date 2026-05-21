@@ -266,12 +266,12 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
                   <CardContent>
                     <div className="space-y-5">
                       {/* Logo Upload */}
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <Label>Logotipo da empresa</Label>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4 flex-wrap">
                           <div className="w-24 h-16 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden shrink-0">
                             {logoPreview ? (
-                              <img src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
+                              <img src={logoPreview} alt="Logo" className="max-w-full max-h-full w-auto h-auto object-contain" />
                             ) : (
                               <Store className="w-8 h-8 text-muted-foreground" />
                             )}
@@ -293,7 +293,42 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
                             )}
                           </div>
                         </div>
-                        <p className="text-xs text-muted-foreground">Recomendado: 400x200px, PNG/WebP, fundo transparente</p>
+
+                        {logoPreview && (
+                          <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                Pré-visualização (PDF / link de aprovação)
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => adjustScale(-0.1)} aria-label="Diminuir">
+                                  <ZoomOut className="w-3.5 h-3.5" />
+                                </Button>
+                                <span className="text-xs font-semibold w-12 text-center tabular-nums">
+                                  {Math.round(logoScale * 100)}%
+                                </span>
+                                <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => adjustScale(0.1)} aria-label="Aumentar">
+                                  <ZoomIn className="w-3.5 h-3.5" />
+                                </Button>
+                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setLogoScale(1)} aria-label="Padrão">
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="bg-background rounded-md border border-border p-4 flex items-center justify-center min-h-[140px]">
+                              <img
+                                src={logoPreview}
+                                alt="Pré-visualização"
+                                style={{ maxHeight: `${64 * logoScale}px`, maxWidth: `${240 * logoScale}px` }}
+                                className="w-auto h-auto object-contain"
+                              />
+                            </div>
+                            <p className="text-[11px] text-muted-foreground text-center">
+                              Use os botões + / − para ajustar. O sistema mantém o formato original (vertical ou horizontal) sem distorcer.
+                            </p>
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">Aceita qualquer formato de imagem. Máximo 5MB.</p>
                       </div>
 
                       {/* Store Name */}
