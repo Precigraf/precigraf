@@ -1,6 +1,6 @@
 import React, { useState, useEffect, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Lock, Save, ArrowLeft, Eye, EyeOff, CheckCircle, Building2, Upload, Trash2, Store, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { User, Lock, Save, ArrowLeft, Eye, EyeOff, CheckCircle, Building2, Upload, Trash2, Store, ChevronDown, ChevronUp, Info, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
