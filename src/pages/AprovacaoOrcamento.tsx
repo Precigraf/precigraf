@@ -29,6 +29,7 @@ type QuoteData = {
     company_email: string | null;
     company_phone: string | null;
     logo_url: string | null;
+    logo_scale: number | null;
     company_document: string | null;
   };
   already_responded: boolean;
