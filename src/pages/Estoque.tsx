@@ -127,7 +127,7 @@ const Estoque: React.FC = () => {
                 <Input placeholder="Buscar insumo..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
               </div>
               <div className="flex gap-1 flex-wrap">
-                {(['all', 'paper', 'ink', 'other'] as const).map((t) => (
+                {(['all', 'paper', 'ink', 'handle', 'packaging', 'glue', 'other'] as const).map((t) => (
                   <Badge
                     key={t}
                     variant={filterType === t ? 'default' : 'outline'}
