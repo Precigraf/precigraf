@@ -40,6 +40,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const [companyCnpj, setCompanyCnpj] = useState('');
   const [pixKey, setPixKey] = useState('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [logoScale, setLogoScale] = useState<number>(1);
   const [uploading, setUploading] = useState(false);
   const [companyOpen, setCompanyOpen] = useState(true);
 
