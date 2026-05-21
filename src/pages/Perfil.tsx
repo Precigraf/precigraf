@@ -193,6 +193,14 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
       store_name: storeName || null,
       system_color: systemColor,
       logo_url: logoPreview || null,
+      logo_scale: logoScale,
+    });
+  };
+
+  const adjustScale = (delta: number) => {
+    setLogoScale((s) => {
+      const next = Math.round((s + delta) * 100) / 100;
+      return Math.min(2, Math.max(0.5, next));
     });
   };
 
