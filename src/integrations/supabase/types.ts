@@ -587,6 +587,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          logo_scale: number
           logo_url: string | null
           monthly_edits_count: number
           monthly_edits_reset_at: string
@@ -622,6 +623,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          logo_scale?: number
           logo_url?: string | null
           monthly_edits_count?: number
           monthly_edits_reset_at?: string
@@ -657,6 +659,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          logo_scale?: number
           logo_url?: string | null
           monthly_edits_count?: number
           monthly_edits_reset_at?: string

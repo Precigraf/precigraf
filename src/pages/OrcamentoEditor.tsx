@@ -434,9 +434,23 @@ const OrcamentoEditor: React.FC = () => {
         canvas.height = img.height;
         canvas.getContext('2d')!.drawImage(img, 0, 0);
         const logoData = canvas.toDataURL('image/png');
-        doc.addImage(logoData, 'PNG', 14, y, 18, 18);
+        // Preserve aspect ratio (vertical or horizontal) and apply user-defined scale
+        const scale = (profile as any).logo_scale && Number((profile as any).logo_scale) > 0
+          ? Number((profile as any).logo_scale)
+          : 1;
+        const baseH = 18; // mm
+        const maxH = baseH * scale;
+        const maxW = 40 * scale; // mm
+        const ratio = img.width / img.height || 1;
+        let logoH = maxH;
+        let logoW = logoH * ratio;
+        if (logoW > maxW) {
+          logoW = maxW;
+          logoH = logoW / ratio;
+        }
+        doc.addImage(logoData, 'PNG', 14, y, logoW, logoH);
         // Company info next to logo
-        const infoX = 36;
+        const infoX = 14 + logoW + 4;
         if (profile.company_name) {
           doc.setFontSize(14);
           doc.setFont('helvetica', 'bold');
@@ -447,7 +461,7 @@ const OrcamentoEditor: React.FC = () => {
         doc.setTextColor(100, 100, 100);
         const infoLines = [profile.company_document, profile.company_phone, profile.company_email, profile.company_full_address].filter(Boolean) as string[];
         infoLines.forEach((line, i) => doc.text(line, infoX, y + 12 + i * 4));
-        y += Math.max(22, 12 + infoLines.length * 4 + 4);
+        y += Math.max(logoH + 4, 12 + infoLines.length * 4 + 4);
       } catch {
         // Logo failed to load, render text-only header
         if (profile.company_name) {

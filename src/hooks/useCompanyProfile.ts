@@ -8,6 +8,7 @@ export interface CompanyProfile {
   store_name: string | null;
   system_color: string | null;
   logo_url: string | null;
+  logo_scale: number | null;
   company_name: string | null;
   company_document: string | null;
   company_phone: string | null;
@@ -32,7 +33,7 @@ export function useCompanyProfile() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('store_name, system_color, logo_url, company_name, company_document, company_phone, company_email, company_address, company_address_number, company_neighborhood, company_city, company_state, company_cep, pix_key, company_full_address')
+        .select('store_name, system_color, logo_url, logo_scale, company_name, company_document, company_phone, company_email, company_address, company_address_number, company_neighborhood, company_city, company_state, company_cep, pix_key, company_full_address')
         .eq('user_id', user!.id)
         .single();
       if (error) throw error;

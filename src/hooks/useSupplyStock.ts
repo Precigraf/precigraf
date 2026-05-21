@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-export type SupplyType = 'paper' | 'ink' | 'other';
+export type SupplyType = 'paper' | 'ink' | 'handle' | 'packaging' | 'glue' | 'other';
 
 export interface Supply {
   id: string;

@@ -79,7 +79,10 @@ const SupplyForm: React.FC<Props> = ({ open, onOpenChange, onSubmit, initialData
                 <SelectContent>
                   <SelectItem value="paper">Papel</SelectItem>
                   <SelectItem value="ink">Tinta</SelectItem>
-                  <SelectItem value="other">Outro</SelectItem>
+                  <SelectItem value="handle">Alça</SelectItem>
+                  <SelectItem value="packaging">Embalagem</SelectItem>
+                  <SelectItem value="glue">Cola</SelectItem>
+                  <SelectItem value="other">Outros</SelectItem>
                 </SelectContent>
               </Select>
             </div>

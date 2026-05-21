@@ -29,6 +29,7 @@ type QuoteData = {
     company_email: string | null;
     company_phone: string | null;
     logo_url: string | null;
+    logo_scale: number | null;
     company_document: string | null;
   };
   already_responded: boolean;
@@ -148,7 +149,11 @@ const AprovacaoOrcamento: React.FC = () => {
             <img
               src={quote.seller.logo_url}
               alt="logo"
-              className="w-16 h-16 object-contain rounded mx-auto mb-3"
+              style={{
+                maxHeight: `${64 * (quote.seller.logo_scale ?? 1)}px`,
+                maxWidth: `${240 * (quote.seller.logo_scale ?? 1)}px`,
+              }}
+              className="w-auto h-auto object-contain mx-auto mb-3"
             />
           ) : (
             <div className="w-16 h-16 rounded bg-gray-900 text-white flex items-center justify-center text-xl font-bold mx-auto mb-3">
