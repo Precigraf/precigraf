@@ -74,6 +74,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
       setLogoPreview(profile.logo_url || null);
       setStoreName(profile.store_name || '');
       setSystemColor(profile.system_color || '#6366f1');
+      setLogoScale(typeof profile.logo_scale === 'number' && profile.logo_scale > 0 ? profile.logo_scale : 1);
       // Use company_document as CNPJ field too
       setCompanyCnpj(profile.company_document || '');
     }
