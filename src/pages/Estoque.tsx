@@ -14,7 +14,10 @@ import { useSupplyStock, useSupplyMovements, type Supply, type SupplyType } from
 const TYPE_LABEL: Record<SupplyType, string> = {
   paper: 'Papel',
   ink: 'Tinta',
-  other: 'Outro',
+  handle: 'Alça',
+  packaging: 'Embalagem',
+  glue: 'Cola',
+  other: 'Outros',
 };
 
 const formatBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
