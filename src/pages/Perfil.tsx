@@ -39,6 +39,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
   const [companyFullAddress, setCompanyFullAddress] = useState('');
   const [companyCnpj, setCompanyCnpj] = useState('');
   const [pixKey, setPixKey] = useState('');
+  const [infinitypayUrl, setInfinitypayUrl] = useState('');
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoScale, setLogoScale] = useState<number>(1);
   const [uploading, setUploading] = useState(false);
@@ -70,6 +71,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
       setCompanyState(profile.company_state || '');
       setCompanyCep(profile.company_cep || '');
       setPixKey(profile.pix_key || '');
+      setInfinitypayUrl(profile.infinitypay_url || '');
       setCompanyFullAddress(profile.company_full_address || '');
       setLogoPreview(profile.logo_url || null);
       setStoreName(profile.store_name || '');
@@ -189,6 +191,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
       company_state: companyState || null,
       company_cep: companyCep || null,
       pix_key: pixKey || null,
+      infinitypay_url: infinitypayUrl || null,
       company_full_address: companyFullAddress || null,
       store_name: storeName || null,
       system_color: systemColor,
@@ -294,40 +297,6 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
                           </div>
                         </div>
 
-                        {logoPreview && (
-                          <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
-                            <div className="flex items-center justify-between gap-2 flex-wrap">
-                              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                                Pré-visualização (PDF / link de aprovação)
-                              </span>
-                              <div className="flex items-center gap-1">
-                                <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => adjustScale(-0.1)} aria-label="Diminuir">
-                                  <ZoomOut className="w-3.5 h-3.5" />
-                                </Button>
-                                <span className="text-xs font-semibold w-12 text-center tabular-nums">
-                                  {Math.round(logoScale * 100)}%
-                                </span>
-                                <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => adjustScale(0.1)} aria-label="Aumentar">
-                                  <ZoomIn className="w-3.5 h-3.5" />
-                                </Button>
-                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => setLogoScale(1)} aria-label="Padrão">
-                                  <RotateCcw className="w-3.5 h-3.5" />
-                                </Button>
-                              </div>
-                            </div>
-                            <div className="bg-background rounded-md border border-border p-4 flex items-center justify-center min-h-[140px]">
-                              <img
-                                src={logoPreview}
-                                alt="Pré-visualização"
-                                style={{ maxHeight: `${64 * logoScale}px`, maxWidth: `${240 * logoScale}px` }}
-                                className="w-auto h-auto object-contain"
-                              />
-                            </div>
-                            <p className="text-[11px] text-muted-foreground text-center">
-                              Use os botões + / − para ajustar. O sistema mantém o formato original (vertical ou horizontal) sem distorcer.
-                            </p>
-                          </div>
-                        )}
                         <p className="text-xs text-muted-foreground">Aceita qualquer formato de imagem. Máximo 5MB.</p>
                       </div>
 
