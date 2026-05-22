@@ -587,6 +587,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          infinitypay_url: string | null
           logo_scale: number
           logo_url: string | null
           monthly_edits_count: number
@@ -623,6 +624,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          infinitypay_url?: string | null
           logo_scale?: number
           logo_url?: string | null
           monthly_edits_count?: number
@@ -659,6 +661,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          infinitypay_url?: string | null
           logo_scale?: number
           logo_url?: string | null
           monthly_edits_count?: number
@@ -721,6 +724,8 @@ export type Database = {
         Row: {
           calculation_id: string | null
           client_id: string
+          client_marked_paid_at: string | null
+          client_marked_paid_method: string | null
           created_at: string
           description: string | null
           discount_type: string | null
@@ -746,6 +751,8 @@ export type Database = {
         Insert: {
           calculation_id?: string | null
           client_id: string
+          client_marked_paid_at?: string | null
+          client_marked_paid_method?: string | null
           created_at?: string
           description?: string | null
           discount_type?: string | null
@@ -771,6 +778,8 @@ export type Database = {
         Update: {
           calculation_id?: string | null
           client_id?: string
+          client_marked_paid_at?: string | null
+          client_marked_paid_method?: string | null
           created_at?: string
           description?: string | null
           discount_type?: string | null
@@ -1338,6 +1347,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      mark_quote_paid_by_token: {
+        Args: { p_method: string; p_token: string }
+        Returns: Json
       }
       register_client_portal_upload: {
         Args: {
