@@ -334,8 +334,24 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
                       <div className="space-y-2">
                         <Label>Chave PIX (opcional)</Label>
                         <Input value={pixKey} onChange={e => setPixKey(e.target.value)} placeholder="Ex: 98.765.432/0001-10 ou (85) 91234-5678" maxLength={100} />
-                        <p className="text-xs text-muted-foreground">Será exibido apenas no PDF de Pedidos (não aparece em Orçamentos)</p>
+                        <p className="text-xs text-muted-foreground">Exibida no portal do cliente para pagamento via PIX após aprovação do orçamento.</p>
                       </div>
+
+                      {/* InfinityPay link */}
+                      <div className="space-y-2">
+                        <Label>Link de pagamento InfinityPay (opcional)</Label>
+                        <Input
+                          type="url"
+                          value={infinitypayUrl}
+                          onChange={e => setInfinitypayUrl(e.target.value)}
+                          placeholder="Ex: https://app.infinitepay.io/seu-link"
+                          maxLength={300}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Cole o link público da sua maquininha InfinityPay. O cliente clica em "Pagar com cartão" no portal e abre esse link.
+                        </p>
+                      </div>
+
 
                       {/* CEP auto-fill section */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
