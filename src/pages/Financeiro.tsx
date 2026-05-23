@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { DollarSign, TrendingDown, TrendingUp, Clock } from 'lucide-react';
+import { DollarSign, TrendingDown, TrendingUp, Clock, Plus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/components/AppLayout';
 import PeriodFilter, { type PeriodKey, getDateRange } from '@/components/PeriodFilter';
 import { useOrders } from '@/hooks/useOrders';
+import ManualEntryModal from '@/components/financeiro/ManualEntryModal';
 
 const formatCurrency = (v: number) => (Number.isFinite(v) ? v : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -13,6 +15,7 @@ const Financeiro: React.FC = () => {
   const [period, setPeriod] = useState<PeriodKey>('current_month');
   const [customStart, setCustomStart] = useState<Date | undefined>();
   const [customEnd, setCustomEnd] = useState<Date | undefined>();
+  const [entryOpen, setEntryOpen] = useState(false);
 
   const filteredOrders = useMemo(() => {
     const { start, end } = getDateRange(period, customStart, customEnd);
@@ -43,14 +46,19 @@ const Financeiro: React.FC = () => {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Financeiro</h1>
             <p className="text-xs sm:text-sm text-muted-foreground">Controle financeiro dos pedidos</p>
           </div>
-          <PeriodFilter
-            value={period}
-            onChange={setPeriod}
-            customStart={customStart}
-            customEnd={customEnd}
-            onCustomStartChange={setCustomStart}
-            onCustomEndChange={setCustomEnd}
-          />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <PeriodFilter
+              value={period}
+              onChange={setPeriod}
+              customStart={customStart}
+              customEnd={customEnd}
+              onCustomStartChange={setCustomStart}
+              onCustomEndChange={setCustomEnd}
+            />
+            <Button onClick={() => setEntryOpen(true)} className="shrink-0">
+              <Plus className="w-4 h-4 mr-1" /> Registrar entrada
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-5 sm:mb-6">
@@ -116,6 +124,7 @@ const Financeiro: React.FC = () => {
           </div>
         </Card>
       </div>
+      <ManualEntryModal open={entryOpen} onOpenChange={setEntryOpen} />
     </AppLayout>
   );
 };

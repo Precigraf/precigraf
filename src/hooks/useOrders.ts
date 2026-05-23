@@ -184,6 +184,56 @@ export function useOrders() {
     },
   });
 
+  const removeItemFromOrder = useMutation({
+    mutationFn: async ({ orderId, itemId }: { orderId: string; itemId: string }) => {
+      const order = ordersQuery.data?.find(o => o.id === orderId);
+      if (!order) throw new Error('Pedido não encontrado');
+      if (!order.quote_id) throw new Error('Pedido sem orçamento vinculado');
+      const currentItems = Array.isArray(order.quotes?.items) ? (order.quotes!.items as any[]) : [];
+      if (currentItems.length <= 1) throw new Error('O pedido precisa ter pelo menos um item');
+      const newItems = currentItems.filter((it: any) => it.id !== itemId);
+      if (newItems.length === currentItems.length) throw new Error('Item não encontrado');
+
+      // Fetch discount/shipping from quote
+      const { data: q, error: qFetchErr } = await supabase
+        .from('quotes')
+        .select('discount_value, discount_type, shipping_value')
+        .eq('id', order.quote_id)
+        .single();
+      if (qFetchErr) throw qFetchErr;
+
+      const subtotal = newItems.reduce((s, it: any) => s + (Number(it.quantity) || 0) * (Number(it.unit_value) || 0), 0);
+      const discountValue = Number(q?.discount_value) || 0;
+      const discountType = q?.discount_type || 'fixed';
+      const shippingValue = Number(q?.shipping_value) || 0;
+      const discountAmount = discountType === 'percent'
+        ? Math.min(subtotal, subtotal * (discountValue / 100))
+        : Math.min(subtotal, discountValue);
+      const newRevenue = Math.max(0, subtotal - discountAmount + shippingValue);
+      const newPending = Math.max(0, newRevenue - (Number(order.amount_received) || 0));
+
+      const { error: qErr } = await supabase
+        .from('quotes')
+        .update({ items: newItems, subtotal, total_value: newRevenue })
+        .eq('id', order.quote_id);
+      if (qErr) throw qErr;
+
+      const { error } = await supabase
+        .from('orders')
+        .update({ total_revenue: newRevenue, amount_pending: newPending })
+        .eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+      toast({ title: 'Item removido do pedido.' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Erro ao remover item', description: error.message, variant: 'destructive' });
+    },
+  });
+
   return {
     orders: ordersQuery.data ?? [],
     isLoading: ordersQuery.isLoading,
@@ -193,5 +243,6 @@ export function useOrders() {
     getOrderHistory,
     deleteOrder,
     addItemToOrder,
+    removeItemFromOrder,
   };
 }
