@@ -46,14 +46,19 @@ const Financeiro: React.FC = () => {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Financeiro</h1>
             <p className="text-xs sm:text-sm text-muted-foreground">Controle financeiro dos pedidos</p>
           </div>
-          <PeriodFilter
-            value={period}
-            onChange={setPeriod}
-            customStart={customStart}
-            customEnd={customEnd}
-            onCustomStartChange={setCustomStart}
-            onCustomEndChange={setCustomEnd}
-          />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <PeriodFilter
+              value={period}
+              onChange={setPeriod}
+              customStart={customStart}
+              customEnd={customEnd}
+              onCustomStartChange={setCustomStart}
+              onCustomEndChange={setCustomEnd}
+            />
+            <Button onClick={() => setEntryOpen(true)} className="shrink-0">
+              <Plus className="w-4 h-4 mr-1" /> Registrar entrada
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-5 sm:mb-6">
