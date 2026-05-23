@@ -124,6 +124,7 @@ const Financeiro: React.FC = () => {
           </div>
         </Card>
       </div>
+      <ManualEntryModal open={entryOpen} onOpenChange={setEntryOpen} />
     </AppLayout>
   );
 };
