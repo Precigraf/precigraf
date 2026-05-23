@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, User, Mail, MapPin, Package, Copy, Link2 } from 'lucide-react';
+import { Plus, User, Mail, MapPin, Package, Copy, Link2, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useOrders, KANBAN_COLUMNS, type Order } from '@/hooks/useOrders';
@@ -32,7 +33,7 @@ const STATUS_BADGE: Record<string, string> = {
 const formatCurrency = (v: number) => (Number.isFinite(v) ? v : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChange, order }) => {
-  const { updateOrderStatus, addItemToOrder } = useOrders();
+  const { updateOrderStatus, addItemToOrder, removeItemFromOrder } = useOrders();
   const { products } = useProducts();
   const [productId, setProductId] = useState<string>('');
   const [qty, setQty] = useState('1');
@@ -185,17 +186,50 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
               <div className="rounded-lg border border-border overflow-x-auto">
                 <div className="min-w-[480px]">
                   <div className="grid grid-cols-12 gap-2 bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
-                    <div className="col-span-6">Produto</div>
+                    <div className="col-span-5">Produto</div>
                     <div className="col-span-2 text-center">Qtd</div>
                     <div className="col-span-2 text-right">Valor unit.</div>
                     <div className="col-span-2 text-right">Subtotal</div>
+                    <div className="col-span-1"></div>
                   </div>
                   {items.map((it: any, i: number) => (
-                    <div key={it.id || i} className="grid grid-cols-12 gap-2 px-3 py-2 text-sm border-t border-border">
-                      <div className="col-span-6 text-foreground break-words">{it.name}</div>
+                    <div key={it.id || i} className="grid grid-cols-12 gap-2 px-3 py-2 text-sm border-t border-border items-center">
+                      <div className="col-span-5 text-foreground break-words">{it.name}</div>
                       <div className="col-span-2 text-center">{it.quantity}</div>
                       <div className="col-span-2 text-right">{formatCurrency(Number(it.unit_value) || 0)}</div>
                       <div className="col-span-2 text-right font-semibold">{formatCurrency((Number(it.quantity) || 0) * (Number(it.unit_value) || 0))}</div>
+                      <div className="col-span-1 flex justify-end">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-destructive hover:text-destructive"
+                              disabled={items.length <= 1 || !it.id}
+                              title={items.length <= 1 ? 'O pedido precisa ter pelo menos um item' : 'Excluir item'}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="bg-card max-w-[calc(100vw-1rem)] sm:max-w-md">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir item?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Remover "{it.name}" ({formatCurrency((Number(it.quantity) || 0) * (Number(it.unit_value) || 0))}) deste pedido. O total será recalculado.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => removeItemFromOrder.mutate({ orderId: order.id, itemId: it.id })}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   ))}
                 </div>
