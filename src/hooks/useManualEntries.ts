@@ -100,5 +100,69 @@ export function useManualEntries() {
     },
   });
 
-  return { createManualEntry };
+  const updateManualEntry = useMutation({
+    mutationFn: async (input: ManualEntryInput & { order_id: string; quote_id: string }) => {
+      if (!user) throw new Error('Not authenticated');
+      const itemsWithIds = input.items.map(it => ({ id: crypto.randomUUID(), ...it }));
+      const subtotal = itemsWithIds.reduce((s, it) => s + it.quantity * it.unit_value, 0);
+      const total = subtotal;
+      const amountReceived = Math.min(input.amount_received, total);
+      const amountPending = Math.max(0, total - amountReceived);
+      const createdAt = new Date(`${input.entry_date}T12:00:00`).toISOString();
+
+      const { error: qErr } = await supabase
+        .from('quotes')
+        .update({
+          client_id: input.client_id,
+          items: itemsWithIds as any,
+          subtotal,
+          total_value: total,
+          unit_value: itemsWithIds[0]?.unit_value ?? 0,
+          quantity: itemsWithIds[0]?.quantity ?? 1,
+          product_name: itemsWithIds[0]?.name ?? 'Entrada manual',
+          notes: input.notes ?? null,
+        })
+        .eq('id', input.quote_id);
+      if (qErr) throw qErr;
+
+      const { error: oErr } = await supabase
+        .from('orders')
+        .update({
+          client_id: input.client_id,
+          total_revenue: total,
+          total_cost: Math.max(0, input.total_cost),
+          amount_received: amountReceived,
+          amount_pending: amountPending,
+          created_at: createdAt,
+        })
+        .eq('id', input.order_id);
+      if (oErr) throw oErr;
+
+      await supabase.from('receivables').delete().eq('order_id', input.order_id);
+      if (amountPending > 0) {
+        const due = input.receivable_due_date || input.entry_date;
+        const { error: rErr } = await supabase.from('receivables').insert({
+          user_id: user.id,
+          order_id: input.order_id,
+          amount: amountPending,
+          due_date: due,
+          installment_number: 1,
+          installment_total: 1,
+        });
+        if (rErr) throw rErr;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['orders'] });
+      qc.invalidateQueries({ queryKey: ['quotes'] });
+      qc.invalidateQueries({ queryKey: ['receivables'] });
+      toast({ title: 'Entrada atualizada!' });
+    },
+    onError: (e: Error) => {
+      toast({ title: 'Erro ao atualizar entrada', description: e.message, variant: 'destructive' });
+    },
+  });
+
+  return { createManualEntry, updateManualEntry };
 }
+
