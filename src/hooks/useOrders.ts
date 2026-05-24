@@ -32,7 +32,7 @@ export interface Order {
   created_at: string;
   updated_at: string;
   clients?: { name: string; whatsapp: string | null } | null;
-  quotes?: { total_value: number; description: string | null; product_name: string | null; items: any; quote_number: number | null } | null;
+  quotes?: { total_value: number; description: string | null; product_name: string | null; items: any; quote_number: number | null; raw_data: any; client_id?: string } | null;
 }
 
 export interface OrderStatusHistory {
@@ -54,7 +54,7 @@ export function useOrders() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
-        .select('*, clients(name, whatsapp), quotes(total_value, description, product_name, items, quote_number)')
+        .select('*, clients(name, whatsapp), quotes(total_value, description, product_name, items, quote_number, raw_data, client_id)')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as Order[];

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,18 +11,32 @@ import { useClients } from '@/hooks/useClients';
 import { useProducts } from '@/hooks/useProducts';
 import { useManualEntries, type ManualEntryItem } from '@/hooks/useManualEntries';
 
+export interface ManualEntryEditData {
+  order_id: string;
+  quote_id: string;
+  client_id: string;
+  entry_date: string;
+  items: ManualEntryItem[];
+  total_cost: number;
+  amount_received: number;
+  total_revenue: number;
+  notes?: string | null;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  editEntry?: ManualEntryEditData | null;
 }
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const today = () => new Date().toISOString().slice(0, 10);
 
-const ManualEntryModal: React.FC<Props> = ({ open, onOpenChange }) => {
+const ManualEntryModal: React.FC<Props> = ({ open, onOpenChange, editEntry }) => {
   const { clients } = useClients();
   const { products } = useProducts();
-  const { createManualEntry } = useManualEntries();
+  const { createManualEntry, updateManualEntry } = useManualEntries();
+  const isEdit = !!editEntry;
 
   const [clientId, setClientId] = useState('');
   const [entryDate, setEntryDate] = useState(today());
@@ -32,6 +46,23 @@ const ManualEntryModal: React.FC<Props> = ({ open, onOpenChange }) => {
   const [partialReceived, setPartialReceived] = useState('0');
   const [dueDate, setDueDate] = useState(today());
   const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    if (open && editEntry) {
+      setClientId(editEntry.client_id);
+      setEntryDate(editEntry.entry_date);
+      setItems(editEntry.items.length ? editEntry.items.map(it => ({ name: it.name, quantity: Number(it.quantity) || 1, unit_value: Number(it.unit_value) || 0, product_id: it.product_id ?? null })) : [{ name: '', quantity: 1, unit_value: 0 }]);
+      setTotalCost(String(editEntry.total_cost ?? 0));
+      const rev = editEntry.total_revenue;
+      const rec = editEntry.amount_received;
+      const mode: 'full' | 'partial' | 'pending' = rec <= 0 ? 'pending' : rec >= rev ? 'full' : 'partial';
+      setPaymentMode(mode);
+      setPartialReceived(String(rec));
+      setDueDate(editEntry.entry_date);
+      setNotes(editEntry.notes ?? '');
+    }
+  }, [open, editEntry]);
+
 
   const subtotal = useMemo(
     () => items.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.unit_value) || 0), 0),
@@ -74,34 +105,35 @@ const ManualEntryModal: React.FC<Props> = ({ open, onOpenChange }) => {
       paymentMode === 'full' ? subtotal :
       paymentMode === 'pending' ? 0 :
       Math.min(subtotal, Number(partialReceived.replace(',', '.')) || 0);
-    createManualEntry.mutate(
-      {
-        client_id: clientId,
-        entry_date: entryDate,
-        items,
-        total_cost: cost,
-        amount_received: amountReceived,
-        notes: notes.trim() || null,
-        receivable_due_date: paymentMode === 'full' ? null : dueDate,
-      },
-      {
-        onSuccess: () => {
-          reset();
-          onOpenChange(false);
-        },
-      }
-    );
+    const payload = {
+      client_id: clientId,
+      entry_date: entryDate,
+      items,
+      total_cost: cost,
+      amount_received: amountReceived,
+      notes: notes.trim() || null,
+      receivable_due_date: paymentMode === 'full' ? null : dueDate,
+    };
+    const onDone = { onSuccess: () => { reset(); onOpenChange(false); } };
+    if (isEdit && editEntry) {
+      updateManualEntry.mutate({ ...payload, order_id: editEntry.order_id, quote_id: editEntry.quote_id }, onDone);
+    } else {
+      createManualEntry.mutate(payload, onDone);
+    }
   };
+
+  const isPending = createManualEntry.isPending || updateManualEntry.isPending;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }}>
       <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-card">
         <DialogHeader>
-          <DialogTitle>Registrar entrada</DialogTitle>
+          <DialogTitle>{isEdit ? 'Editar entrada' : 'Registrar entrada'}</DialogTitle>
           <DialogDescription>
-            Lance uma receita avulsa sem precisar criar orçamento. Aparece em Financeiro e Pedidos.
+            {isEdit ? 'Atualize cliente, itens, custo e recebimento desta entrada.' : 'Lance uma receita avulsa sem precisar criar orçamento. Aparece em Financeiro e Pedidos.'}
           </DialogDescription>
         </DialogHeader>
+
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -222,8 +254,8 @@ const ManualEntryModal: React.FC<Props> = ({ open, onOpenChange }) => {
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit || createManualEntry.isPending}>
-            {createManualEntry.isPending ? 'Salvando...' : 'Registrar entrada'}
+          <Button onClick={handleSubmit} disabled={!canSubmit || isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            {isPending ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Registrar entrada'}
           </Button>
         </DialogFooter>
       </DialogContent>
