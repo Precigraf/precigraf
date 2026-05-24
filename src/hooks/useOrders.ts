@@ -32,7 +32,7 @@ export interface Order {
   created_at: string;
   updated_at: string;
   clients?: { name: string; whatsapp: string | null } | null;
-  quotes?: { total_value: number; description: string | null; product_name: string | null; items: any; quote_number: number | null } | null;
+  quotes?: { total_value: number; description: string | null; product_name: string | null; items: any; quote_number: number | null; raw_data: any; client_id?: string } | null;
 }
 
 export interface OrderStatusHistory {
