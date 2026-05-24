@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,9 +11,22 @@ import { useClients } from '@/hooks/useClients';
 import { useProducts } from '@/hooks/useProducts';
 import { useManualEntries, type ManualEntryItem } from '@/hooks/useManualEntries';
 
+export interface ManualEntryEditData {
+  order_id: string;
+  quote_id: string;
+  client_id: string;
+  entry_date: string;
+  items: ManualEntryItem[];
+  total_cost: number;
+  amount_received: number;
+  total_revenue: number;
+  notes?: string | null;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  editEntry?: ManualEntryEditData | null;
 }
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
