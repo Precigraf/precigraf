@@ -254,8 +254,8 @@ const ManualEntryModal: React.FC<Props> = ({ open, onOpenChange, editEntry }) =>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={!canSubmit || createManualEntry.isPending}>
-            {createManualEntry.isPending ? 'Salvando...' : 'Registrar entrada'}
+          <Button onClick={handleSubmit} disabled={!canSubmit || isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+            {isPending ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Registrar entrada'}
           </Button>
         </DialogFooter>
       </DialogContent>
