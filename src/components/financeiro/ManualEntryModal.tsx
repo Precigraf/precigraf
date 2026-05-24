@@ -105,34 +105,35 @@ const ManualEntryModal: React.FC<Props> = ({ open, onOpenChange, editEntry }) =>
       paymentMode === 'full' ? subtotal :
       paymentMode === 'pending' ? 0 :
       Math.min(subtotal, Number(partialReceived.replace(',', '.')) || 0);
-    createManualEntry.mutate(
-      {
-        client_id: clientId,
-        entry_date: entryDate,
-        items,
-        total_cost: cost,
-        amount_received: amountReceived,
-        notes: notes.trim() || null,
-        receivable_due_date: paymentMode === 'full' ? null : dueDate,
-      },
-      {
-        onSuccess: () => {
-          reset();
-          onOpenChange(false);
-        },
-      }
-    );
+    const payload = {
+      client_id: clientId,
+      entry_date: entryDate,
+      items,
+      total_cost: cost,
+      amount_received: amountReceived,
+      notes: notes.trim() || null,
+      receivable_due_date: paymentMode === 'full' ? null : dueDate,
+    };
+    const onDone = { onSuccess: () => { reset(); onOpenChange(false); } };
+    if (isEdit && editEntry) {
+      updateManualEntry.mutate({ ...payload, order_id: editEntry.order_id, quote_id: editEntry.quote_id }, onDone);
+    } else {
+      createManualEntry.mutate(payload, onDone);
+    }
   };
+
+  const isPending = createManualEntry.isPending || updateManualEntry.isPending;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) reset(); onOpenChange(o); }}>
       <DialogContent className="max-w-[calc(100vw-1rem)] sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-card">
         <DialogHeader>
-          <DialogTitle>Registrar entrada</DialogTitle>
+          <DialogTitle>{isEdit ? 'Editar entrada' : 'Registrar entrada'}</DialogTitle>
           <DialogDescription>
-            Lance uma receita avulsa sem precisar criar orçamento. Aparece em Financeiro e Pedidos.
+            {isEdit ? 'Atualize cliente, itens, custo e recebimento desta entrada.' : 'Lance uma receita avulsa sem precisar criar orçamento. Aparece em Financeiro e Pedidos.'}
           </DialogDescription>
         </DialogHeader>
+
 
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
