@@ -32,10 +32,11 @@ interface Props {
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const today = () => new Date().toISOString().slice(0, 10);
 
-const ManualEntryModal: React.FC<Props> = ({ open, onOpenChange }) => {
+const ManualEntryModal: React.FC<Props> = ({ open, onOpenChange, editEntry }) => {
   const { clients } = useClients();
   const { products } = useProducts();
-  const { createManualEntry } = useManualEntries();
+  const { createManualEntry, updateManualEntry } = useManualEntries();
+  const isEdit = !!editEntry;
 
   const [clientId, setClientId] = useState('');
   const [entryDate, setEntryDate] = useState(today());
@@ -45,6 +46,23 @@ const ManualEntryModal: React.FC<Props> = ({ open, onOpenChange }) => {
   const [partialReceived, setPartialReceived] = useState('0');
   const [dueDate, setDueDate] = useState(today());
   const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    if (open && editEntry) {
+      setClientId(editEntry.client_id);
+      setEntryDate(editEntry.entry_date);
+      setItems(editEntry.items.length ? editEntry.items.map(it => ({ name: it.name, quantity: Number(it.quantity) || 1, unit_value: Number(it.unit_value) || 0, product_id: it.product_id ?? null })) : [{ name: '', quantity: 1, unit_value: 0 }]);
+      setTotalCost(String(editEntry.total_cost ?? 0));
+      const rev = editEntry.total_revenue;
+      const rec = editEntry.amount_received;
+      const mode: 'full' | 'partial' | 'pending' = rec <= 0 ? 'pending' : rec >= rev ? 'full' : 'partial';
+      setPaymentMode(mode);
+      setPartialReceived(String(rec));
+      setDueDate(editEntry.entry_date);
+      setNotes(editEntry.notes ?? '');
+    }
+  }, [open, editEntry]);
+
 
   const subtotal = useMemo(
     () => items.reduce((s, it) => s + (Number(it.quantity) || 0) * (Number(it.unit_value) || 0), 0),
