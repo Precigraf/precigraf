@@ -18,7 +18,6 @@ import Produtos from "./pages/Produtos";
 import Pedidos from "./pages/Pedidos";
 import Gestao from "./pages/Gestao";
 import Financeiro from "./pages/Financeiro";
-import FluxoCaixa from "./pages/FluxoCaixa";
 import PagamentoConfirmado from "./pages/PagamentoConfirmado";
 import Marketplace from "./pages/Marketplace";
 import Producao from "./pages/Producao";
@@ -59,7 +58,6 @@ const App = () => (
               <Route path="/pedidos" element={<ProtectedRoute><Pedidos /></ProtectedRoute>} />
               <Route path="/gestao" element={<ProtectedRoute><Gestao /></ProtectedRoute>} />
               <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
-              <Route path="/fluxo-caixa" element={<ProtectedRoute><FluxoCaixa /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
               <Route path="/producao" element={<ProtectedRoute><Producao /></ProtectedRoute>} />
               <Route path="/pagamento-confirmado" element={<ProtectedRoute><PagamentoConfirmado /></ProtectedRoute>} />
