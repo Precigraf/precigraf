@@ -104,6 +104,122 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_banners: {
+        Row: {
+          bg_color: string
+          created_at: string
+          cta_label: string | null
+          cta_url: string | null
+          eyebrow: string | null
+          id: string
+          is_active: boolean
+          sort_order: number
+          subtitle: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bg_color?: string
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          eyebrow?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          subtitle?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bg_color?: string
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          eyebrow?: string | null
+          id?: string
+          is_active?: boolean
+          sort_order?: number
+          subtitle?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      catalog_featured: {
+        Row: {
+          badge: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          product_id: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badge?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          product_id: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badge?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          product_id?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_featured_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalog_settings: {
+        Row: {
+          created_at: string
+          is_active: boolean
+          primary_color: string
+          slug: string
+          updated_at: string
+          user_id: string
+          whatsapp_message_template: string
+        }
+        Insert: {
+          created_at?: string
+          is_active?: boolean
+          primary_color?: string
+          slug: string
+          updated_at?: string
+          user_id: string
+          whatsapp_message_template?: string
+        }
+        Update: {
+          created_at?: string
+          is_active?: boolean
+          primary_color?: string
+          slug?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp_message_template?: string
+        }
+        Relationships: []
+      }
       client_files: {
         Row: {
           client_id: string
@@ -1320,6 +1436,7 @@ export type Database = {
       }
       get_free_plan_id: { Args: never; Returns: string }
       get_order_by_tracking_token: { Args: { p_token: string }; Returns: Json }
+      get_public_catalog: { Args: { p_slug: string }; Returns: Json }
       get_quote_by_token: { Args: { p_token: string }; Returns: Json }
       get_user_role: {
         Args: { _user_id: string }
