@@ -27,6 +27,8 @@ import Suporte from "./pages/Suporte";
 import AprovacaoOrcamento from "./pages/AprovacaoOrcamento";
 import ContasReceber from "./pages/ContasReceber";
 import Estoque from "./pages/Estoque";
+import CatalogoAdmin from "./pages/CatalogoAdmin";
+import CatalogoPublico from "./pages/CatalogoPublico";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +66,8 @@ const App = () => (
               <Route path="/suporte" element={<ProtectedRoute><Suporte /></ProtectedRoute>} />
               <Route path="/financeiro/receber" element={<ProtectedRoute><ContasReceber /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><Estoque /></ProtectedRoute>} />
+              <Route path="/catalogo-admin" element={<ProtectedRoute><CatalogoAdmin /></ProtectedRoute>} />
+              <Route path="/catalogo/:slug" element={<CatalogoPublico />} />
               <Route path="/orcamento/:token" element={<AprovacaoOrcamento />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
