@@ -53,7 +53,7 @@ export function useCatalogSettings() {
         .eq('user_id', user!.id)
         .maybeSingle();
       if (error) throw error;
-      return (data ?? null) as CatalogSettings | null;
+      return (data ?? null) as unknown as CatalogSettings | null;
     },
     enabled: !!user,
   });
