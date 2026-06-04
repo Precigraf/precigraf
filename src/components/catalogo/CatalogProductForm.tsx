@@ -110,7 +110,8 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
       const arr = Array.from(files).slice(0, remaining);
       const uploaded: ImageItem[] = [];
       for (const f of arr) {
-        const compressed = await compressImage(f, { maxWidth: 1200, quality: 0.85 });
+        const compressedBlob = await compressImage(f, 1200, 0.85);
+        const compressed = new File([compressedBlob], f.name, { type: compressedBlob.type || f.type });
         const { url, storage_path } = await uploadCatalogImage(user.id, tempProductId, compressed);
         uploaded.push({ url, storage_path });
       }
