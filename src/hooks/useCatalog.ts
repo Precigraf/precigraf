@@ -236,21 +236,20 @@ export interface PublicCatalogData {
     cta_label: string | null;
     cta_url: string | null;
   }>;
-  categories: Array<{ id: string; name: string }>;
+  categories: Array<{ id: string; name: string; parent_id: string | null }>;
   products: Array<{
     id: string;
     name: string;
     description: string | null;
-    size: string | null;
-    material: string | null;
-    finish: string | null;
-    production_time: string | null;
-    unit_price: number;
-    default_quantity: number;
-    price_tiers: Array<{ quantity: number; price: number; cost?: number }>;
+    price: number;
+    promo_price: number | null;
+    stock: number | null;
+    delivery_time: string | null;
     category_id: string | null;
-    badge: 'promo' | 'new' | null;
+    is_featured: boolean;
     sort_order: number;
+    images: string[];
+    variants: Array<{ id: string; name: string; price: number; stock: number | null }>;
   }>;
 }
 

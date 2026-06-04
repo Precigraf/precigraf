@@ -1,0 +1,402 @@
+import React, { useEffect, useState } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ImagePlus, Trash2, Plus, X, Star } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  useCatalogCategories,
+  useCatalogProducts,
+  uploadCatalogImage,
+  saveProductImages,
+  replaceVariants,
+  type CatalogProduct,
+  type CatalogVariant,
+} from '@/hooks/useCatalogProducts';
+import { compressImage } from '@/lib/imageCompress';
+
+interface Props {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  product?: CatalogProduct | null;
+}
+
+interface ImageItem {
+  url: string;
+  storage_path: string | null;
+}
+
+interface VariantDraft {
+  name: string;
+  price: string;
+  stock: string;
+}
+
+export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, product }) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { categories } = useCatalogCategories();
+  const { create, update } = useCatalogProducts();
+
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [description, setDescription] = useState('');
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [promoPrice, setPromoPrice] = useState('');
+  const [stock, setStock] = useState('');
+  const [deliveryTime, setDeliveryTime] = useState('');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [variants, setVariants] = useState<VariantDraft[]>([]);
+  const [images, setImages] = useState<ImageItem[]>([]);
+  const [featured, setFeatured] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    if (product) {
+      setName(product.name);
+      setPrice(product.price ? String(product.price) : '');
+      setDescription(product.description ?? '');
+      setCategoryId(product.category_id);
+      setPromoPrice(product.promo_price ? String(product.promo_price) : '');
+      setStock(product.stock != null ? String(product.stock) : '');
+      setDeliveryTime(product.delivery_time ?? '');
+      setDeliveryNotes(product.delivery_notes ?? '');
+      setFeatured(product.is_featured);
+      setVariants(
+        (product.variants ?? []).map((v: CatalogVariant) => ({
+          name: v.name,
+          price: String(v.price ?? ''),
+          stock: v.stock != null ? String(v.stock) : '',
+        })),
+      );
+      setImages((product.images ?? []).map((i) => ({ url: i.url, storage_path: i.storage_path })));
+    } else {
+      setName(''); setPrice(''); setDescription(''); setCategoryId(null);
+      setPromoPrice(''); setStock(''); setDeliveryTime(''); setDeliveryNotes('');
+      setVariants([]); setImages([]); setFeatured(false);
+    }
+  }, [open, product]);
+
+  // Categories with children indented
+  const orderedCats = (() => {
+    const parents = categories.filter((c) => !c.parent_id);
+    const result: Array<{ id: string; label: string }> = [];
+    parents.forEach((p) => {
+      result.push({ id: p.id, label: p.name });
+      categories.filter((c) => c.parent_id === p.id).forEach((s) =>
+        result.push({ id: s.id, label: `  ↳ ${s.name}` }),
+      );
+    });
+    return result;
+  })();
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || !user) return;
+    const remaining = 5 - images.length;
+    if (remaining <= 0) {
+      toast({ title: 'Máximo de 5 imagens', variant: 'destructive' });
+      return;
+    }
+    setUploading(true);
+    try {
+      const tempProductId = product?.id ?? 'tmp';
+      const arr = Array.from(files).slice(0, remaining);
+      const uploaded: ImageItem[] = [];
+      for (const f of arr) {
+        const compressedBlob = await compressImage(f, 1200, 0.85);
+        const compressed = new File([compressedBlob], f.name, { type: compressedBlob.type || f.type });
+        const { url, storage_path } = await uploadCatalogImage(user.id, tempProductId, compressed);
+        uploaded.push({ url, storage_path });
+      }
+      setImages((prev) => [...prev, ...uploaded]);
+    } catch (e: any) {
+      toast({ title: 'Falha no upload', description: e.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const addVariant = () =>
+    setVariants((v) => [...v, { name: '', price: '', stock: '' }]);
+  const updateVariant = (i: number, field: keyof VariantDraft, value: string) =>
+    setVariants((v) => v.map((x, idx) => (idx === i ? { ...x, [field]: value } : x)));
+  const removeVariant = (i: number) =>
+    setVariants((v) => v.filter((_, idx) => idx !== i));
+
+  const handleSubmit = async () => {
+    if (!user) return;
+    if (!name.trim()) {
+      toast({ title: 'Nome obrigatório', variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload: Partial<CatalogProduct> = {
+        name: name.trim(),
+        description: description.trim() || null,
+        price: parseFloat(price.replace(',', '.')) || 0,
+        promo_price: promoPrice ? parseFloat(promoPrice.replace(',', '.')) : null,
+        stock: stock ? parseInt(stock) : null,
+        delivery_time: deliveryTime.trim() || null,
+        delivery_notes: deliveryNotes.trim() || null,
+        category_id: categoryId,
+        is_featured: featured,
+      };
+
+      let productId = product?.id;
+      if (product) {
+        await update.mutateAsync({ id: product.id, ...payload });
+      } else {
+        const created = await create.mutateAsync(payload);
+        productId = (created as any).id;
+      }
+      if (!productId) throw new Error('Sem id');
+
+      const cleanVariants = variants
+        .filter((v) => v.name.trim())
+        .map((v) => ({
+          name: v.name.trim(),
+          price: parseFloat(v.price.replace(',', '.')) || 0,
+          stock: v.stock ? parseInt(v.stock) : null,
+        }));
+      await replaceVariants(user.id, productId, cleanVariants);
+      await saveProductImages(user.id, productId, images);
+
+      onOpenChange(false);
+    } catch (e: any) {
+      toast({ title: 'Erro ao salvar', description: e.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl p-0 gap-0 max-h-[90vh] flex flex-col">
+        {/* Topbar */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+          <button
+            onClick={() => onOpenChange(false)}
+            className="text-sm text-destructive hover:underline font-medium"
+          >
+            Cancelar
+          </button>
+          <h2 className="font-semibold text-foreground text-sm">
+            {product ? 'Editar produto' : 'Adicionar produto'}
+          </h2>
+          <button
+            onClick={() => setFeatured((v) => !v)}
+            className={`text-sm font-medium flex items-center gap-1 ${
+              featured ? 'text-amber-500' : 'text-primary'
+            } hover:underline`}
+          >
+            <Star className={`w-3.5 h-3.5 ${featured ? 'fill-current' : ''}`} />
+            {featured ? 'Destacado' : 'Destacar'}
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_140px] gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Nome</Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex: Camiseta preta"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Preço</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
+                <Input
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="0,00"
+                  className="pl-9 text-right"
+                  inputMode="decimal"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Descrição</Label>
+            <div className="relative">
+              <Textarea
+                rows={3}
+                maxLength={10000}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ex: Camiseta preta de algodão. Tamanhos P, M e G."
+              />
+              <span className="absolute bottom-2 right-3 text-[10px] text-muted-foreground">
+                {description.length}/10000
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Categoria</Label>
+            <Select value={categoryId ?? 'none'} onValueChange={(v) => setCategoryId(v === 'none' ? null : v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Ex: Camisetas, calças, meias" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem categoria</SelectItem>
+                {orderedCats.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1 max-w-[200px]">
+            <Label className="text-xs">Preço promocional</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">R$</span>
+              <Input
+                value={promoPrice}
+                onChange={(e) => setPromoPrice(e.target.value)}
+                placeholder="0,00"
+                className="pl-9"
+                inputMode="decimal"
+              />
+            </div>
+          </div>
+
+          <Accordion type="multiple" className="border-t border-border">
+            <AccordionItem value="stock">
+              <AccordionTrigger className="text-sm">
+                Estoque <span className="text-muted-foreground font-normal ml-1">(Opcional)</span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="max-w-[200px]">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={stock}
+                    onChange={(e) => setStock(e.target.value)}
+                    placeholder="Quantidade em estoque"
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="variants">
+              <AccordionTrigger className="text-sm">
+                <div className="flex flex-col items-start">
+                  <span>Variações <span className="text-muted-foreground font-normal">(Opcional)</span></span>
+                  <span className="text-[11px] text-muted-foreground font-normal">Exemplo: Cor, tamanho, etc</span>
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-2">
+                {variants.map((v, i) => (
+                  <div key={i} className="grid grid-cols-[1fr_100px_80px_auto] gap-2 items-center">
+                    <Input
+                      placeholder="Ex: Vermelho - P"
+                      value={v.name}
+                      onChange={(e) => updateVariant(i, 'name', e.target.value)}
+                    />
+                    <div className="relative">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
+                      <Input
+                        className="pl-7"
+                        placeholder="0,00"
+                        value={v.price}
+                        onChange={(e) => updateVariant(i, 'price', e.target.value)}
+                        inputMode="decimal"
+                      />
+                    </div>
+                    <Input
+                      type="number"
+                      placeholder="Estoq."
+                      value={v.stock}
+                      onChange={(e) => updateVariant(i, 'stock', e.target.value)}
+                    />
+                    <Button size="icon" variant="ghost" onClick={() => removeVariant(i)}>
+                      <X className="w-4 h-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={addVariant}>
+                  <Plus className="w-3 h-3 mr-1" /> adicionar variação
+                </Button>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="delivery">
+              <AccordionTrigger className="text-sm">
+                Entrega <span className="text-muted-foreground font-normal ml-1">(Opcional)</span>
+              </AccordionTrigger>
+              <AccordionContent className="space-y-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Prazo de produção/entrega</Label>
+                  <Input
+                    placeholder="Ex: 3 a 5 dias úteis"
+                    value={deliveryTime}
+                    onChange={(e) => setDeliveryTime(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Observações</Label>
+                  <Textarea
+                    rows={2}
+                    placeholder="Ex: Envio via Sedex/PAC após aprovação"
+                    value={deliveryNotes}
+                    onChange={(e) => setDeliveryNotes(e.target.value)}
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+
+          {/* Image previews */}
+          {images.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {images.map((img, i) => (
+                <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
+                  <img src={img.url} alt="" className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => setImages((arr) => arr.filter((_, idx) => idx !== i))}
+                    className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-background">
+          <label className="cursor-pointer">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => handleFiles(e.target.files)}
+              disabled={uploading || images.length >= 5}
+            />
+            <div className={`w-12 h-12 rounded-lg border border-dashed border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/40 ${uploading ? 'opacity-50' : ''}`}>
+              <ImagePlus className="w-5 h-5" />
+            </div>
+          </label>
+          <Button onClick={handleSubmit} disabled={saving || uploading} className="px-8">
+            {saving ? 'Salvando...' : product ? 'Salvar' : 'Adicionar'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};

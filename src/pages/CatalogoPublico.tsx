@@ -274,65 +274,75 @@ interface PCardProps {
 }
 
 const ProductCard: React.FC<PCardProps> = ({ product, primary, isOpen, onToggle, onAdd }) => {
-  const tiers = (product.price_tiers ?? []).filter((t) => t && t.price > 0);
-  const hasTiers = tiers.length > 0;
-  const minPrice = hasTiers ? Math.min(...tiers.map((t) => t.price)) : product.unit_price;
-  const popularIdx = hasTiers ? Math.floor(tiers.length / 2) : -1;
-  const [selectedIdx, setSelectedIdx] = useState(popularIdx >= 0 ? popularIdx : 0);
-
-  const specs = [product.size, product.material, product.finish].filter(Boolean).join(' · ');
+  const variants = product.variants ?? [];
+  const hasVariants = variants.length > 0;
+  const basePrice = product.promo_price ?? product.price;
+  const minPrice = hasVariants ? Math.min(...variants.map((v) => v.price)) : basePrice;
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const thumb = product.images?.[0];
 
   const handleAdd = () => {
-    if (hasTiers) {
-      const t = tiers[selectedIdx];
+    if (hasVariants) {
+      const v = variants[selectedIdx];
       onAdd({
         key: `${product.id}-${Date.now()}`,
         product_id: product.id,
-        product_name: product.name,
-        qty_label: `${t.quantity} un`,
-        price: t.price,
+        product_name: `${product.name} — ${v.name}`,
+        qty_label: '1 un',
+        price: v.price,
       });
     } else {
       onAdd({
         key: `${product.id}-${Date.now()}`,
         product_id: product.id,
         product_name: product.name,
-        qty_label: `${product.default_quantity} un`,
-        price: product.unit_price,
+        qty_label: '1 un',
+        price: basePrice,
       });
     }
   };
 
   return (
     <div className="bg-background border border-border rounded-2xl overflow-hidden hover:border-muted-foreground/30 transition">
-      <div className="h-32 bg-muted/40 border-b border-border flex items-center justify-center relative">
-        <Package className="w-10 h-10 text-muted-foreground/50" />
-        {product.badge === 'promo' && (
+      <div className="h-36 bg-muted/40 border-b border-border flex items-center justify-center relative overflow-hidden">
+        {thumb ? (
+          <img src={thumb} alt={product.name} className="w-full h-full object-cover" />
+        ) : (
+          <Package className="w-10 h-10 text-muted-foreground/50" />
+        )}
+        {product.promo_price != null && product.promo_price < product.price && (
           <span className="absolute top-2 left-2 bg-destructive text-white text-[10px] font-medium px-2 py-0.5 rounded-full">
             PROMO
           </span>
         )}
-        {product.badge === 'new' && (
+        {product.is_featured && (
           <span
-            className="absolute top-2 left-2 text-white text-[10px] font-medium px-2 py-0.5 rounded-full"
+            className="absolute top-2 right-2 text-white text-[10px] font-medium px-2 py-0.5 rounded-full"
             style={{ background: primary }}
           >
-            NOVO
+            DESTAQUE
           </span>
         )}
       </div>
       <div className="p-4">
         <div className="font-semibold text-sm text-foreground mb-1">{product.name}</div>
-        {specs && <div className="text-xs text-muted-foreground mb-2 line-clamp-2">{specs}</div>}
-        {product.production_time && (
+        {product.description && (
+          <div className="text-xs text-muted-foreground mb-2 line-clamp-2">{product.description}</div>
+        )}
+        {product.delivery_time && (
           <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-3">
-            <Clock className="w-3 h-3" /> {product.production_time}
+            <Clock className="w-3 h-3" /> {product.delivery_time}
           </div>
         )}
         <div className="mb-3">
-          <div className="text-[10px] text-muted-foreground">a partir de</div>
-          <div className="font-bold text-base" style={{ color: primary }}>
-            {formatBRL(minPrice)}
+          {hasVariants && <div className="text-[10px] text-muted-foreground">a partir de</div>}
+          <div className="flex items-baseline gap-2">
+            <div className="font-bold text-base" style={{ color: primary }}>
+              {formatBRL(minPrice)}
+            </div>
+            {!hasVariants && product.promo_price != null && product.promo_price < product.price && (
+              <div className="text-xs text-muted-foreground line-through">{formatBRL(product.price)}</div>
+            )}
           </div>
         </div>
 
@@ -340,12 +350,12 @@ const ProductCard: React.FC<PCardProps> = ({ product, primary, isOpen, onToggle,
           variant="outline"
           size="sm"
           className="w-full"
-          onClick={hasTiers ? onToggle : handleAdd}
+          onClick={hasVariants ? onToggle : handleAdd}
         >
-          {hasTiers ? (
+          {hasVariants ? (
             <>
               <Tag className="w-3.5 h-3.5 mr-1.5" />
-              Quantidades
+              Variações
             </>
           ) : (
             <>
@@ -355,40 +365,31 @@ const ProductCard: React.FC<PCardProps> = ({ product, primary, isOpen, onToggle,
           )}
         </Button>
 
-        {hasTiers && isOpen && (
+        {hasVariants && isOpen && (
           <div className="mt-2 border border-border rounded-lg overflow-hidden">
-            <div className="grid grid-cols-2 bg-muted/40 text-[10px] uppercase tracking-wide text-muted-foreground px-3 py-1.5">
-              <span>Quantidade</span>
-              <span>Preço</span>
-            </div>
-            {tiers.map((t, i) => {
+            {variants.map((v, i) => {
               const sel = selectedIdx === i;
               return (
                 <button
-                  key={i}
+                  key={v.id}
                   type="button"
                   onClick={() => setSelectedIdx(i)}
-                  className={`w-full grid grid-cols-2 px-3 py-2 text-sm text-left border-t border-border ${
+                  className={`w-full grid grid-cols-[1fr_auto] gap-2 px-3 py-2 text-sm text-left border-t border-border first:border-t-0 ${
                     sel ? 'bg-muted/60' : 'hover:bg-muted/30'
                   }`}
                 >
                   <span className="flex items-center gap-2">
                     <span
-                      className={`w-4 h-4 rounded-full border flex items-center justify-center ${sel ? 'border-transparent text-white' : 'border-border'}`}
+                      className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                        sel ? 'border-transparent text-white' : 'border-border'
+                      }`}
                       style={sel ? { background: primary } : {}}
                     >
                       {sel && <Check className="w-2.5 h-2.5" />}
                     </span>
-                    {t.quantity} un
+                    {v.name}
                   </span>
-                  <span className="flex items-center gap-2">
-                    {formatBRL(t.price)}
-                    {i === popularIdx && (
-                      <span className="text-[9px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 px-1.5 py-0.5 rounded-full">
-                        Popular
-                      </span>
-                    )}
-                  </span>
+                  <span>{formatBRL(v.price)}</span>
                 </button>
               );
             })}
@@ -399,7 +400,7 @@ const ProductCard: React.FC<PCardProps> = ({ product, primary, isOpen, onToggle,
               style={{ background: primary }}
             >
               <ShoppingCart className="w-4 h-4" />
-              Adicionar · {formatBRL(tiers[selectedIdx].price)}
+              Adicionar · {formatBRL(variants[selectedIdx].price)}
             </button>
           </div>
         )}

@@ -1,84 +1,70 @@
+# Catálogo: nova sub-navegação + cadastro de produtos
 
-# Catálogo público com carrinho via WhatsApp
+## Objetivo
+Quando o usuário clica em **Catálogo** na sidebar, o app entra em uma nova área com sub-menus próprios:
 
-Uma vitrine pública dos produtos da gráfica, com URL única para compartilhar com clientes finais. O cliente navega, escolhe quantidade/tier e finaliza enviando o pedido pronto pelo WhatsApp do dono. Disponível em todos os planos.
+1. **Catálogo** (novo) — gestão de produtos exclusivos do catálogo público, com categorias + subcategorias.
+2. **Banners** — o que hoje está em "Banners" no `/catalogo-admin`.
+3. **Destaques** — o que hoje está em "Destaques".
+4. **Configurações** — slug, cor, template do WhatsApp.
 
-## O que será entregue
+A vitrine pública `/catalogo/:slug` continua igual, mas passa a ler dos novos produtos de catálogo (não dos produtos do calculador).
 
-### 1. Página pública `/catalogo/:slug`
-- Sem login, igual ao layout do HTML enviado (navbar, banners em carrossel, filtros de categoria, busca, grid de cards).
-- Cada card mostra: imagem/ícone, nome, especificações (tamanho, material, acabamento), prazo, "a partir de R$ X".
-- Tag visual: **Promo** (vermelha) ou **Novo** (roxa) quando marcado.
-- Botão "Quantidades" abre dropdown com os `price_tiers` do produto (qtd × preço, marca "Popular" no destaque).
-- Selecionar tier + "Adicionar ao carrinho".
-- Carrinho lateral/seção com itens, total e botão verde **Finalizar pelo WhatsApp** → abre `wa.me/{telefone}?text=...` com mensagem formatada (loja, itens, qtds, valores, total).
-- Responsivo (mobile-first), tema próprio da página pública (não usa sidebar do app).
+## Decisões já confirmadas
+- Subcategorias via `parent_id` (hierarquia de 1 nível pai → filhas).
+- Produtos do catálogo são **separados** dos produtos do calculador (`/produtos` segue intacto).
+- Variações **completas**: cada variação tem nome, preço próprio e estoque próprio.
+- Imagens carregadas do computador do usuário, até 5 por produto.
 
-### 2. Página interna `/catalogo` (admin)
-- Mesma visualização (preview do que o cliente vê) + botão **Copiar link público**.
-- Tabs/seções para gerenciar:
-  - **Banners**: criar/editar/remover slides (título, subtítulo, eyebrow, cor, CTA opcional, ordem, ativo).
-  - **Destaques**: marcar produtos existentes como "Promo" / "Novo" e definir ordem de exibição no catálogo.
-  - **Configurações**: ativar/desativar catálogo, slug personalizado, mensagem padrão do WhatsApp.
+## Banco de dados (1 migração)
 
-### 3. Reaproveitamento
-- Produtos e categorias vêm de `products` / `product_categories` (já existem com `price_tiers`, `is_active`, `size`, `material`, `finish`, `production_time`).
-- WhatsApp vem de `profiles.whatsapp`; nome da loja de `profiles.store_name`; logo de `profiles.logo_url`.
+Novas tabelas (todas com RLS `auth.uid() = user_id`, grants `authenticated` + `service_role`):
 
-## Detalhes técnicos
+- **`catalog_product_categories`** — `id`, `user_id`, `parent_id` (self-ref, nullable), `name`, `sort_order`, `is_active`.
+- **`catalog_products`** — `id`, `user_id`, `name`, `description`, `price`, `promo_price`, `category_id`, `is_active`, `is_featured`, `stock` (opcional), `sort_order`.
+- **`catalog_product_variants`** — `id`, `product_id`, `name` (ex: "Vermelho - P"), `price`, `stock`, `sort_order`.
+- **`catalog_product_images`** — `id`, `product_id`, `url`, `sort_order` (máx 5 por produto via trigger).
 
-### Banco de dados (1 migration)
-```sql
--- Configuração do catálogo por usuário
-catalog_settings (user_id PK, slug unique, is_active bool, whatsapp_message_template text,
-                  primary_color text, created_at, updated_at)
+Atualizar a RPC `get_public_catalog(p_slug)` para devolver os novos `catalog_products` + categorias hierárquicas + variantes + imagens, ao invés de `products`/`product_categories`. `catalog_featured` deixa de ser usada — destaque vira `is_featured` no próprio produto (a aba "Destaques" passa a ordenar/marcar `is_featured`).
 
--- Banners
-catalog_banners (id, user_id, title, subtitle, eyebrow, bg_color, cta_label,
-                 cta_url, sort_order, is_active, created_at, updated_at)
+Storage:
+- Bucket público **`catalog-images`** com policy de SELECT público + INSERT/UPDATE/DELETE restrito ao dono via `auth.uid()::text = (storage.foldername(name))[1]`.
+- Caminho: `{user_id}/{product_id}/{uuid}.jpg`.
 
--- Destaques de produto (relação 1-1 com products, adiciona metadados de vitrine)
-catalog_featured (id, user_id, product_id unique, badge ('promo'|'new'|null),
-                  sort_order, is_active, created_at, updated_at)
-```
-RLS:
-- `authenticated`: CRUD apenas das próprias linhas (`user_id = auth.uid()`).
-- `anon`: `SELECT` permitido **apenas via RPCs SECURITY DEFINER** que recebem o `slug` e devolvem dados públicos (sem expor `user_id` direto). Segue o padrão de Client Portal / tracking já existente no projeto.
+## Frontend
 
-### RPCs públicas (SECURITY DEFINER)
-- `get_public_catalog(slug)` → retorna `{ store_name, logo_url, primary_color, banners[], categories[], products[] (com price_tiers, badge, sort) }` filtrando apenas ativos.
-- Nenhum endpoint expõe WhatsApp diretamente além do necessário para o link final (retorna no payload do catálogo).
+### Sub-navegação
+- `src/components/catalogo/CatalogoSubNav.tsx` — barra horizontal de tabs (`Catálogo | Banners | Destaques | Configurações`) que aparece dentro do `AppLayout` quando a rota começa com `/catalogo-admin`.
+- Sidebar continua com um único item "Catálogo" apontando para `/catalogo-admin`.
+- Rotas: `/catalogo-admin` (produtos), `/catalogo-admin/banners`, `/catalogo-admin/destaques`, `/catalogo-admin/configuracoes`.
 
-### Frontend
-- `src/pages/CatalogoPublico.tsx` (rota `/catalogo/:slug`) — sem `ProtectedRoute`, sem `AppLayout`.
-- `src/pages/CatalogoAdmin.tsx` (rota `/catalogo`, dentro de `ProtectedRoute` + `AppLayout`).
-- Componentes em `src/components/catalogo/`: `BannerCarousel`, `ProductCard`, `QuantityDropdown`, `CartDrawer`, `BannerManager`, `FeaturedManager`, `CatalogSettingsForm`.
-- Hooks: `useCatalogSettings`, `useCatalogBanners`, `useCatalogFeatured`, `usePublicCatalog(slug)`.
-- Carrinho em estado local (Zustand simples ou `useState` + Context) — não persiste em DB.
-- Item de menu **Catálogo** no `AppSidebar` (ícone `Store` ou `LayoutGrid`).
+### Aba 1 — Catálogo (produtos)  *(novo, conforme imagem)*
+Componente `CatalogProductsManager.tsx`:
+- Campo de busca largura total no topo.
+- **Seção Categorias**: botão `+` para criar, chips com nome e ícone de edição. Click no chip filtra a lista. "Mais opções" expande para exibir subcategorias agrupadas por pai e permitir criar subcategoria dentro de uma categoria.
+- **Seção Produtos**: botão azul "Adicionar produto" largura total. Lista de cards-linha com: thumb, nome + descrição curta, link "Contém variações" (se houver), estrela (toggle `is_featured`), lixeira (delete), switch `is_active`.
 
-### Mensagem WhatsApp
-Formato padrão (editável em settings):
-```
-Olá {loja}! Quero fazer um pedido:
+### Modal "Adicionar/editar produto" *(novo, conforme 2ª imagem)*
+Componente `CatalogProductForm.tsx` (Dialog):
+- Topbar: "Cancelar" (vermelho) | "Adicionar produto" | "Destacar" (azul, alterna `is_featured`).
+- Campos: Nome, Preço (R$), Descrição (textarea com contador 0/10000), Categoria (dropdown com pais e filhas indentadas), Preço promocional.
+- Accordions opcionais: **Estoque** (campo numérico), **Variações** (lista editável: nome + preço + estoque, botão "+ adicionar variação"), **Entrega** (prazo + observação).
+- Rodapé fixo: botão de upload de imagens (até 5, preview com remover) à esquerda; botão "Adicionar" (ou "Salvar") à direita.
 
-• Cartão de visita — 250 un — R$ 89,00
-• Banner em lona — 2×1m — R$ 89,00
+### Hooks
+- `useCatalogProducts.ts` (list, create, update, delete, toggleActive, toggleFeatured)
+- `useCatalogCategories.ts` (hierarquia, CRUD)
+- `useCatalogVariants.ts` (CRUD por produto)
+- Upload de imagens via Supabase Storage com compressão (`@/lib/imageCompress`).
 
-Total: R$ 178,00
-```
-Abre via `https://wa.me/{whatsapp}?text={encodeURIComponent(msg)}`.
+## Out of scope (este plano)
+- Não mexe em `/produtos` (calculador).
+- Não migra produtos antigos automaticamente — vitrine passa a usar `catalog_products` zerada; usuário cadastra os do catálogo.
+- Banners e Configurações não mudam de comportamento, só ganham nova navegação.
 
-### Tokens de design
-- Reaproveitar `index.css` / `tailwind.config.ts`. As cores do HTML (`#534AB7`, `#1D9E75`, etc.) viram tokens semânticos (`--catalog-primary`, `--catalog-success`) ou usam variáveis já existentes, evitando classes hardcoded.
-
-## Fora de escopo
-- Não cria Quote/Order automaticamente (decidido: só WhatsApp).
-- Sem pagamento online, sem upload de arte pelo cliente, sem login do cliente.
-- Banners por enquanto sem upload de imagem (cor sólida + ícone, como o HTML). Upload pode ser fase 2.
-
-## Ordem de implementação
-1. Migration (3 tabelas + RLS + RPC pública + GRANTs).
-2. Hooks + página admin (settings, banners, destaques).
-3. Página pública + carrinho + integração WhatsApp.
-4. Item no sidebar e rota pública no `App.tsx`.
+## Ordem de execução
+1. Migração SQL (tabelas + bucket + RPC atualizada + remoção do uso de `catalog_featured`).
+2. Hooks + storage helper.
+3. `CatalogProductsManager` + `CatalogProductForm` + `CategoryChips`.
+4. `CatalogoSubNav` + novas rotas em `App.tsx`.
+5. Ajustar `CatalogoPublico.tsx` para consumir o novo shape da RPC.
