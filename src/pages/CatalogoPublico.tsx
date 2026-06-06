@@ -41,14 +41,41 @@ const CatalogoPublico: React.FC = () => {
     return () => clearInterval(id);
   }, [bannerCount]);
 
+  // Map parent → children to support subcategory chips
+  const subcats = useMemo(() => {
+    if (!data || !filterCat) return [];
+    return data.categories.filter((c) => c.parent_id === filterCat);
+  }, [data, filterCat]);
+
+  const [subCat, setSubCat] = useState<string | null>(null);
+  useEffect(() => { setSubCat(null); }, [filterCat]);
+
   const filtered = useMemo(() => {
     if (!data) return [];
+    const q = search.trim().toLowerCase();
     return data.products.filter((p) => {
-      if (filterCat && p.category_id !== filterCat) return false;
-      if (search && !p.name.toLowerCase().includes(search.toLowerCase())) return false;
+      const catActive = subCat ?? filterCat;
+      if (catActive) {
+        // If a parent is selected (no subCat), include children of that parent too
+        const matchCat = subCat
+          ? p.category_id === subCat
+          : p.category_id === filterCat ||
+            data.categories.some((c) => c.parent_id === filterCat && c.id === p.category_id);
+        if (!matchCat) return false;
+      }
+      if (q) {
+        const hay = [
+          p.name,
+          p.description ?? '',
+          ...(p.variants ?? []).map((v) => v.name),
+        ].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
       return true;
     });
-  }, [data, filterCat, search]);
+  }, [data, filterCat, subCat, search]);
+
+  const hasActiveFilters = !!search || !!filterCat;
 
   const total = cart.reduce((s, i) => s + i.unit_price * i.qty, 0);
   const totalItems = cart.reduce((s, i) => s + i.qty, 0);
