@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import CatalogFeatureGate from "@/components/CatalogFeatureGate";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Cadastro from "./pages/Cadastro";
@@ -68,10 +69,10 @@ const App = () => (
               <Route path="/suporte" element={<ProtectedRoute><Suporte /></ProtectedRoute>} />
               <Route path="/financeiro/receber" element={<ProtectedRoute><ContasReceber /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><Estoque /></ProtectedRoute>} />
-              <Route path="/catalogo-admin" element={<ProtectedRoute><CatalogoAdmin /></ProtectedRoute>} />
-              <Route path="/catalogo-admin/destaques" element={<ProtectedRoute><CatalogoDestaques /></ProtectedRoute>} />
-              <Route path="/catalogo-admin/personalizar" element={<ProtectedRoute><CatalogoPersonalizar /></ProtectedRoute>} />
-              <Route path="/catalogo-admin/configuracoes" element={<ProtectedRoute><CatalogoPersonalizar /></ProtectedRoute>} />
+              <Route path="/catalogo-admin" element={<ProtectedRoute><CatalogFeatureGate><CatalogoAdmin /></CatalogFeatureGate></ProtectedRoute>} />
+              <Route path="/catalogo-admin/destaques" element={<ProtectedRoute><CatalogFeatureGate><CatalogoDestaques /></CatalogFeatureGate></ProtectedRoute>} />
+              <Route path="/catalogo-admin/personalizar" element={<ProtectedRoute><CatalogFeatureGate><CatalogoPersonalizar /></CatalogFeatureGate></ProtectedRoute>} />
+              <Route path="/catalogo-admin/configuracoes" element={<ProtectedRoute><CatalogFeatureGate><CatalogoPersonalizar /></CatalogFeatureGate></ProtectedRoute>} />
               <Route path="/catalogo/:slug" element={<CatalogoPublico />} />
               <Route path="/orcamento/:token" element={<AprovacaoOrcamento />} />
               {/* Link público curto: precigraf.com.br/{slug} */}
