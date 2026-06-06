@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, Minus, Plus, Check, Package, Clock, X } from 'lucide-react';
+import { ShoppingCart, Minus, Plus, Package, Clock, X } from 'lucide-react';
 import type { PublicCatalogData, PublicCatalogStore } from '@/hooks/useCatalog';
 
 const formatBRL = (n: number) =>
