@@ -115,7 +115,18 @@ export function useCatalogCategories() {
     },
   });
 
-  return { categories: q.data ?? [], isLoading: q.isLoading, create, update, remove };
+  const reorder = useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      await Promise.all(
+        orderedIds.map((id, idx) =>
+          supabase.from('catalog_product_categories' as any).update({ sort_order: idx }).eq('id', id),
+        ),
+      );
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['catalog-categories'] }),
+  });
+
+  return { categories: q.data ?? [], isLoading: q.isLoading, create, update, remove, reorder };
 }
 
 export function useCatalogProducts() {
