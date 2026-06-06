@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import LogoIcon from '@/components/LogoIcon';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
+import { canAccessCatalog } from '@/lib/featureFlags';
 import NotificationBell from '@/components/NotificationBell';
 
 import { Button } from '@/components/ui/button';
