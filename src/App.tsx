@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import CatalogFeatureGate from "@/components/CatalogFeatureGate";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Cadastro from "./pages/Cadastro";
