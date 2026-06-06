@@ -101,16 +101,26 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
     if (!files || !user) return;
     const remaining = 5 - images.length;
     if (remaining <= 0) {
-      toast({ title: 'Máximo de 5 imagens', variant: 'destructive' });
+      toast({ title: 'Máximo de 5 imagens atingido', variant: 'destructive' });
       return;
     }
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const MAX = 8 * 1024 * 1024;
     setUploading(true);
     try {
       const tempProductId = product?.id ?? 'tmp';
       const arr = Array.from(files).slice(0, remaining);
       const uploaded: ImageItem[] = [];
       for (const f of arr) {
-        const compressedBlob = await compressImage(f, 1200, 0.85);
+        if (!allowed.includes(f.type)) {
+          toast({ title: `Formato inválido: ${f.name}`, description: 'Use JPG, PNG ou WebP.', variant: 'destructive' });
+          continue;
+        }
+        if (f.size > MAX) {
+          toast({ title: `Arquivo muito grande: ${f.name}`, description: 'Máximo 8 MB.', variant: 'destructive' });
+          continue;
+        }
+        const compressedBlob = await compressImage(f, 1080, 0.88);
         const compressed = new File([compressedBlob], f.name, { type: compressedBlob.type || f.type });
         const { url, storage_path } = await uploadCatalogImage(user.id, tempProductId, compressed);
         uploaded.push({ url, storage_path });
@@ -122,6 +132,17 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
       setUploading(false);
     }
   };
+
+  const moveImage = (i: number, dir: -1 | 1) => {
+    setImages((arr) => {
+      const j = i + dir;
+      if (j < 0 || j >= arr.length) return arr;
+      const next = [...arr];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  };
+
 
   const addVariant = () =>
     setVariants((v) => [...v, { name: '', price: '', stock: '' }]);
