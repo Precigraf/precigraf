@@ -20,6 +20,7 @@ export interface CompanyProfile {
   company_state: string | null;
   company_cep: string | null;
   pix_key: string | null;
+  whatsapp: string | null;
   company_full_address: string | null;
 }
 
