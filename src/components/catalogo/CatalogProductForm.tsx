@@ -381,21 +381,33 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
           </Accordion>
 
           {/* Image previews */}
-          {images.length > 0 && (
-            <div className="flex gap-2 flex-wrap">
-              {images.map((img, i) => (
-                <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border">
-                  <img src={img.url} alt="" className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => setImages((arr) => arr.filter((_, idx) => idx !== i))}
-                    className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="space-y-2">
+            <p className="text-[11px] text-muted-foreground">
+              Recomendado 1080×1080 px (JPG, PNG ou WebP, até 8 MB). Máx. 5 imagens.
+            </p>
+            {images.length > 0 && (
+              <div className="flex gap-2 flex-wrap">
+                {images.map((img, i) => (
+                  <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-border group">
+                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                    <span className="absolute top-0.5 left-0.5 text-[9px] bg-black/60 text-white px-1 rounded">
+                      {i + 1}/{images.length}
+                    </span>
+                    <button
+                      onClick={() => setImages((arr) => arr.filter((_, idx) => idx !== i))}
+                      className="absolute top-0.5 right-0.5 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                    <div className="absolute bottom-0 inset-x-0 flex justify-between bg-black/40 opacity-0 group-hover:opacity-100 transition">
+                      <button onClick={() => moveImage(i, -1)} disabled={i === 0} className="text-white text-xs px-1 disabled:opacity-30">◀</button>
+                      <button onClick={() => moveImage(i, 1)} disabled={i === images.length - 1} className="text-white text-xs px-1 disabled:opacity-30">▶</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Footer */}
@@ -403,13 +415,13 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
           <label className="cursor-pointer">
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp"
               multiple
               className="hidden"
-              onChange={(e) => handleFiles(e.target.files)}
+              onChange={(e) => { handleFiles(e.target.files); e.currentTarget.value = ''; }}
               disabled={uploading || images.length >= 5}
             />
-            <div className={`w-12 h-12 rounded-lg border border-dashed border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/40 ${uploading ? 'opacity-50' : ''}`}>
+            <div className={`w-12 h-12 rounded-lg border border-dashed border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/40 ${uploading || images.length >= 5 ? 'opacity-50' : ''}`}>
               <ImagePlus className="w-5 h-5" />
             </div>
           </label>
