@@ -1,22 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Loader2, Search, ShoppingCart, Tag, Clock, Check, MessageCircle, Trash2, Package } from 'lucide-react';
+import { Loader2, Search, ShoppingCart, Clock, MessageCircle, Trash2, Package, Minus, Plus } from 'lucide-react';
 import { usePublicCatalog, type PublicCatalogData, type PublicCatalogStore } from '@/hooks/useCatalog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { injectCatalogFonts } from '@/lib/googleFonts';
+import { ProductDetailModal, type CartLine } from '@/components/catalogo/public/ProductDetailModal';
 
 const formatBRL = (n: number) =>
   n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-interface CartItem {
-  key: string;
-  product_id: string;
-  product_name: string;
-  qty_label: string;
-  price: number;
-}
 
 const radiusFor = (style?: string) => {
   if (style === 'pill') return '9999px';
@@ -30,15 +23,23 @@ const CatalogoPublico: React.FC = () => {
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState<string | null>(null);
   const [bannerIdx, setBannerIdx] = useState(0);
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [openDrop, setOpenDrop] = useState<string | null>(null);
+  const [cart, setCart] = useState<CartLine[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [selected, setSelected] = useState<PublicCatalogData['products'][number] | null>(null);
 
   const store = data?.store;
 
   useEffect(() => {
     if (store) injectCatalogFonts([store.title_font, store.body_font].filter(Boolean) as string[]);
   }, [store?.title_font, store?.body_font]);
+
+  // Auto-rotate banner a cada 3s
+  const bannerCount = data?.banners.length ?? 0;
+  useEffect(() => {
+    if (bannerCount < 2) return;
+    const id = setInterval(() => setBannerIdx((i) => (i + 1) % bannerCount), 3000);
+    return () => clearInterval(id);
+  }, [bannerCount]);
 
   const filtered = useMemo(() => {
     if (!data) return [];
@@ -49,16 +50,47 @@ const CatalogoPublico: React.FC = () => {
     });
   }, [data, filterCat, search]);
 
-  const total = cart.reduce((s, i) => s + i.price, 0);
+  const total = cart.reduce((s, i) => s + i.unit_price * i.qty, 0);
+  const totalItems = cart.reduce((s, i) => s + i.qty, 0);
 
-  const addToCart = (item: CartItem) => { setCart((c) => [...c, item]); setOpenDrop(null); };
-  const removeFromCart = (key: string) => setCart((c) => c.filter((i) => i.key !== key));
+  const addToCart = (line: CartLine) => {
+    setCart((prev) => {
+      const same = prev.findIndex(
+        (l) => l.product_id === line.product_id && l.variant_name === line.variant_name,
+      );
+      if (same >= 0) {
+        const copy = [...prev];
+        copy[same] = { ...copy[same], qty: copy[same].qty + line.qty };
+        return copy;
+      }
+      return [...prev, line];
+    });
+  };
+
+  const buyNow = (line: CartLine) => {
+    addToCart(line);
+    setCartOpen(true);
+  };
+
+  const updateQty = (key: string, delta: number) =>
+    setCart((c) => c.flatMap((l) => {
+      if (l.key !== key) return [l];
+      const next = l.qty + delta;
+      return next <= 0 ? [] : [{ ...l, qty: next }];
+    }));
+
+  const removeLine = (key: string) => setCart((c) => c.filter((i) => i.key !== key));
 
   const finalizeWhatsApp = () => {
     if (!data || cart.length === 0) return;
     const phone = (data.store.whatsapp ?? '').replace(/\D/g, '');
     if (!phone) { alert('Loja sem WhatsApp configurado.'); return; }
-    const itensTxt = cart.map((i) => `• ${i.product_name} — ${i.qty_label} — ${formatBRL(i.price)}`).join('\n');
+    const itensTxt = cart
+      .map((i) => {
+        const variant = i.variant_name ? ` (${i.variant_name})` : '';
+        return `• ${i.qty}x ${i.product_name}${variant} — ${formatBRL(i.unit_price * i.qty)}`;
+      })
+      .join('\n');
     const msg = (data.store.whatsapp_message_template || 'Olá {loja}!\n{itens}\nTotal: {total}')
       .replace(/\{loja\}/g, data.store.name)
       .replace(/\{itens\}/g, itensTxt)
@@ -109,18 +141,18 @@ const CatalogoPublico: React.FC = () => {
                 <Package className="w-4 h-4 text-white" />
               </div>
             )}
-            <span className="truncate" style={{ fontFamily: titleFamily, fontWeight: titleWeight }}>{store.name}</span>
+            <span className="truncate font-semibold" style={{ fontFamily: titleFamily, fontWeight: titleWeight }}>{store.name}</span>
           </div>
           <Sheet open={cartOpen} onOpenChange={setCartOpen}>
             <SheetTrigger asChild>
               <button
-                className="inline-flex items-center px-4 py-2 text-sm font-medium"
+                className="inline-flex items-center px-4 py-2 text-sm font-medium relative"
                 style={{ background: buttonBg, color: buttonFg, borderRadius: buttonRadius }}
               >
                 <ShoppingCart className="w-4 h-4 mr-1" />
                 Carrinho
-                {cart.length > 0 && (
-                  <span className="ml-2 bg-white/25 rounded-full px-2 text-xs">{cart.length}</span>
+                {totalItems > 0 && (
+                  <span className="ml-2 bg-white/25 rounded-full px-2 text-xs">{totalItems}</span>
                 )}
               </button>
             </SheetTrigger>
@@ -133,17 +165,37 @@ const CatalogoPublico: React.FC = () => {
                   <p className="text-sm text-muted-foreground text-center py-8">Carrinho vazio.</p>
                 ) : (
                   cart.map((item) => (
-                    <div key={item.key} className="flex items-center gap-3 p-3 border border-border rounded-lg">
+                    <div key={item.key} className="flex gap-3 p-3 border border-border rounded-lg">
+                      <div className="w-14 h-14 bg-muted rounded shrink-0 overflow-hidden">
+                        {item.image ? (
+                          <img src={item.image} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center"><Package className="w-5 h-5 text-muted-foreground/50" /></div>
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-sm truncate">{item.product_name}</div>
-                        <div className="text-xs text-muted-foreground">{item.qty_label}</div>
+                        {item.variant_name && (
+                          <div className="text-xs text-muted-foreground">{item.variant_name}</div>
+                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="inline-flex items-center border border-border rounded-full">
+                            <button onClick={() => updateQty(item.key, -1)} className="w-6 h-6 flex items-center justify-center" aria-label="−"><Minus className="w-3 h-3" /></button>
+                            <span className="w-6 text-center text-xs">{item.qty}</span>
+                            <button onClick={() => updateQty(item.key, +1)} className="w-6 h-6 flex items-center justify-center" aria-label="+"><Plus className="w-3 h-3" /></button>
+                          </div>
+                          <span className="text-xs text-muted-foreground">×</span>
+                          <span className="text-xs">{formatBRL(item.unit_price)}</span>
+                        </div>
                       </div>
-                      <div className="font-semibold text-sm" style={{ color: store.price_color }}>
-                        {formatBRL(item.price)}
+                      <div className="flex flex-col items-end justify-between">
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeLine(item.key)}>
+                          <Trash2 className="w-3 h-3 text-destructive" />
+                        </Button>
+                        <div className="font-semibold text-sm" style={{ color: store.price_color }}>
+                          {formatBRL(item.unit_price * item.qty)}
+                        </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeFromCart(item.key)}>
-                        <Trash2 className="w-3 h-3 text-destructive" />
-                      </Button>
                     </div>
                   ))
                 )}
@@ -181,23 +233,26 @@ const CatalogoPublico: React.FC = () => {
               backgroundImage: currentBanner.image_desktop_url ? `url(${currentBanner.image_desktop_url})` : undefined,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
+              aspectRatio: currentBanner.image_desktop_url ? '3 / 1' : undefined,
             }}>
-            <div className="px-6 py-8 sm:px-12 text-white max-w-2xl">
-              {currentBanner.eyebrow && (
-                <div className="text-[11px] font-medium uppercase tracking-wider opacity-80 mb-2">{currentBanner.eyebrow}</div>
-              )}
-              <h2 className="text-2xl sm:text-3xl mb-2" style={{ fontFamily: titleFamily, fontWeight: titleWeight }}>
-                {currentBanner.title}
-              </h2>
-              {currentBanner.subtitle && <p className="text-sm opacity-90 mb-4">{currentBanner.subtitle}</p>}
-              {currentBanner.cta_label && currentBanner.cta_url && (
-                <a href={currentBanner.cta_url} target="_blank" rel="noreferrer"
-                  className="inline-block px-5 py-2 bg-white/20 hover:bg-white/30 text-sm font-medium"
-                  style={{ borderRadius: buttonRadius }}>
-                  {currentBanner.cta_label}
-                </a>
-              )}
-            </div>
+            {(currentBanner.title || currentBanner.subtitle) && !currentBanner.image_desktop_url && (
+              <div className="px-6 py-8 sm:px-12 text-white max-w-2xl">
+                {currentBanner.eyebrow && (
+                  <div className="text-[11px] font-medium uppercase tracking-wider opacity-80 mb-2">{currentBanner.eyebrow}</div>
+                )}
+                <h2 className="text-2xl sm:text-3xl mb-2" style={{ fontFamily: titleFamily, fontWeight: titleWeight }}>
+                  {currentBanner.title}
+                </h2>
+                {currentBanner.subtitle && <p className="text-sm opacity-90 mb-4">{currentBanner.subtitle}</p>}
+                {currentBanner.cta_label && currentBanner.cta_url && (
+                  <a href={currentBanner.cta_url} target="_blank" rel="noreferrer"
+                    className="inline-block px-5 py-2 bg-white/20 hover:bg-white/30 text-sm font-medium"
+                    style={{ borderRadius: buttonRadius }}>
+                    {currentBanner.cta_label}
+                  </a>
+                )}
+              </div>
+            )}
             {banners.length > 1 && (
               <div className="absolute bottom-3 right-4 flex gap-2">
                 {banners.map((_, i) => (
@@ -240,9 +295,7 @@ const CatalogoPublico: React.FC = () => {
                   key={p.id}
                   product={p}
                   store={store}
-                  isOpen={openDrop === p.id}
-                  onToggle={() => setOpenDrop(openDrop === p.id ? null : p.id)}
-                  onAdd={addToCart}
+                  onOpen={() => setSelected(p)}
                 />
               ))}
             </div>
@@ -253,6 +306,15 @@ const CatalogoPublico: React.FC = () => {
           Pedido enviado pelo WhatsApp diretamente para {store.name}.
         </footer>
       </div>
+
+      <ProductDetailModal
+        open={!!selected}
+        onOpenChange={(v) => !v && setSelected(null)}
+        product={selected}
+        store={store}
+        onAdd={addToCart}
+        onBuyNow={buyNow}
+      />
     </div>
   );
 };
@@ -260,17 +322,14 @@ const CatalogoPublico: React.FC = () => {
 interface PCardProps {
   product: PublicCatalogData['products'][number];
   store: PublicCatalogStore;
-  isOpen: boolean;
-  onToggle: () => void;
-  onAdd: (i: CartItem) => void;
+  onOpen: () => void;
 }
 
-const ProductCard: React.FC<PCardProps> = ({ product, store, isOpen, onToggle, onAdd }) => {
+const ProductCard: React.FC<PCardProps> = ({ product, store, onOpen }) => {
   const variants = product.variants ?? [];
   const hasVariants = variants.length > 0;
   const basePrice = product.promo_price ?? product.price;
   const minPrice = hasVariants ? Math.min(...variants.map((v) => v.price)) : basePrice;
-  const [selectedIdx, setSelectedIdx] = useState(0);
   const thumb = product.images?.[0];
 
   const cardRadius = store.product_border_style === 'rounded' ? '16px' : '0px';
@@ -285,28 +344,17 @@ const ProductCard: React.FC<PCardProps> = ({ product, store, isOpen, onToggle, o
   const transform: React.CSSProperties['textTransform'] =
     store.product_name_case === 'uppercase' ? 'uppercase' : 'none';
 
-  const handleAdd = () => {
-    const item: CartItem = hasVariants ? {
-      key: `${product.id}-${Date.now()}`,
-      product_id: product.id,
-      product_name: `${product.name} — ${variants[selectedIdx].name}`,
-      qty_label: '1 un',
-      price: variants[selectedIdx].price,
-    } : {
-      key: `${product.id}-${Date.now()}`,
-      product_id: product.id,
-      product_name: product.name,
-      qty_label: '1 un',
-      price: basePrice,
-    };
-    onAdd(item);
-  };
-
   const showButton = store.product_buy_button !== 'none';
 
   return (
-    <div className="bg-background border border-border overflow-hidden hover:border-muted-foreground/30 transition"
-      style={{ borderRadius: cardRadius, textAlign: align }}>
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onOpen()}
+      className="bg-background border border-border overflow-hidden hover:border-muted-foreground/30 hover:shadow-md transition cursor-pointer text-left"
+      style={{ borderRadius: cardRadius, textAlign: align }}
+    >
       <div className="bg-muted/40 border-b border-border flex items-center justify-center relative overflow-hidden" style={{ aspectRatio: aspect }}>
         {thumb ? (
           <img src={thumb} alt={product.name} className="w-full h-full object-cover" />
@@ -345,38 +393,13 @@ const ProductCard: React.FC<PCardProps> = ({ product, store, isOpen, onToggle, o
         </div>
 
         {showButton && (
-          <button onClick={hasVariants ? onToggle : handleAdd}
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpen(); }}
             className="w-full inline-flex items-center justify-center px-3 py-2 text-sm font-medium border"
-            style={{ background: store.button_bg_color, color: store.button_text_color, borderRadius: buttonRadius, borderColor: store.button_bg_color }}>
-            {hasVariants ? (<><Tag className="w-3.5 h-3.5 mr-1.5" /> Variações</>) : (<><ShoppingCart className="w-3.5 h-3.5 mr-1.5" /> Adicionar</>)}
+            style={{ background: store.button_bg_color, color: store.button_text_color, borderRadius: buttonRadius, borderColor: store.button_bg_color }}
+          >
+            <ShoppingCart className="w-3.5 h-3.5 mr-1.5" /> Comprar
           </button>
-        )}
-
-        {showButton && hasVariants && isOpen && (
-          <div className="mt-2 border border-border overflow-hidden" style={{ borderRadius: cardRadius }}>
-            {variants.map((v, i) => {
-              const sel = selectedIdx === i;
-              return (
-                <button key={v.id} type="button" onClick={() => setSelectedIdx(i)}
-                  className={`w-full grid grid-cols-[1fr_auto] gap-2 px-3 py-2 text-sm text-left border-t border-border first:border-t-0 ${sel ? 'bg-muted/60' : 'hover:bg-muted/30'}`}>
-                  <span className="flex items-center gap-2">
-                    <span className={`w-4 h-4 rounded-full border flex items-center justify-center ${sel ? 'border-transparent text-white' : 'border-border'}`}
-                      style={sel ? { background: store.primary_color } : {}}>
-                      {sel && <Check className="w-2.5 h-2.5" />}
-                    </span>
-                    {v.name}
-                  </span>
-                  <span>{formatBRL(v.price)}</span>
-                </button>
-              );
-            })}
-            <button type="button" onClick={handleAdd}
-              className="w-full px-3 py-2.5 text-sm font-medium flex items-center justify-center gap-2"
-              style={{ background: store.button_bg_color, color: store.button_text_color }}>
-              <ShoppingCart className="w-4 h-4" />
-              Adicionar · {formatBRL(variants[selectedIdx].price)}
-            </button>
-          </div>
         )}
       </div>
     </div>
