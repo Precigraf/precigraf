@@ -88,7 +88,7 @@ const CatalogoPersonalizar: React.FC = () => {
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((p) => ({ ...p, [k]: v }));
   const publicUrl = d.slug ? buildCatalogUrl(d.slug) : '';
   const displayUrl = d.slug ? `${PUBLIC_BASE_HOST}/${d.slug}` : '';
-  const storeWhats = (profile as { whatsapp?: string | null } | null)?.whatsapp ?? null;
+  const storeWhats = profile?.whatsapp ?? null;
 
   const handleSave = () => {
     const clean = slugify(d.slug || '');
