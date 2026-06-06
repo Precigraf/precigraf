@@ -74,7 +74,10 @@ const App = () => (
               <Route path="/catalogo-admin/configuracoes" element={<ProtectedRoute><CatalogoPersonalizar /></ProtectedRoute>} />
               <Route path="/catalogo/:slug" element={<CatalogoPublico />} />
               <Route path="/orcamento/:token" element={<AprovacaoOrcamento />} />
+              {/* Link público curto: precigraf.com.br/{slug} */}
+              <Route path="/:slug" element={<CatalogoPublico />} />
               <Route path="*" element={<NotFound />} />
+
             </Routes>
           </TooltipProvider>
         </AuthProvider>
