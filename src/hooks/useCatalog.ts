@@ -9,6 +9,22 @@ export interface CatalogSettings {
   is_active: boolean;
   whatsapp_message_template: string;
   primary_color: string;
+  template: 'catalog' | 'shop';
+  header_bg_color: string;
+  header_text_color: string;
+  title_font: string;
+  title_weight: 'light' | 'medium' | 'bold';
+  body_font: string;
+  title_color: string;
+  price_color: string;
+  product_image_shape: 'square' | 'rectangle' | 'full';
+  product_border_style: 'straight' | 'rounded';
+  product_text_align: 'left' | 'center';
+  product_name_case: 'uppercase' | 'normal';
+  product_buy_button: 'below' | 'none';
+  button_border_style: 'rounded' | 'straight' | 'pill';
+  button_bg_color: string;
+  button_text_color: string;
 }
 
 export interface CatalogBanner {
@@ -61,12 +77,10 @@ export function useCatalogSettings() {
   const upsert = useMutation({
     mutationFn: async (input: Partial<CatalogSettings> & { slug: string }) => {
       if (!user) throw new Error('Não autenticado');
-      const payload = {
+      const payload: any = {
         user_id: user.id,
+        ...input,
         slug: input.slug.toLowerCase().trim(),
-        is_active: input.is_active ?? true,
-        whatsapp_message_template: input.whatsapp_message_template ?? DEFAULT_TEMPLATE,
-        primary_color: input.primary_color ?? '#534AB7',
       };
       const { data, error } = await supabase
         .from('catalog_settings' as any)
@@ -78,7 +92,7 @@ export function useCatalogSettings() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['catalog-settings'] });
-      toast({ title: 'Configurações salvas' });
+      qc.invalidateQueries({ queryKey: ['public-catalog'] });
     },
     onError: (e: Error) =>
       toast({ title: 'Erro ao salvar', description: e.message, variant: 'destructive' }),
@@ -219,14 +233,32 @@ export function useCatalogFeatured() {
 }
 
 // ============= Public ============
+export interface PublicCatalogStore {
+  name: string;
+  logo_url: string | null;
+  whatsapp: string | null;
+  primary_color: string;
+  whatsapp_message_template: string;
+  template: 'catalog' | 'shop';
+  header_bg_color: string;
+  header_text_color: string;
+  title_font: string;
+  title_weight: 'light' | 'medium' | 'bold';
+  body_font: string;
+  title_color: string;
+  price_color: string;
+  product_image_shape: 'square' | 'rectangle' | 'full';
+  product_border_style: 'straight' | 'rounded';
+  product_text_align: 'left' | 'center';
+  product_name_case: 'uppercase' | 'normal';
+  product_buy_button: 'below' | 'none';
+  button_border_style: 'rounded' | 'straight' | 'pill';
+  button_bg_color: string;
+  button_text_color: string;
+}
+
 export interface PublicCatalogData {
-  store: {
-    name: string;
-    logo_url: string | null;
-    whatsapp: string | null;
-    primary_color: string;
-    whatsapp_message_template: string;
-  };
+  store: PublicCatalogStore;
   banners: Array<{
     id: string;
     eyebrow: string | null;
@@ -235,6 +267,8 @@ export interface PublicCatalogData {
     bg_color: string;
     cta_label: string | null;
     cta_url: string | null;
+    image_mobile_url: string | null;
+    image_desktop_url: string | null;
   }>;
   categories: Array<{ id: string; name: string; parent_id: string | null }>;
   products: Array<{

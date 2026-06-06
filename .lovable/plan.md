@@ -1,70 +1,97 @@
-# Catálogo: nova sub-navegação + cadastro de produtos
+# Plano: Personalização, Categorias, Imagens e Limpeza
 
-## Objetivo
-Quando o usuário clica em **Catálogo** na sidebar, o app entra em uma nova área com sub-menus próprios:
+## 1. Remover aba "Banners"
+- Remover item "Banners" de `CatalogoSubNav.tsx`.
+- Remover rota `/catalogo-admin/banners` em `App.tsx`.
+- Excluir `src/pages/CatalogoBanners.tsx` e `src/components/catalogo/BannerManager.tsx`.
+- Banners passam a ser gerenciados dentro da nova aba "Personalizar" (item 4).
 
-1. **Catálogo** (novo) — gestão de produtos exclusivos do catálogo público, com categorias + subcategorias.
-2. **Banners** — o que hoje está em "Banners" no `/catalogo-admin`.
-3. **Destaques** — o que hoje está em "Destaques".
-4. **Configurações** — slug, cor, template do WhatsApp.
+## 2. CRUD completo de Categorias e Subcategorias
+Substituir o `CatalogCategoryChips` (que mistura filtro + edição) por um gerenciador dedicado dentro da aba "Catálogo", com:
+- Lista hierárquica (pai → filhos) com expand/collapse.
+- Criar categoria pai e subcategoria (campo `parent_id` já existe).
+- Renomear inline.
+- Reordenar via setas ↑/↓ atualizando `sort_order` no banco.
+- Toggle de ativar/desativar (`is_active`) — categorias inativas não aparecem no público.
+- Remover (com confirmação; produtos da categoria ficam sem categoria).
+- Filtro de produtos por categoria continua via chips simples acima da lista.
 
-A vitrine pública `/catalogo/:slug` continua igual, mas passa a ler dos novos produtos de catálogo (não dos produtos do calculador).
+Hook `useCatalogCategories` ganha mutação `reorder(ids: string[])` que atualiza `sort_order` em lote.
 
-## Decisões já confirmadas
-- Subcategorias via `parent_id` (hierarquia de 1 nível pai → filhas).
-- Produtos do catálogo são **separados** dos produtos do calculador (`/produtos` segue intacto).
-- Variações **completas**: cada variação tem nome, preço próprio e estoque próprio.
-- Imagens carregadas do computador do usuário, até 5 por produto.
+## 3. Upload aprimorado de imagens (até 5, 1080×1080)
+No `CatalogProductForm.tsx`:
+- Validar `file.type` (apenas `image/jpeg`, `image/png`, `image/webp`).
+- Validar tamanho (≤ 8 MB antes da compressão).
+- Aumentar compressão para 1080 px (`compressImage(f, 1080, 0.88)`).
+- Pré-visualização com badge da ordem (1/5, 2/5…), botão para remover individual e para reordenar (drag opcional; setas como fallback).
+- Mostrar dica "Recomendado 1080×1080 px (JPG, PNG ou WebP, até 8MB)".
+- Bloquear botão de upload quando já houver 5 imagens, com mensagem clara.
 
-## Banco de dados (1 migração)
+## 4. Renomear "Configurações" → "Personalizar" e rebuild completo
+Renomear a aba e a rota:
+- Sub-nav: label "Personalizar", ícone `Palette`.
+- Rota: `/catalogo-admin/personalizar` (mantém `/configuracoes` redirecionando para compatibilidade).
+- Página: `CatalogoPersonalizar.tsx` substitui `CatalogoConfiguracoes.tsx`.
 
-Novas tabelas (todas com RLS `auth.uid() = user_id`, grants `authenticated` + `service_role`):
+### Novos campos de personalização (baseados na imagem)
+Estendidos em `catalog_settings`:
 
-- **`catalog_product_categories`** — `id`, `user_id`, `parent_id` (self-ref, nullable), `name`, `sort_order`, `is_active`.
-- **`catalog_products`** — `id`, `user_id`, `name`, `description`, `price`, `promo_price`, `category_id`, `is_active`, `is_featured`, `stock` (opcional), `sort_order`.
-- **`catalog_product_variants`** — `id`, `product_id`, `name` (ex: "Vermelho - P"), `price`, `stock`, `sort_order`.
-- **`catalog_product_images`** — `id`, `product_id`, `url`, `sort_order` (máx 5 por produto via trigger).
+**Geral**
+- `primary_color` (já existe)
 
-Atualizar a RPC `get_public_catalog(p_slug)` para devolver os novos `catalog_products` + categorias hierárquicas + variantes + imagens, ao invés de `products`/`product_categories`. `catalog_featured` deixa de ser usada — destaque vira `is_featured` no próprio produto (a aba "Destaques" passa a ordenar/marcar `is_featured`).
+**Cabeçalho**
+- `header_bg_color`
+- `header_text_color`
 
-Storage:
-- Bucket público **`catalog-images`** com policy de SELECT público + INSERT/UPDATE/DELETE restrito ao dono via `auth.uid()::text = (storage.foldername(name))[1]`.
-- Caminho: `{user_id}/{product_id}/{uuid}.jpg`.
+**Fontes** (Google Fonts pré-selecionadas: Inter, Playfair Display, Rubik, Source Serif, Montserrat, Poppins, Taviraj, IBM Plex Mono, Exo 2, Fredoka, Kaushan Script, DM Sans, Roboto, Crimson)
+- `title_font` (string)
+- `title_weight` ('light' | 'medium' | 'bold')
+- `body_font` (string)
+- `title_color`
+- `price_color`
 
-## Frontend
+**Lista de produtos**
+- `product_image_shape` ('square' | 'rectangle' | 'full')
+- `product_border_style` ('straight' | 'rounded')
+- `product_text_align` ('left' | 'center')
+- `product_name_case` ('uppercase' | 'normal')
+- `product_buy_button` ('below' | 'none')
 
-### Sub-navegação
-- `src/components/catalogo/CatalogoSubNav.tsx` — barra horizontal de tabs (`Catálogo | Banners | Destaques | Configurações`) que aparece dentro do `AppLayout` quando a rota começa com `/catalogo-admin`.
-- Sidebar continua com um único item "Catálogo" apontando para `/catalogo-admin`.
-- Rotas: `/catalogo-admin` (produtos), `/catalogo-admin/banners`, `/catalogo-admin/destaques`, `/catalogo-admin/configuracoes`.
+**Botões**
+- `button_border_style` ('rounded' | 'straight' | 'pill')
+- `button_bg_color`
+- `button_text_color`
 
-### Aba 1 — Catálogo (produtos)  *(novo, conforme imagem)*
-Componente `CatalogProductsManager.tsx`:
-- Campo de busca largura total no topo.
-- **Seção Categorias**: botão `+` para criar, chips com nome e ícone de edição. Click no chip filtra a lista. "Mais opções" expande para exibir subcategorias agrupadas por pai e permitir criar subcategoria dentro de uma categoria.
-- **Seção Produtos**: botão azul "Adicionar produto" largura total. Lista de cards-linha com: thumb, nome + descrição curta, link "Contém variações" (se houver), estrela (toggle `is_featured`), lixeira (delete), switch `is_active`.
+**Banners (mesclados aqui)**
+- Subseção com gerenciador `BannerManager` existente, mas integrado nesta página (campos: upload de imagem mobile, upload de imagem desktop; tamanho recomendado 562×300). Migração: adicionar `image_mobile_url`, `image_desktop_url`, `storage_path_mobile`, `storage_path_desktop` em `catalog_banners`.
 
-### Modal "Adicionar/editar produto" *(novo, conforme 2ª imagem)*
-Componente `CatalogProductForm.tsx` (Dialog):
-- Topbar: "Cancelar" (vermelho) | "Adicionar produto" | "Destacar" (azul, alterna `is_featured`).
-- Campos: Nome, Preço (R$), Descrição (textarea com contador 0/10000), Categoria (dropdown com pais e filhas indentadas), Preço promocional.
-- Accordions opcionais: **Estoque** (campo numérico), **Variações** (lista editável: nome + preço + estoque, botão "+ adicionar variação"), **Entrega** (prazo + observação).
-- Rodapé fixo: botão de upload de imagens (até 5, preview com remover) à esquerda; botão "Adicionar" (ou "Salvar") à direita.
+**Modelo (visual apenas, por enquanto)**
+- `template` ('catalog' | 'shop') — apenas armazenado, "Catálogo" é o único renderizado nesta fase.
 
-### Hooks
-- `useCatalogProducts.ts` (list, create, update, delete, toggleActive, toggleFeatured)
-- `useCatalogCategories.ts` (hierarquia, CRUD)
-- `useCatalogVariants.ts` (CRUD por produto)
-- Upload de imagens via Supabase Storage com compressão (`@/lib/imageCompress`).
+### Estrutura UI (mobile-first, accordions)
+Página em accordions seguindo a imagem: Design (Modelo + Banners), Personalizar estilo (Geral, Cabeçalho, Fontes, Lista de produtos, Botões). Mais ao fim: Slug, Catálogo ativo, Mensagem WhatsApp (seções existentes preservadas).
 
-## Out of scope (este plano)
-- Não mexe em `/produtos` (calculador).
-- Não migra produtos antigos automaticamente — vitrine passa a usar `catalog_products` zerada; usuário cadastra os do catálogo.
-- Banners e Configurações não mudam de comportamento, só ganham nova navegação.
+### Sincronização instantânea com o catálogo público
+- RPC `get_public_catalog` atualizada para devolver todos os novos campos em `store`.
+- `CatalogoPublico.tsx` lê esses campos e aplica via CSS variables (`--catalog-primary`, `--catalog-header-bg`, `--catalog-header-fg`, `--catalog-title-color`, `--catalog-price-color`, `--catalog-button-bg`, `--catalog-button-fg`, raios, alinhamento, case, etc.).
+- Fontes carregadas dinamicamente via `<link>` injetado no head conforme `title_font`/`body_font`.
+- Auto-save com debounce (~600 ms) por campo: ao soltar/alterar, salva e re-renderiza preview em tempo real do mesmo lado (preview embutido no painel, opcional nesta fase).
+- Para o público, alterações refletem na próxima abertura/recarregamento (React Query revalida; sem websockets nesta fase).
 
-## Ordem de execução
-1. Migração SQL (tabelas + bucket + RPC atualizada + remoção do uso de `catalog_featured`).
-2. Hooks + storage helper.
-3. `CatalogProductsManager` + `CatalogProductForm` + `CategoryChips`.
-4. `CatalogoSubNav` + novas rotas em `App.tsx`.
-5. Ajustar `CatalogoPublico.tsx` para consumir o novo shape da RPC.
+## 5. Migrações de banco
+Uma única migration:
+- `ALTER TABLE catalog_settings ADD COLUMN ...` (todos os campos acima com defaults sensatos).
+- `ALTER TABLE catalog_banners ADD COLUMN image_mobile_url text, image_desktop_url text, storage_path_mobile text, storage_path_desktop text`.
+- Substituir RPC `get_public_catalog` para incluir os novos campos em `store` e considerar `is_active` em categorias.
+- Bucket `catalog-images` reaproveitado para imagens de banner.
+
+## 6. Out of scope
+- Editor visual "WYSIWYG" lado a lado completo (apresenta apenas controles + preview do catálogo público em nova aba).
+- Modelo "Loja virtual profissional" (apenas o seletor é exibido, sem renderização alternativa).
+- Reordenação por drag-and-drop nativo (usaremos setas para evitar dependência extra).
+
+## Técnico — Arquivos afetados
+- **Criar**: `src/pages/CatalogoPersonalizar.tsx`, `src/components/catalogo/personalize/{GeneralSection,HeaderSection,FontsSection,ProductListSection,ButtonsSection,BannersSection,SlugSection,WhatsAppSection}.tsx`, `src/components/catalogo/CategoryManager.tsx`, `src/lib/googleFonts.ts`.
+- **Editar**: `CatalogoSubNav.tsx`, `App.tsx`, `CatalogoAdmin.tsx`, `CatalogProductsManager.tsx` (usa novo CategoryManager + chips simplificados), `CatalogProductForm.tsx` (validação/imagens), `useCatalog.ts` (tipos + campos), `useCatalogProducts.ts` (mutação reorder de categoria), `CatalogoPublico.tsx` (aplica todas as variáveis de estilo).
+- **Excluir**: `CatalogoBanners.tsx`, `BannerManager.tsx` antigo (substituído por `BannersSection` integrado), `CatalogoConfiguracoes.tsx` (substituído).
+- **Migração SQL**: novos campos em `catalog_settings` e `catalog_banners`, RPC atualizada.

@@ -1,12 +1,11 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutGrid, Image as ImageIcon, Star, Settings as SettingsIcon } from 'lucide-react';
+import { LayoutGrid, Star, Palette } from 'lucide-react';
 
 const tabs = [
   { to: '/catalogo-admin', label: 'Catálogo', icon: LayoutGrid, end: true },
-  { to: '/catalogo-admin/banners', label: 'Banners', icon: ImageIcon },
   { to: '/catalogo-admin/destaques', label: 'Destaques', icon: Star },
-  { to: '/catalogo-admin/configuracoes', label: 'Configurações', icon: SettingsIcon },
+  { to: '/catalogo-admin/personalizar', label: 'Personalizar', icon: Palette },
 ];
 
 export const CatalogoSubNav: React.FC = () => (
