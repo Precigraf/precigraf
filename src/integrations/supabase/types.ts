@@ -112,8 +112,12 @@ export type Database = {
           cta_url: string | null
           eyebrow: string | null
           id: string
+          image_desktop_url: string | null
+          image_mobile_url: string | null
           is_active: boolean
           sort_order: number
+          storage_path_desktop: string | null
+          storage_path_mobile: string | null
           subtitle: string | null
           title: string
           updated_at: string
@@ -126,8 +130,12 @@ export type Database = {
           cta_url?: string | null
           eyebrow?: string | null
           id?: string
+          image_desktop_url?: string | null
+          image_mobile_url?: string | null
           is_active?: boolean
           sort_order?: number
+          storage_path_desktop?: string | null
+          storage_path_mobile?: string | null
           subtitle?: string | null
           title: string
           updated_at?: string
@@ -140,8 +148,12 @@ export type Database = {
           cta_url?: string | null
           eyebrow?: string | null
           id?: string
+          image_desktop_url?: string | null
+          image_mobile_url?: string | null
           is_active?: boolean
           sort_order?: number
+          storage_path_desktop?: string | null
+          storage_path_mobile?: string | null
           subtitle?: string | null
           title?: string
           updated_at?: string
@@ -374,28 +386,76 @@ export type Database = {
       }
       catalog_settings: {
         Row: {
+          body_font: string
+          button_bg_color: string
+          button_border_style: string
+          button_text_color: string
           created_at: string
+          header_bg_color: string
+          header_text_color: string
           is_active: boolean
+          price_color: string
           primary_color: string
+          product_border_style: string
+          product_buy_button: string
+          product_image_shape: string
+          product_name_case: string
+          product_text_align: string
           slug: string
+          template: string
+          title_color: string
+          title_font: string
+          title_weight: string
           updated_at: string
           user_id: string
           whatsapp_message_template: string
         }
         Insert: {
+          body_font?: string
+          button_bg_color?: string
+          button_border_style?: string
+          button_text_color?: string
           created_at?: string
+          header_bg_color?: string
+          header_text_color?: string
           is_active?: boolean
+          price_color?: string
           primary_color?: string
+          product_border_style?: string
+          product_buy_button?: string
+          product_image_shape?: string
+          product_name_case?: string
+          product_text_align?: string
           slug: string
+          template?: string
+          title_color?: string
+          title_font?: string
+          title_weight?: string
           updated_at?: string
           user_id: string
           whatsapp_message_template?: string
         }
         Update: {
+          body_font?: string
+          button_bg_color?: string
+          button_border_style?: string
+          button_text_color?: string
           created_at?: string
+          header_bg_color?: string
+          header_text_color?: string
           is_active?: boolean
+          price_color?: string
           primary_color?: string
+          product_border_style?: string
+          product_buy_button?: string
+          product_image_shape?: string
+          product_name_case?: string
+          product_text_align?: string
           slug?: string
+          template?: string
+          title_color?: string
+          title_font?: string
+          title_weight?: string
           updated_at?: string
           user_id?: string
           whatsapp_message_template?: string
