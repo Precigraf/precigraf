@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import AppLayout from '@/components/AppLayout';
 import { CatalogoSubNav } from '@/components/catalogo/CatalogoSubNav';
+import { CoverBannerManager } from '@/components/catalogo/CoverBannerManager';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,10 +10,12 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Copy, ExternalLink, Loader2 } from 'lucide-react';
+import { Copy, ExternalLink, Loader2, MessageCircle, Settings } from 'lucide-react';
 import { useCatalogSettings, type CatalogSettings } from '@/hooks/useCatalog';
+import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useToast } from '@/hooks/use-toast';
 import { TITLE_FONTS, BODY_FONTS, injectCatalogFonts } from '@/lib/googleFonts';
+import { PUBLIC_BASE_HOST, buildCatalogUrl } from '@/lib/publicUrl';
 
 const slugify = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -69,6 +73,7 @@ const Pills: React.FC<{ value: string; onChange: (v: any) => void; options: Arra
 
 const CatalogoPersonalizar: React.FC = () => {
   const { settings, upsert } = useCatalogSettings();
+  const { profile } = useCompanyProfile();
   const { toast } = useToast();
   const [d, setD] = useState<Draft>(DEFAULTS);
 
@@ -81,7 +86,9 @@ const CatalogoPersonalizar: React.FC = () => {
   }, [d.title_font, d.body_font]);
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((p) => ({ ...p, [k]: v }));
-  const publicUrl = d.slug ? `${window.location.origin}/catalogo/${d.slug}` : '';
+  const publicUrl = d.slug ? buildCatalogUrl(d.slug) : '';
+  const displayUrl = d.slug ? `${PUBLIC_BASE_HOST}/${d.slug}` : '';
+  const storeWhats = profile?.whatsapp ?? null;
 
   const handleSave = () => {
     const clean = slugify(d.slug || '');
@@ -109,29 +116,34 @@ const CatalogoPersonalizar: React.FC = () => {
           </Button>
         </div>
 
-        {/* Link público + ativar */}
+        {/* Seu Link (catálogo) + ativar */}
         <Card className="p-4 space-y-3">
           <div className="space-y-1.5">
-            <Label>URL pública (slug)</Label>
+            <Label>Seu Link (catálogo)</Label>
             <div className="flex items-center rounded-lg border border-border bg-input pl-3">
-              <span className="text-sm text-muted-foreground">/catalogo/</span>
+              <span className="text-sm text-muted-foreground">{PUBLIC_BASE_HOST}/</span>
               <Input value={d.slug} onChange={(e) => set('slug', e.target.value)}
-                placeholder="minha-grafica"
+                placeholder="minhaloja"
                 className="border-0 bg-transparent h-10 px-1 focus-visible:ring-0" />
             </div>
-            {publicUrl && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                <Button variant="outline" size="sm" onClick={() => {
-                  navigator.clipboard.writeText(publicUrl); toast({ title: 'Link copiado!' });
-                }}>
-                  <Copy className="w-3 h-3 mr-1" /> Copiar
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <a href={publicUrl} target="_blank" rel="noreferrer">
-                    <ExternalLink className="w-3 h-3 mr-1" /> Abrir
-                  </a>
-                </Button>
-              </div>
+            {displayUrl && (
+              <>
+                <p className="text-xs text-muted-foreground pt-1">
+                  Compartilhe: <span className="font-medium text-foreground">{displayUrl}</span>
+                </p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button variant="outline" size="sm" onClick={() => {
+                    navigator.clipboard.writeText(publicUrl); toast({ title: 'Link copiado!' });
+                  }}>
+                    <Copy className="w-3 h-3 mr-1" /> Copiar
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={publicUrl} target="_blank" rel="noreferrer">
+                      <ExternalLink className="w-3 h-3 mr-1" /> Abrir
+                    </a>
+                  </Button>
+                </div>
+              </>
             )}
           </div>
           <div className="flex items-center justify-between">
@@ -143,21 +155,11 @@ const CatalogoPersonalizar: React.FC = () => {
           </div>
         </Card>
 
-        <Accordion type="multiple" defaultValue={['design', 'estilo']} className="space-y-3">
-          {/* Design */}
-          <AccordionItem value="design" className="border border-border rounded-lg px-3">
-            <AccordionTrigger className="text-sm font-semibold">Design</AccordionTrigger>
-            <AccordionContent className="space-y-5 pb-4">
-              <div className="space-y-2">
-                <Label className="text-xs">Modelo</Label>
-                <p className="text-[11px] text-muted-foreground -mt-1">Selecione o modelo do seu site</p>
-                <Pills value={d.template ?? 'catalog'} onChange={(v) => set('template', v)} options={[
-                  { value: 'catalog', label: 'Catálogo' },
-                  { value: 'shop', label: 'Loja virtual profissional' },
-                ]} />
-              </div>
-            </AccordionContent>
-          </AccordionItem>
+        {/* Imagem de capa (banner) */}
+        <CoverBannerManager />
+
+        <Accordion type="multiple" defaultValue={['estilo']} className="space-y-3">
+
 
           {/* Personalizar estilo */}
           <AccordionItem value="estilo" className="border border-border rounded-lg px-3">
@@ -286,7 +288,24 @@ const CatalogoPersonalizar: React.FC = () => {
           {/* Mensagem WhatsApp */}
           <AccordionItem value="whatsapp" className="border border-border rounded-lg px-3">
             <AccordionTrigger className="text-sm font-semibold">Mensagem do WhatsApp</AccordionTrigger>
-            <AccordionContent className="space-y-2 pb-4">
+            <AccordionContent className="space-y-3 pb-4">
+              <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/30">
+                <MessageCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                <div className="flex-1 text-xs">
+                  <div className="font-medium text-foreground">
+                    Número usado: {storeWhats ? storeWhats : <span className="text-destructive">não configurado</span>}
+                  </div>
+                  <p className="text-muted-foreground">
+                    Os pedidos do catálogo serão enviados para esse WhatsApp.
+                  </p>
+                  <Button asChild variant="link" size="sm" className="px-0 h-auto mt-1">
+                    <Link to="/perfil">
+                      <Settings className="w-3 h-3 mr-1" />
+                      Editar em Configurações da empresa
+                    </Link>
+                  </Button>
+                </div>
+              </div>
               <Textarea rows={6} value={d.whatsapp_message_template ?? ''}
                 onChange={(e) => set('whatsapp_message_template', e.target.value)}
                 placeholder="Use {loja}, {itens} e {total}" />
@@ -295,6 +314,7 @@ const CatalogoPersonalizar: React.FC = () => {
               </p>
             </AccordionContent>
           </AccordionItem>
+
         </Accordion>
 
         <div className="sticky bottom-3 z-10">
