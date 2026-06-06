@@ -291,30 +291,65 @@ const CatalogoPublico: React.FC = () => {
           </div>
         )}
 
-        <div className="bg-background border-b border-border px-4 py-3 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
-          <div className="flex gap-1 flex-wrap">
-            <button onClick={() => setFilterCat(null)}
-              className={`px-3 py-1.5 text-sm transition ${!filterCat ? 'text-white' : 'text-muted-foreground hover:bg-muted'}`}
-              style={!filterCat ? { background: primary, borderRadius: buttonRadius } : { borderRadius: buttonRadius }}>
-              Todos
-            </button>
-            {data.categories.filter((c) => !c.parent_id).map((c) => (
-              <button key={c.id} onClick={() => setFilterCat(c.id)}
-                className={`px-3 py-1.5 text-sm transition ${filterCat === c.id ? 'text-white' : 'text-muted-foreground hover:bg-muted'}`}
-                style={filterCat === c.id ? { background: primary, borderRadius: buttonRadius } : { borderRadius: buttonRadius }}>
-                {c.name}
+        <div className="bg-background border-b border-border px-4 py-3 space-y-2">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            <div className="flex gap-1 flex-nowrap overflow-x-auto -mx-1 px-1 sm:flex-wrap sm:overflow-visible">
+              <button onClick={() => setFilterCat(null)}
+                className={`shrink-0 px-3 py-1.5 text-sm transition ${!filterCat ? 'text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                style={!filterCat ? { background: primary, borderRadius: buttonRadius } : { borderRadius: buttonRadius }}>
+                Todos
               </button>
-            ))}
+              {data.categories.filter((c) => !c.parent_id).map((c) => (
+                <button key={c.id} onClick={() => setFilterCat(c.id)}
+                  className={`shrink-0 px-3 py-1.5 text-sm transition ${filterCat === c.id ? 'text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                  style={filterCat === c.id ? { background: primary, borderRadius: buttonRadius } : { borderRadius: buttonRadius }}>
+                  {c.name}
+                </button>
+              ))}
+            </div>
+            <div className="relative max-w-xs w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar produto..." className="pl-9 h-9 rounded-full" />
+            </div>
           </div>
-          <div className="relative max-w-xs w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar produto..." className="pl-9 h-9 rounded-full" />
-          </div>
+
+          {subcats.length > 0 && (
+            <div className="flex gap-1 flex-nowrap overflow-x-auto -mx-1 px-1 sm:flex-wrap pt-1">
+              <button onClick={() => setSubCat(null)}
+                className={`shrink-0 px-2.5 py-1 text-xs transition border ${!subCat ? 'border-foreground/40 text-foreground' : 'border-border text-muted-foreground'}`}
+                style={{ borderRadius: buttonRadius }}>
+                Todas as subcategorias
+              </button>
+              {subcats.map((sc) => (
+                <button key={sc.id} onClick={() => setSubCat(sc.id)}
+                  className={`shrink-0 px-2.5 py-1 text-xs transition border ${subCat === sc.id ? 'border-foreground/40 text-foreground' : 'border-border text-muted-foreground'}`}
+                  style={{ borderRadius: buttonRadius }}>
+                  {sc.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {hasActiveFilters && (
+            <button onClick={() => { setSearch(''); setFilterCat(null); setSubCat(null); }}
+              className="text-xs text-muted-foreground hover:text-foreground underline">
+              Limpar filtros
+            </button>
+          )}
         </div>
 
         <div className="p-4 sm:p-6">
           {filtered.length === 0 ? (
-            <div className="text-center text-muted-foreground py-12">Nenhum produto encontrado.</div>
+            <div className="text-center text-muted-foreground py-12">
+              <Package className="w-10 h-10 mx-auto mb-2 opacity-40" />
+              <p className="text-sm">Nenhum produto encontrado.</p>
+              {hasActiveFilters && (
+                <button onClick={() => { setSearch(''); setFilterCat(null); setSubCat(null); }}
+                  className="text-xs mt-2 underline text-foreground">
+                  Ver todos os produtos
+                </button>
+              )}
+            </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filtered.map((p) => (
