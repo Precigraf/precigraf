@@ -45,6 +45,8 @@ export function AppSidebar() {
   
 
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
+  const showCatalog = canAccessCatalog(user?.email);
+  const visibleNavItems = navItems.filter(i => i.url !== '/catalogo-admin' || showCatalog);
 
   const handleLogout = async () => {
     await signOut();
