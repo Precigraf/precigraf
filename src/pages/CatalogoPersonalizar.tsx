@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import AppLayout from '@/components/AppLayout';
 import { CatalogoSubNav } from '@/components/catalogo/CatalogoSubNav';
+import { CoverBannerManager } from '@/components/catalogo/CoverBannerManager';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,10 +10,12 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Copy, ExternalLink, Loader2 } from 'lucide-react';
+import { Copy, ExternalLink, Loader2, MessageCircle, Settings } from 'lucide-react';
 import { useCatalogSettings, type CatalogSettings } from '@/hooks/useCatalog';
+import { useCompanyProfile } from '@/hooks/useCompanyProfile';
 import { useToast } from '@/hooks/use-toast';
 import { TITLE_FONTS, BODY_FONTS, injectCatalogFonts } from '@/lib/googleFonts';
+import { PUBLIC_BASE_HOST, buildCatalogUrl } from '@/lib/publicUrl';
 
 const slugify = (s: string) =>
   s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
