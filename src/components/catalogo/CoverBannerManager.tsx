@@ -45,20 +45,18 @@ export const CoverBannerManager: React.FC = () => {
         .upload(path, blob, { upsert: false, contentType: blob.type });
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from('catalog-images').getPublicUrl(path);
-      await create.mutateAsync({
+      const payload: Record<string, unknown> = {
         title: '',
         eyebrow: null,
         subtitle: null,
         bg_color: '#000000',
         sort_order: count,
         is_active: true,
-        // @ts-expect-error new fields not in narrow type
         image_desktop_url: pub.publicUrl,
-        // @ts-expect-error
         image_mobile_url: pub.publicUrl,
-        // @ts-expect-error
         storage_path_desktop: path,
-      } as Partial<CatalogBanner>);
+      };
+      await create.mutateAsync(payload as Partial<CatalogBanner>);
     } catch (e: any) {
       toast({ title: 'Erro no upload', description: e.message, variant: 'destructive' });
     } finally {
