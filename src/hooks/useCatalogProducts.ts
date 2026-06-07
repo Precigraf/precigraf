@@ -188,6 +188,7 @@ export function useCatalogProducts() {
           is_active: input.is_active ?? true,
           is_featured: input.is_featured ?? false,
           sort_order: input.sort_order ?? 0,
+          variation_label: input.variation_label ?? null,
         })
         .select()
         .single();
