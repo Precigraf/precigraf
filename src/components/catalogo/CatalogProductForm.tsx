@@ -154,12 +154,31 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
   };
 
 
-  const addVariant = () =>
-    setVariants((v) => [...v, { name: '', price: '', stock: '' }]);
-  const updateVariant = (i: number, field: keyof VariantDraft, value: string) =>
-    setVariants((v) => v.map((x, idx) => (idx === i ? { ...x, [field]: value } : x)));
-  const removeVariant = (i: number) =>
-    setVariants((v) => v.filter((_, idx) => idx !== i));
+  // Quando a variação muda (nova opção, remoção, renomeação), reconcilia variantRows preservando preço/estoque/ativo existentes
+  const handleVariationChange = (next: VariationData | null) => {
+    if (!next) {
+      setVariation(null);
+      setVariantRows([]);
+      return;
+    }
+    setVariation(next);
+    setVariantRows((prev) => {
+      const byName = new Map(prev.map((r) => [r.name, r]));
+      return next.options.map((opt, idx) => {
+        const existing = byName.get(opt) ?? prev[idx];
+        return (
+          existing ?? {
+            name: opt,
+            price: '',
+            promo_price: '',
+            is_active: true,
+            stock_type: 'infinite' as const,
+            stock: '',
+          }
+        );
+      }).map((row, idx) => ({ ...row, name: next.options[idx] }));
+    });
+  };
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -179,6 +198,7 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
         delivery_notes: deliveryNotes.trim() || null,
         category_id: categoryId,
         is_featured: featured,
+        variation_label: variation?.label ?? null,
       };
 
       let productId = product?.id;
@@ -190,13 +210,20 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
       }
       if (!productId) throw new Error('Sem id');
 
-      const cleanVariants = variants
+      const cleanVariants = variantRows
         .filter((v) => v.name.trim())
-        .map((v) => ({
-          name: v.name.trim(),
-          price: parseFloat(v.price.replace(',', '.')) || 0,
-          stock: v.stock ? parseInt(v.stock) : null,
-        }));
+        .map((v) => {
+          const promo = v.promo_price ? parseFloat(v.promo_price.replace(',', '.')) : null;
+          const priceN = parseFloat(v.price.replace(',', '.')) || 0;
+          return {
+            name: v.name.trim(),
+            price: priceN,
+            promo_price: promo && promo > 0 && promo < priceN ? promo : null,
+            stock: v.stock_type === 'limited' ? (parseInt(v.stock) || 0) : null,
+            stock_type: v.stock_type,
+            is_active: v.is_active,
+          };
+        });
       await replaceVariants(user.id, productId, cleanVariants);
       await saveProductImages(user.id, productId, images);
 
