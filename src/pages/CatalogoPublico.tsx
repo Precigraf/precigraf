@@ -33,6 +33,18 @@ const CatalogoPublico: React.FC = () => {
     if (store) injectCatalogFonts([store.title_font, store.body_font].filter(Boolean) as string[]);
   }, [store?.title_font, store?.body_font]);
 
+  // Catálogo público sempre em modo claro
+  useEffect(() => {
+    const root = document.documentElement;
+    const hadDark = root.classList.contains('dark');
+    root.classList.remove('dark');
+    root.classList.add('light');
+    return () => {
+      root.classList.remove('light');
+      if (hadDark) root.classList.add('dark');
+    };
+  }, []);
+
   // Auto-rotate banner a cada 3s
   const bannerCount = data?.banners.length ?? 0;
   useEffect(() => {
