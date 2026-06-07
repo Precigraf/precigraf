@@ -134,21 +134,6 @@ export const CoverBannerManager: React.FC = () => {
         {count >= MAX_BANNERS ? 'Limite atingido' : 'Adicionar imagem'}
       </Button>
 
-      <div className="border border-border rounded-lg p-3 bg-muted/30">
-        <div className="flex items-start gap-2">
-          <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-          <div className="text-xs space-y-1">
-            <div className="font-semibold">Slide de Imagens de Capa</div>
-            <ul className="space-y-0.5 text-muted-foreground">
-              <li>✅ <span className="text-foreground font-medium">Quantidade:</span> Até 3 imagens (mínimo 1)</li>
-              <li>✅ <span className="text-foreground font-medium">Tamanho ideal:</span> 1500 x 500 px (proporção 3:1)</li>
-              <li>✅ <span className="text-foreground font-medium">Peso máximo:</span> 2MB por imagem</li>
-              <li>✅ <span className="text-foreground font-medium">Formatos:</span> JPG, PNG ou WebP</li>
-              <li className="text-amber-600 dark:text-amber-400">💡 Com 2 ou mais imagens, elas alternam automaticamente a cada 3 segundos</li>
-            </ul>
-          </div>
-        </div>
-      </div>
     </Card>
   );
 };
