@@ -399,10 +399,12 @@ interface PCardProps {
 }
 
 const ProductCard: React.FC<PCardProps> = ({ product, store, onOpen }) => {
-  const variants = product.variants ?? [];
+  const variants = (product.variants ?? []).filter((v) => v.is_active !== false);
   const hasVariants = variants.length > 0;
   const basePrice = product.promo_price ?? product.price;
-  const minPrice = hasVariants ? Math.min(...variants.map((v) => v.price)) : basePrice;
+  const minPrice = hasVariants
+    ? Math.min(...variants.map((v) => (v.promo_price && v.promo_price > 0 && v.promo_price < v.price ? v.promo_price : v.price)))
+    : basePrice;
   const thumb = product.images?.[0];
 
   const cardRadius = store.product_border_style === 'rounded' ? '16px' : '0px';
