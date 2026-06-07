@@ -45,12 +45,16 @@ export const ProductDetailModal: React.FC<Props> = ({ open, onOpenChange, produc
   const titleFamily = `'${store.title_font}', sans-serif`;
   const titleWeight = store.title_weight === 'light' ? 300 : store.title_weight === 'medium' ? 500 : 700;
 
-  const variants = product?.variants ?? [];
+  const variants = (product?.variants ?? []).filter((v: any) => v.is_active !== false);
   const hasVariants = variants.length > 0;
 
   const unitPrice = useMemo(() => {
     if (!product) return 0;
-    if (hasVariants) return variants[variantIdx]?.price ?? product.price;
+    if (hasVariants) {
+      const v: any = variants[variantIdx];
+      if (!v) return product.price;
+      return v.promo_price && v.promo_price > 0 && v.promo_price < v.price ? v.promo_price : v.price;
+    }
     return product.promo_price ?? product.price;
   }, [product, hasVariants, variantIdx, variants]);
 
