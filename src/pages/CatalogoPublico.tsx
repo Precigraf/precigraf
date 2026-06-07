@@ -174,13 +174,12 @@ const CatalogoPublico: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             {store.logo_url ? (
-              <img src={store.logo_url} alt={store.name} className="w-8 h-8 rounded-lg object-cover" />
+              <img src={store.logo_url} alt={store.name} className="h-9 max-w-[160px] object-contain" />
             ) : (
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: primary }}>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: primary }}>
                 <Package className="w-4 h-4 text-white" />
               </div>
             )}
-            <span className="truncate font-semibold" style={{ fontFamily: titleFamily, fontWeight: titleWeight }}>{store.name}</span>
           </div>
           <Sheet open={cartOpen} onOpenChange={setCartOpen}>
             <SheetTrigger asChild>
