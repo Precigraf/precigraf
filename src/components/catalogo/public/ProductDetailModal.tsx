@@ -137,7 +137,7 @@ export const ProductDetailModal: React.FC<Props> = ({ open, onOpenChange, produc
 
             {hasVariants && (
               <div>
-                <div className="text-sm font-medium mb-2">Escolha uma opção</div>
+                <div className="text-sm font-medium mb-2">{(product as any).variation_label || 'Escolha uma opção'}</div>
                 <div className="grid grid-cols-1 gap-2">
                   {variants.map((v: any, i) => {
                     const sel = i === variantIdx;
