@@ -349,47 +349,38 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="variants">
-              <AccordionTrigger className="text-sm">
-                <div className="flex flex-col items-start">
-                  <span>Variações <span className="text-muted-foreground font-normal">(Opcional)</span></span>
-                  <span className="text-[11px] text-muted-foreground font-normal">Exemplo: Cor, tamanho, etc</span>
+          </Accordion>
+
+          {/* Variações — fora do accordion para ficar sempre visível */}
+          <div className="border-t border-border pt-4 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold">
+                  Variações <span className="text-muted-foreground font-normal">(Opcional)</span>
                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-2">
-                {variants.map((v, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_100px_80px_auto] gap-2 items-center">
-                    <Input
-                      placeholder="Ex: Vermelho - P"
-                      value={v.name}
-                      onChange={(e) => updateVariant(i, 'name', e.target.value)}
-                    />
-                    <div className="relative">
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
-                      <Input
-                        className="pl-7"
-                        placeholder="0,00"
-                        value={v.price}
-                        onChange={(e) => updateVariant(i, 'price', e.target.value)}
-                        inputMode="decimal"
-                      />
-                    </div>
-                    <Input
-                      type="number"
-                      placeholder="Estoq."
-                      value={v.stock}
-                      onChange={(e) => updateVariant(i, 'stock', e.target.value)}
-                    />
-                    <Button size="icon" variant="ghost" onClick={() => removeVariant(i)}>
-                      <X className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-                <Button variant="outline" size="sm" onClick={addVariant}>
-                  <Plus className="w-3 h-3 mr-1" /> adicionar variação
-                </Button>
-              </AccordionContent>
-            </AccordionItem>
+                <p className="text-[11px] text-muted-foreground">Exemplo: Cor, tamanho, etc</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setVariationsOpen(true)}
+                className="text-primary border-primary/40 hover:bg-primary/10"
+              >
+                Editar variações
+              </Button>
+            </div>
+
+            {variation && variantRows.length > 0 && (
+              <VariantPricingTable
+                label={variation.label}
+                rows={variantRows}
+                onChange={setVariantRows}
+              />
+            )}
+          </div>
+
+          <Accordion type="multiple" className="border-t border-border">
 
             <AccordionItem value="delivery">
               <AccordionTrigger className="text-sm">
