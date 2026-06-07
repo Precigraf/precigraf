@@ -17,7 +17,10 @@ export interface CatalogVariant {
   product_id: string;
   name: string;
   price: number;
+  promo_price: number | null;
   stock: number | null;
+  stock_type: 'infinite' | 'limited';
+  is_active: boolean;
   sort_order: number;
 }
 
@@ -43,6 +46,7 @@ export interface CatalogProduct {
   is_active: boolean;
   is_featured: boolean;
   sort_order: number;
+  variation_label: string | null;
   variants?: CatalogVariant[];
   images?: CatalogImage[];
 }
@@ -184,6 +188,7 @@ export function useCatalogProducts() {
           is_active: input.is_active ?? true,
           is_featured: input.is_featured ?? false,
           sort_order: input.sort_order ?? 0,
+          variation_label: input.variation_label ?? null,
         })
         .select()
         .single();
@@ -226,7 +231,14 @@ export function useCatalogProducts() {
 export async function replaceVariants(
   userId: string,
   productId: string,
-  variants: Array<{ name: string; price: number; stock: number | null }>,
+  variants: Array<{
+    name: string;
+    price: number;
+    promo_price: number | null;
+    stock: number | null;
+    stock_type: 'infinite' | 'limited';
+    is_active: boolean;
+  }>,
 ) {
   await supabase.from('catalog_product_variants' as any).delete().eq('product_id', productId);
   if (variants.length === 0) return;
@@ -235,7 +247,10 @@ export async function replaceVariants(
     product_id: productId,
     name: v.name.trim(),
     price: v.price || 0,
-    stock: v.stock,
+    promo_price: v.promo_price,
+    stock: v.stock_type === 'limited' ? (v.stock ?? 0) : null,
+    stock_type: v.stock_type,
+    is_active: v.is_active,
     sort_order: i,
   }));
   const { error } = await supabase.from('catalog_product_variants' as any).insert(rows);

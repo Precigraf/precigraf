@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ImagePlus, Trash2, Plus, X, Star } from 'lucide-react';
+import { ImagePlus, Trash2, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -19,6 +19,8 @@ import {
   type CatalogVariant,
 } from '@/hooks/useCatalogProducts';
 import { compressImage } from '@/lib/imageCompress';
+import VariationsModal, { type VariationData } from './variations/VariationsModal';
+import VariantPricingTable, { type VariantRow } from './variations/VariantPricingTable';
 
 interface Props {
   open: boolean;
@@ -29,12 +31,6 @@ interface Props {
 interface ImageItem {
   url: string;
   storage_path: string | null;
-}
-
-interface VariantDraft {
-  name: string;
-  price: string;
-  stock: string;
 }
 
 export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, product }) => {
@@ -51,7 +47,9 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
   const [stock, setStock] = useState('');
   const [deliveryTime, setDeliveryTime] = useState('');
   const [deliveryNotes, setDeliveryNotes] = useState('');
-  const [variants, setVariants] = useState<VariantDraft[]>([]);
+  const [variation, setVariation] = useState<VariationData | null>(null);
+  const [variantRows, setVariantRows] = useState<VariantRow[]>([]);
+  const [variationsOpen, setVariationsOpen] = useState(false);
   const [images, setImages] = useState<ImageItem[]>([]);
   const [featured, setFeatured] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -69,18 +67,30 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
       setDeliveryTime(product.delivery_time ?? '');
       setDeliveryNotes(product.delivery_notes ?? '');
       setFeatured(product.is_featured);
-      setVariants(
-        (product.variants ?? []).map((v: CatalogVariant) => ({
-          name: v.name,
-          price: String(v.price ?? ''),
-          stock: v.stock != null ? String(v.stock) : '',
-        })),
-      );
+      const vs = product.variants ?? [];
+      const label = product.variation_label ?? '';
+      if (label && vs.length > 0) {
+        setVariation({ label, options: vs.map((v) => v.name) });
+        setVariantRows(
+          vs.map((v: CatalogVariant) => ({
+            id: v.id,
+            name: v.name,
+            price: v.price ? String(v.price) : '',
+            promo_price: v.promo_price ? String(v.promo_price) : '',
+            is_active: v.is_active,
+            stock_type: v.stock_type,
+            stock: v.stock != null ? String(v.stock) : '',
+          })),
+        );
+      } else {
+        setVariation(null);
+        setVariantRows([]);
+      }
       setImages((product.images ?? []).map((i) => ({ url: i.url, storage_path: i.storage_path })));
     } else {
       setName(''); setPrice(''); setDescription(''); setCategoryId(null);
       setPromoPrice(''); setStock(''); setDeliveryTime(''); setDeliveryNotes('');
-      setVariants([]); setImages([]); setFeatured(false);
+      setVariation(null); setVariantRows([]); setImages([]); setFeatured(false);
     }
   }, [open, product]);
 
@@ -144,12 +154,31 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
   };
 
 
-  const addVariant = () =>
-    setVariants((v) => [...v, { name: '', price: '', stock: '' }]);
-  const updateVariant = (i: number, field: keyof VariantDraft, value: string) =>
-    setVariants((v) => v.map((x, idx) => (idx === i ? { ...x, [field]: value } : x)));
-  const removeVariant = (i: number) =>
-    setVariants((v) => v.filter((_, idx) => idx !== i));
+  // Quando a variação muda (nova opção, remoção, renomeação), reconcilia variantRows preservando preço/estoque/ativo existentes
+  const handleVariationChange = (next: VariationData | null) => {
+    if (!next) {
+      setVariation(null);
+      setVariantRows([]);
+      return;
+    }
+    setVariation(next);
+    setVariantRows((prev) => {
+      const byName = new Map(prev.map((r) => [r.name, r]));
+      return next.options.map((opt, idx) => {
+        const existing = byName.get(opt) ?? prev[idx];
+        return (
+          existing ?? {
+            name: opt,
+            price: '',
+            promo_price: '',
+            is_active: true,
+            stock_type: 'infinite' as const,
+            stock: '',
+          }
+        );
+      }).map((row, idx) => ({ ...row, name: next.options[idx] }));
+    });
+  };
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -169,6 +198,7 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
         delivery_notes: deliveryNotes.trim() || null,
         category_id: categoryId,
         is_featured: featured,
+        variation_label: variation?.label ?? null,
       };
 
       let productId = product?.id;
@@ -180,13 +210,20 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
       }
       if (!productId) throw new Error('Sem id');
 
-      const cleanVariants = variants
+      const cleanVariants = variantRows
         .filter((v) => v.name.trim())
-        .map((v) => ({
-          name: v.name.trim(),
-          price: parseFloat(v.price.replace(',', '.')) || 0,
-          stock: v.stock ? parseInt(v.stock) : null,
-        }));
+        .map((v) => {
+          const promo = v.promo_price ? parseFloat(v.promo_price.replace(',', '.')) : null;
+          const priceN = parseFloat(v.price.replace(',', '.')) || 0;
+          return {
+            name: v.name.trim(),
+            price: priceN,
+            promo_price: promo && promo > 0 && promo < priceN ? promo : null,
+            stock: v.stock_type === 'limited' ? (parseInt(v.stock) || 0) : null,
+            stock_type: v.stock_type,
+            is_active: v.is_active,
+          };
+        });
       await replaceVariants(user.id, productId, cleanVariants);
       await saveProductImages(user.id, productId, images);
 
@@ -312,47 +349,38 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
               </AccordionContent>
             </AccordionItem>
 
-            <AccordionItem value="variants">
-              <AccordionTrigger className="text-sm">
-                <div className="flex flex-col items-start">
-                  <span>Variações <span className="text-muted-foreground font-normal">(Opcional)</span></span>
-                  <span className="text-[11px] text-muted-foreground font-normal">Exemplo: Cor, tamanho, etc</span>
+          </Accordion>
+
+          {/* Variações — fora do accordion para ficar sempre visível */}
+          <div className="border-t border-border pt-4 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold">
+                  Variações <span className="text-muted-foreground font-normal">(Opcional)</span>
                 </div>
-              </AccordionTrigger>
-              <AccordionContent className="space-y-2">
-                {variants.map((v, i) => (
-                  <div key={i} className="grid grid-cols-[1fr_100px_80px_auto] gap-2 items-center">
-                    <Input
-                      placeholder="Ex: Vermelho - P"
-                      value={v.name}
-                      onChange={(e) => updateVariant(i, 'name', e.target.value)}
-                    />
-                    <div className="relative">
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">R$</span>
-                      <Input
-                        className="pl-7"
-                        placeholder="0,00"
-                        value={v.price}
-                        onChange={(e) => updateVariant(i, 'price', e.target.value)}
-                        inputMode="decimal"
-                      />
-                    </div>
-                    <Input
-                      type="number"
-                      placeholder="Estoq."
-                      value={v.stock}
-                      onChange={(e) => updateVariant(i, 'stock', e.target.value)}
-                    />
-                    <Button size="icon" variant="ghost" onClick={() => removeVariant(i)}>
-                      <X className="w-4 h-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-                <Button variant="outline" size="sm" onClick={addVariant}>
-                  <Plus className="w-3 h-3 mr-1" /> adicionar variação
-                </Button>
-              </AccordionContent>
-            </AccordionItem>
+                <p className="text-[11px] text-muted-foreground">Exemplo: Cor, tamanho, etc</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setVariationsOpen(true)}
+                className="text-primary border-primary/40 hover:bg-primary/10"
+              >
+                Editar variações
+              </Button>
+            </div>
+
+            {variation && variantRows.length > 0 && (
+              <VariantPricingTable
+                label={variation.label}
+                rows={variantRows}
+                onChange={setVariantRows}
+              />
+            )}
+          </div>
+
+          <Accordion type="multiple" className="border-t border-border">
 
             <AccordionItem value="delivery">
               <AccordionTrigger className="text-sm">
@@ -430,6 +458,13 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
           </Button>
         </div>
       </DialogContent>
+
+      <VariationsModal
+        open={variationsOpen}
+        onOpenChange={setVariationsOpen}
+        value={variation}
+        onSave={handleVariationChange}
+      />
     </Dialog>
   );
 };

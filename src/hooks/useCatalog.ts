@@ -282,8 +282,17 @@ export interface PublicCatalogData {
     category_id: string | null;
     is_featured: boolean;
     sort_order: number;
+    variation_label: string | null;
     images: string[];
-    variants: Array<{ id: string; name: string; price: number; stock: number | null }>;
+    variants: Array<{
+      id: string;
+      name: string;
+      price: number;
+      promo_price: number | null;
+      stock: number | null;
+      stock_type: 'infinite' | 'limited';
+      is_active: boolean;
+    }>;
   }>;
 }
 

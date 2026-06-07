@@ -33,6 +33,18 @@ const CatalogoPublico: React.FC = () => {
     if (store) injectCatalogFonts([store.title_font, store.body_font].filter(Boolean) as string[]);
   }, [store?.title_font, store?.body_font]);
 
+  // Catálogo público sempre em modo claro
+  useEffect(() => {
+    const root = document.documentElement;
+    const hadDark = root.classList.contains('dark');
+    root.classList.remove('dark');
+    root.classList.add('light');
+    return () => {
+      root.classList.remove('light');
+      if (hadDark) root.classList.add('dark');
+    };
+  }, []);
+
   // Auto-rotate banner a cada 3s
   const bannerCount = data?.banners.length ?? 0;
   useEffect(() => {
@@ -162,13 +174,12 @@ const CatalogoPublico: React.FC = () => {
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             {store.logo_url ? (
-              <img src={store.logo_url} alt={store.name} className="w-8 h-8 rounded-lg object-cover" />
+              <img src={store.logo_url} alt={store.name} className="h-9 max-w-[160px] object-contain" />
             ) : (
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: primary }}>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: primary }}>
                 <Package className="w-4 h-4 text-white" />
               </div>
             )}
-            <span className="truncate font-semibold" style={{ fontFamily: titleFamily, fontWeight: titleWeight }}>{store.name}</span>
           </div>
           <Sheet open={cartOpen} onOpenChange={setCartOpen}>
             <SheetTrigger asChild>
@@ -388,10 +399,12 @@ interface PCardProps {
 }
 
 const ProductCard: React.FC<PCardProps> = ({ product, store, onOpen }) => {
-  const variants = product.variants ?? [];
+  const variants = (product.variants ?? []).filter((v) => v.is_active !== false);
   const hasVariants = variants.length > 0;
   const basePrice = product.promo_price ?? product.price;
-  const minPrice = hasVariants ? Math.min(...variants.map((v) => v.price)) : basePrice;
+  const minPrice = hasVariants
+    ? Math.min(...variants.map((v) => (v.promo_price && v.promo_price > 0 && v.promo_price < v.price ? v.promo_price : v.price)))
+    : basePrice;
   const thumb = product.images?.[0];
 
   const cardRadius = store.product_border_style === 'rounded' ? '16px' : '0px';
