@@ -46,6 +46,7 @@ export interface CatalogProduct {
   is_active: boolean;
   is_featured: boolean;
   sort_order: number;
+  variation_label: string | null;
   variants?: CatalogVariant[];
   images?: CatalogImage[];
 }
