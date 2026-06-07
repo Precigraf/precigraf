@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ImagePlus, Trash2, Plus, X, Star } from 'lucide-react';
+import { ImagePlus, Trash2, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -19,6 +19,8 @@ import {
   type CatalogVariant,
 } from '@/hooks/useCatalogProducts';
 import { compressImage } from '@/lib/imageCompress';
+import VariationsModal, { type VariationData } from './variations/VariationsModal';
+import VariantPricingTable, { type VariantRow } from './variations/VariantPricingTable';
 
 interface Props {
   open: boolean;
@@ -29,12 +31,6 @@ interface Props {
 interface ImageItem {
   url: string;
   storage_path: string | null;
-}
-
-interface VariantDraft {
-  name: string;
-  price: string;
-  stock: string;
 }
 
 export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, product }) => {
