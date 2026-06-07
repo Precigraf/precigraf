@@ -285,31 +285,40 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_active: boolean
           name: string
           price: number
           product_id: string
+          promo_price: number | null
           sort_order: number
           stock: number | null
+          stock_type: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_active?: boolean
           name: string
           price?: number
           product_id: string
+          promo_price?: number | null
           sort_order?: number
           stock?: number | null
+          stock_type?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_active?: boolean
           name?: string
           price?: number
           product_id?: string
+          promo_price?: number | null
           sort_order?: number
           stock?: number | null
+          stock_type?: string
           user_id?: string
         }
         Relationships: [
@@ -339,6 +348,7 @@ export type Database = {
           stock: number | null
           updated_at: string
           user_id: string
+          variation_label: string | null
         }
         Insert: {
           category_id?: string | null
@@ -356,6 +366,7 @@ export type Database = {
           stock?: number | null
           updated_at?: string
           user_id: string
+          variation_label?: string | null
         }
         Update: {
           category_id?: string | null
@@ -373,6 +384,7 @@ export type Database = {
           stock?: number | null
           updated_at?: string
           user_id?: string
+          variation_label?: string | null
         }
         Relationships: [
           {
