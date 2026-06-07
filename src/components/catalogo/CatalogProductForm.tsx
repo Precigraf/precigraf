@@ -67,18 +67,30 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
       setDeliveryTime(product.delivery_time ?? '');
       setDeliveryNotes(product.delivery_notes ?? '');
       setFeatured(product.is_featured);
-      setVariants(
-        (product.variants ?? []).map((v: CatalogVariant) => ({
-          name: v.name,
-          price: String(v.price ?? ''),
-          stock: v.stock != null ? String(v.stock) : '',
-        })),
-      );
+      const vs = product.variants ?? [];
+      const label = product.variation_label ?? '';
+      if (label && vs.length > 0) {
+        setVariation({ label, options: vs.map((v) => v.name) });
+        setVariantRows(
+          vs.map((v: CatalogVariant) => ({
+            id: v.id,
+            name: v.name,
+            price: v.price ? String(v.price) : '',
+            promo_price: v.promo_price ? String(v.promo_price) : '',
+            is_active: v.is_active,
+            stock_type: v.stock_type,
+            stock: v.stock != null ? String(v.stock) : '',
+          })),
+        );
+      } else {
+        setVariation(null);
+        setVariantRows([]);
+      }
       setImages((product.images ?? []).map((i) => ({ url: i.url, storage_path: i.storage_path })));
     } else {
       setName(''); setPrice(''); setDescription(''); setCategoryId(null);
       setPromoPrice(''); setStock(''); setDeliveryTime(''); setDeliveryNotes('');
-      setVariants([]); setImages([]); setFeatured(false);
+      setVariation(null); setVariantRows([]); setImages([]); setFeatured(false);
     }
   }, [open, product]);
 
