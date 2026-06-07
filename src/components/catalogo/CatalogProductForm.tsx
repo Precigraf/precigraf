@@ -458,6 +458,13 @@ export const CatalogProductForm: React.FC<Props> = ({ open, onOpenChange, produc
           </Button>
         </div>
       </DialogContent>
+
+      <VariationsModal
+        open={variationsOpen}
+        onOpenChange={setVariationsOpen}
+        value={variation}
+        onSave={handleVariationChange}
+      />
     </Dialog>
   );
 };
