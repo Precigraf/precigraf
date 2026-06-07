@@ -139,9 +139,10 @@ export const ProductDetailModal: React.FC<Props> = ({ open, onOpenChange, produc
               <div>
                 <div className="text-sm font-medium mb-2">Escolha uma opção</div>
                 <div className="grid grid-cols-1 gap-2">
-                  {variants.map((v, i) => {
+                  {variants.map((v: any, i) => {
                     const sel = i === variantIdx;
-                    const out = v.stock != null && v.stock <= 0;
+                    const out = v.stock_type === 'limited' && (v.stock ?? 0) <= 0;
+                    const variantPrice = v.promo_price && v.promo_price > 0 && v.promo_price < v.price ? v.promo_price : v.price;
                     return (
                       <button
                         key={v.id}
@@ -160,13 +161,18 @@ export const ProductDetailModal: React.FC<Props> = ({ open, onOpenChange, produc
                           </span>
                           <span className="text-sm truncate">{v.name}</span>
                           {out && <span className="text-[10px] text-destructive">esgotado</span>}
-                          {v.stock != null && v.stock > 0 && v.stock <= 5 && (
+                          {v.stock_type === 'limited' && v.stock > 0 && v.stock <= 5 && (
                             <span className="text-[10px] text-muted-foreground">({v.stock} disp.)</span>
                           )}
                         </div>
-                        <span className="text-sm font-semibold shrink-0" style={{ color: store.price_color }}>
-                          {formatBRL(v.price)}
-                        </span>
+                        <div className="flex flex-col items-end shrink-0">
+                          <span className="text-sm font-semibold" style={{ color: store.price_color }}>
+                            {formatBRL(variantPrice)}
+                          </span>
+                          {variantPrice < v.price && (
+                            <span className="text-[10px] text-muted-foreground line-through">{formatBRL(v.price)}</span>
+                          )}
+                        </div>
                       </button>
                     );
                   })}
