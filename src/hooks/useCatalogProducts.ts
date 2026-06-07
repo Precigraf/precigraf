@@ -17,7 +17,10 @@ export interface CatalogVariant {
   product_id: string;
   name: string;
   price: number;
+  promo_price: number | null;
   stock: number | null;
+  stock_type: 'infinite' | 'limited';
+  is_active: boolean;
   sort_order: number;
 }
 
