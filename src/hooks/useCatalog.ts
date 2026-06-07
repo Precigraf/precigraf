@@ -282,7 +282,6 @@ export interface PublicCatalogData {
     category_id: string | null;
     is_featured: boolean;
     sort_order: number;
-    sort_order: number;
     variation_label: string | null;
     images: string[];
     variants: Array<{
