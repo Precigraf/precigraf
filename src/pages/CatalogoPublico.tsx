@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Loader2, Search, ShoppingCart, Clock, MessageCircle, Trash2, Package, Minus, Plus } from 'lucide-react';
+import { Loader2, Search, ShoppingCart, Clock, MessageCircle, Trash2, Package, Minus, Plus, Sun, Moon } from 'lucide-react';
 import { usePublicCatalog, type PublicCatalogData, type PublicCatalogStore } from '@/hooks/useCatalog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -33,17 +33,22 @@ const CatalogoPublico: React.FC = () => {
     if (store) injectCatalogFonts([store.title_font, store.body_font].filter(Boolean) as string[]);
   }, [store?.title_font, store?.body_font]);
 
-  // Catálogo público sempre em modo claro
+  // Tema do catálogo público: claro/escuro com preferência salva
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'light';
+    return (localStorage.getItem('catalog-theme') as 'light' | 'dark') || 'light';
+  });
   useEffect(() => {
     const root = document.documentElement;
     const hadDark = root.classList.contains('dark');
-    root.classList.remove('dark');
-    root.classList.add('light');
+    root.classList.remove('dark', 'light');
+    root.classList.add(theme);
+    try { localStorage.setItem('catalog-theme', theme); } catch {}
     return () => {
-      root.classList.remove('light');
+      root.classList.remove('light', 'dark');
       if (hadDark) root.classList.add('dark');
     };
-  }, []);
+  }, [theme]);
 
   // Auto-rotate banner a cada 3s
   const bannerCount = data?.banners.length ?? 0;
@@ -124,16 +129,22 @@ const CatalogoPublico: React.FC = () => {
     if (!data || cart.length === 0) return;
     const phone = (data.store.whatsapp ?? '').replace(/\D/g, '');
     if (!phone) { alert('Loja sem WhatsApp configurado.'); return; }
-    const itensTxt = cart
-      .map((i) => {
-        const variant = i.variant_name ? ` (${i.variant_name})` : '';
-        return `• ${i.qty}x ${i.product_name}${variant} — ${formatBRL(i.unit_price * i.qty)}`;
-      })
-      .join('\n');
-    const msg = (data.store.whatsapp_message_template || 'Olá {loja}!\n{itens}\nTotal: {total}')
-      .replace(/\{loja\}/g, data.store.name)
-      .replace(/\{itens\}/g, itensTxt)
-      .replace(/\{total\}/g, formatBRL(total));
+    const lojaNome = data.store.name || 'sua empresa';
+    const linhas: string[] = [];
+    linhas.push(`Olá! Vim pelo catálogo da ${lojaNome} e gostaria de finalizar meu pedido:`);
+    linhas.push('');
+    cart.forEach((i) => {
+      linhas.push(`Produto: ${i.product_name}`);
+      if (i.variant_name) linhas.push(`Variação: ${i.variant_name}`);
+      linhas.push(`Quantidade: ${i.qty}`);
+      linhas.push(`Preço: ${formatBRL(i.unit_price)}`);
+      linhas.push(`Subtotal: ${formatBRL(i.unit_price * i.qty)}`);
+      linhas.push('');
+    });
+    linhas.push(`Total do pedido: ${formatBRL(total)}`);
+    linhas.push('');
+    linhas.push('Aguardo o atendimento para finalizar a compra.');
+    const msg = linhas.join('\n');
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -171,29 +182,44 @@ const CatalogoPublico: React.FC = () => {
   return (
     <div className="min-h-screen bg-muted/30" style={{ fontFamily: bodyFamily, color: store.title_color }}>
       <header className="border-b border-border sticky top-0 z-30" style={{ background: headerBg, color: headerFg }}>
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+        <div className="max-w-6xl mx-auto px-4 h-16 sm:h-20 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             {store.logo_url ? (
-              <img src={store.logo_url} alt={store.name} className="h-9 max-w-[160px] object-contain" />
+              <img
+                src={store.logo_url}
+                alt={store.name}
+                className="h-12 sm:h-14 max-h-14 max-w-[220px] w-auto object-contain"
+              />
             ) : (
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: primary }}>
-                <Package className="w-4 h-4 text-white" />
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: primary }}>
+                <Package className="w-5 h-5 text-white" />
               </div>
             )}
           </div>
-          <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-            <SheetTrigger asChild>
-              <button
-                className="inline-flex items-center px-4 py-2 text-sm font-medium relative"
-                style={{ background: buttonBg, color: buttonFg, borderRadius: buttonRadius }}
-              >
-                <ShoppingCart className="w-4 h-4 mr-1" />
-                Carrinho
-                {totalItems > 0 && (
-                  <span className="ml-2 bg-white/25 rounded-full px-2 text-xs">{totalItems}</span>
-                )}
-              </button>
-            </SheetTrigger>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
+              aria-label={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+              title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-white/20 hover:bg-white/10 transition"
+              style={{ color: headerFg }}
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <Sheet open={cartOpen} onOpenChange={setCartOpen}>
+              <SheetTrigger asChild>
+                <button
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium relative"
+                  style={{ background: buttonBg, color: buttonFg, borderRadius: buttonRadius }}
+                >
+                  <ShoppingCart className="w-4 h-4 mr-1" />
+                  Carrinho
+                  {totalItems > 0 && (
+                    <span className="ml-2 bg-white/25 rounded-full px-2 text-xs">{totalItems}</span>
+                  )}
+                </button>
+              </SheetTrigger>
             <SheetContent className="w-full sm:max-w-md flex flex-col">
               <SheetHeader>
                 <SheetTitle>Seu carrinho</SheetTitle>
