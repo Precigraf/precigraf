@@ -285,8 +285,10 @@ const CatalogoPublico: React.FC = () => {
               )}
             </SheetContent>
           </Sheet>
+          </div>
         </div>
       </header>
+
 
       <div className="max-w-6xl mx-auto">
         {currentBanner && (
