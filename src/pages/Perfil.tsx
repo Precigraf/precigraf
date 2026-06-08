@@ -181,6 +181,7 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
       company_name: companyName || null,
       company_document: companyCnpj || null,
       company_phone: companyPhone || null,
+      whatsapp: companyPhone || null,
       company_email: companyEmail || null,
       company_address: companyAddress || null,
       company_address_number: companyAddressNumber || null,
@@ -297,10 +298,11 @@ const Perfil = forwardRef<HTMLDivElement>((_, ref) => {
                         <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Ex: Print Gráfica" maxLength={150} />
                       </div>
 
-                      {/* Phone */}
+                      {/* WhatsApp */}
                       <div className="space-y-2">
-                        <Label>Telefone</Label>
-                        <Input value={companyPhone} onChange={e => setCompanyPhone(maskPhone(e.target.value))} placeholder="Ex: (00) 00000-0000" maxLength={15} />
+                        <Label>WhatsApp</Label>
+                        <Input value={companyPhone} onChange={e => setCompanyPhone(maskPhone(e.target.value))} placeholder="Ex: (11) 98765-4321" maxLength={15} />
+                        <p className="text-xs text-muted-foreground">Este número será usado no catálogo público para receber pedidos.</p>
                       </div>
 
                       {/* Full Address */}
