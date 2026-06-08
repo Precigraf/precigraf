@@ -285,37 +285,28 @@ const CatalogoPersonalizar: React.FC = () => {
             </AccordionContent>
           </AccordionItem>
 
-          {/* Mensagem WhatsApp */}
-          <AccordionItem value="whatsapp" className="border border-border rounded-lg px-3">
-            <AccordionTrigger className="text-sm font-semibold">Mensagem do WhatsApp</AccordionTrigger>
-            <AccordionContent className="space-y-3 pb-4">
-              <div className="flex items-start gap-3 p-3 rounded-lg border border-border bg-muted/30">
-                <MessageCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                <div className="flex-1 text-xs">
-                  <div className="font-medium text-foreground">
-                    Número usado: {storeWhats ? storeWhats : <span className="text-destructive">não configurado</span>}
-                  </div>
-                  <p className="text-muted-foreground">
-                    Os pedidos do catálogo serão enviados para esse WhatsApp.
-                  </p>
-                  <Button asChild variant="link" size="sm" className="px-0 h-auto mt-1">
-                    <Link to="/perfil">
-                      <Settings className="w-3 h-3 mr-1" />
-                      Editar em Configurações da empresa
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-              <Textarea rows={6} value={d.whatsapp_message_template ?? ''}
-                onChange={(e) => set('whatsapp_message_template', e.target.value)}
-                placeholder="Use {loja}, {itens} e {total}" />
-              <p className="text-xs text-muted-foreground">
-                Variáveis: <code>{'{loja}'}</code>, <code>{'{itens}'}</code>, <code>{'{total}'}</code>
-              </p>
-            </AccordionContent>
-          </AccordionItem>
-
         </Accordion>
+
+        {/* WhatsApp info — vem das Configurações da Empresa */}
+        <Card className="p-4">
+          <div className="flex items-start gap-3">
+            <MessageCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+            <div className="flex-1 text-xs">
+              <div className="font-medium text-foreground text-sm">
+                WhatsApp do catálogo: {storeWhats ? storeWhats : <span className="text-destructive">não configurado</span>}
+              </div>
+              <p className="text-muted-foreground mt-0.5">
+                Os pedidos do catálogo são enviados para o WhatsApp cadastrado nas Configurações da Empresa.
+              </p>
+              <Button asChild variant="link" size="sm" className="px-0 h-auto mt-1">
+                <Link to="/perfil">
+                  <Settings className="w-3 h-3 mr-1" />
+                  Editar em Configurações da empresa
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </Card>
 
         <div className="sticky bottom-3 z-10">
           <Button onClick={handleSave} disabled={upsert.isPending} className="w-full h-11 shadow-lg">

@@ -9,8 +9,8 @@ import { useCatalogBanners, type CatalogBanner } from '@/hooks/useCatalog';
 import { compressImage } from '@/lib/imageCompress';
 
 const MAX_BANNERS = 3;
-const MAX_BYTES = 2 * 1024 * 1024;
-const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_BYTES = 10 * 1024 * 1024;
+const ACCEPTED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 export const CoverBannerManager: React.FC = () => {
   const { user } = useAuth();
@@ -28,7 +28,7 @@ export const CoverBannerManager: React.FC = () => {
       return;
     }
     if (file.size > MAX_BYTES) {
-      toast({ title: 'Imagem muito grande', description: 'Máximo 2 MB.', variant: 'destructive' });
+      toast({ title: 'Imagem muito grande', description: 'Máximo 10 MB.', variant: 'destructive' });
       return;
     }
     if (count >= MAX_BANNERS) {
@@ -37,7 +37,7 @@ export const CoverBannerManager: React.FC = () => {
     }
     try {
       setUploading(true);
-      const blob = await compressImage(file, 1500, 0.88);
+      const blob = await compressImage(file, 1600, 0.9);
       const ext = (blob.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
       const path = `${user.id}/banner/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabase.storage
