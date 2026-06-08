@@ -88,6 +88,12 @@ export const CoverBannerManager: React.FC = () => {
         </span>
       </div>
 
+      <div className="text-[11px] text-muted-foreground bg-muted/40 rounded-md p-2.5 space-y-0.5">
+        <div>• Até <strong>3 imagens</strong> (tamanho ideal: 1080 × 500 px)</div>
+        <div>• Formatos: <strong>JPG, PNG</strong> ou WebP — qualquer proporção é aceita</div>
+        <div>• Com 2 ou mais imagens, elas alternam automaticamente a cada 3 segundos</div>
+      </div>
+
       {count === 0 ? (
         <div className="border-2 border-dashed border-border rounded-lg py-12 flex flex-col items-center justify-center text-muted-foreground">
           <ImageIcon className="w-10 h-10 mb-2 opacity-50" />
