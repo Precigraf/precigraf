@@ -76,19 +76,30 @@ const EquipmentDepreciationInput: React.FC<EquipmentDepreciationInputProps> = ({
 
         <div className="space-y-1.5">
           <TooltipLabel
-            label="Vida útil (anos)"
-            tooltip="Tempo estimado de uso do equipamento. Padrão: 5 anos"
+            label="Vida útil"
+            tooltip="Tempo estimado de uso do equipamento. Escolha entre anos ou meses."
           />
-          <Input
-            type="number"
-            value={data.usefulLifeYears || ''}
-            onChange={handleValueChange('usefulLifeYears')}
-            placeholder="5"
-            disabled={disabled}
-            className="input-currency"
-            min={1}
-            max={50}
-          />
+          <div className="flex gap-2">
+            <Input
+              type="number"
+              value={data.usefulLifeYears || ''}
+              onChange={handleValueChange('usefulLifeYears')}
+              placeholder={unit === 'months' ? '60' : '5'}
+              disabled={disabled}
+              className="input-currency flex-1"
+              min={1}
+              max={unit === 'months' ? 600 : 50}
+            />
+            <Select value={unit} onValueChange={(v) => handleUnitChange(v as UsefulLifeUnit)} disabled={disabled}>
+              <SelectTrigger className="w-[110px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="years">Anos</SelectItem>
+                <SelectItem value="months">Meses</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div className="space-y-1.5">
