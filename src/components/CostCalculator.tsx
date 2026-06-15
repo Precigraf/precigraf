@@ -8,6 +8,7 @@ import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPre
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
 import OtherMaterialsInput, { OtherMaterialItem, calculateOtherMaterialItemCost } from './OtherMaterialsInput';
+import RollMaterialsInput, { RollMaterialItem, calculateRollMaterialItemCost } from './RollMaterialsInput';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -92,6 +93,7 @@ const CostCalculator: React.FC = () => {
   const [handleData, setHandleData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
   const [packagingData, setPackagingData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
   const [otherMaterialsItems, setOtherMaterialsItems] = useState<OtherMaterialItem[]>([]);
+  const [rollMaterialsItems, setRollMaterialsItems] = useState<RollMaterialItem[]>([]);
   
   // Tinta - Nova estrutura avançada com cálculo por ML
   const [inkData, setInkData] = useState<InkCostData>({ 
@@ -188,6 +190,8 @@ const CostCalculator: React.FC = () => {
       if (ri.inkData) setInkData(ri.inkData);
       if (ri.packagingData) setPackagingData(ri.packagingData);
       if (ri.otherMaterialsItems) setOtherMaterialsItems(ri.otherMaterialsItems);
+      if (ri.rollMaterialsItems) setRollMaterialsItems(ri.rollMaterialsItems);
+      else setRollMaterialsItems([]);
       if (ri.operationalCostsData) setOperationalCostsData(ri.operationalCostsData);
       if (ri.taxesFees) setTaxesFees(ri.taxesFees);
       else setTaxesFees(DEFAULT_TAXES_FEES);
@@ -232,6 +236,7 @@ const CostCalculator: React.FC = () => {
     setInkData({ totalValue: 0, bottleCount: 0, mlPerBottle: 0, mlPerPrint: 0, printQuantity: 0 });
     setPackagingData({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
     setOtherMaterialsItems([]);
+    setRollMaterialsItems([]);
     setOperationalCostsData(DEFAULT_OPERATIONAL_COSTS_DATA);
     setProfitMargin(0);
     setFixedProfit(0);
@@ -315,6 +320,11 @@ const CostCalculator: React.FC = () => {
     return otherMaterialsItems.reduce((sum, item) => sum + calculateOtherMaterialItemCost(item), 0);
   }, [otherMaterialsItems]);
 
+  // Calcular custo total de materiais por rolo / área
+  const rollMaterialsTotalCost = useMemo(() => {
+    return rollMaterialsItems.reduce((sum, item) => sum + calculateRollMaterialItemCost(item), 0);
+  }, [rollMaterialsItems]);
+
   // Calcular custos de matéria-prima por unidade
   const rawMaterialCosts = useMemo(() => {
     return {
@@ -323,8 +333,9 @@ const CostCalculator: React.FC = () => {
       ink: inkCost,
       packaging: calculateRawMaterialCost(packagingData),
       other: otherMaterialsTotalCost,
+      roll: rollMaterialsTotalCost,
     };
-  }, [paperData, handleData, inkCost, packagingData, otherMaterialsTotalCost]);
+  }, [paperData, handleData, inkCost, packagingData, otherMaterialsTotalCost, rollMaterialsTotalCost]);
 
   // Cálculos em tempo real
   const calculations = useMemo(() => {
@@ -364,7 +375,8 @@ const CostCalculator: React.FC = () => {
       rawMaterialCosts.handle + 
       rawMaterialCosts.ink + 
       rawMaterialCosts.packaging + 
-      rawMaterialCosts.other;
+      rawMaterialCosts.other +
+      rawMaterialCosts.roll;
     
     // Matéria-prima total = unitário × quantidade
     const rawMaterialsCost = unitRawMaterialsCost * safeLotQuantity;
@@ -438,7 +450,7 @@ const CostCalculator: React.FC = () => {
     paper: rawMaterialCosts.paper,
     ink: rawMaterialCosts.handle,
     varnish: rawMaterialCosts.ink,
-    otherMaterials: rawMaterialCosts.packaging + rawMaterialCosts.other,
+    otherMaterials: rawMaterialCosts.packaging + rawMaterialCosts.other + rawMaterialCosts.roll,
     labor: calculatedOperationalCosts.labor.appliedCost,
     energy: calculatedOperationalCosts.electricity.appliedCost,
     equipment: calculatedOperationalCosts.equipment.appliedCost + calculatedOperationalCosts.equipments.reduce((sum, e) => sum + e.appliedCost, 0),
@@ -584,6 +596,10 @@ const CostCalculator: React.FC = () => {
               items={otherMaterialsItems}
               onItemsChange={setOtherMaterialsItems}
             />
+            <RollMaterialsInput
+              items={rollMaterialsItems}
+              onItemsChange={setRollMaterialsItems}
+            />
           </FormSection>
 
           {/* Seção 4: Custos Operacionais Avançados */}
@@ -663,6 +679,7 @@ const CostCalculator: React.FC = () => {
               inkData,
               packagingData,
               otherMaterialsItems,
+              rollMaterialsItems,
               operationalCostsData,
               taxesFees,
             }}
