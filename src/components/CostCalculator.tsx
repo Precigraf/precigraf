@@ -596,6 +596,10 @@ const CostCalculator: React.FC = () => {
               items={otherMaterialsItems}
               onItemsChange={setOtherMaterialsItems}
             />
+            <RollMaterialsInput
+              items={rollMaterialsItems}
+              onItemsChange={setRollMaterialsItems}
+            />
           </FormSection>
 
           {/* Seção 4: Custos Operacionais Avançados */}
