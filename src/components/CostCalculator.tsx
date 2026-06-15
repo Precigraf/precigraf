@@ -8,6 +8,7 @@ import ProductPresets, { ProductPresetType, PRODUCT_PRESETS } from './ProductPre
 import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
 import OtherMaterialsInput, { OtherMaterialItem, calculateOtherMaterialItemCost } from './OtherMaterialsInput';
+import RollMaterialsInput, { RollMaterialItem, calculateRollMaterialItemCost } from './RollMaterialsInput';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
