@@ -236,6 +236,7 @@ const CostCalculator: React.FC = () => {
     setInkData({ totalValue: 0, bottleCount: 0, mlPerBottle: 0, mlPerPrint: 0, printQuantity: 0 });
     setPackagingData({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
     setOtherMaterialsItems([]);
+    setRollMaterialsItems([]);
     setOperationalCostsData(DEFAULT_OPERATIONAL_COSTS_DATA);
     setProfitMargin(0);
     setFixedProfit(0);
