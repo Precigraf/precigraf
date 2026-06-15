@@ -20,6 +20,8 @@ const EquipmentDepreciationInput: React.FC<EquipmentDepreciationInputProps> = ({
   productionTimeMinutes,
   disabled = false,
 }) => {
+  const unit: UsefulLifeUnit = data.usefulLifeUnit ?? 'years';
+
   const handleValueChange = (field: keyof EquipmentDepreciationData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     if (inputValue === '') {
@@ -29,10 +31,14 @@ const EquipmentDepreciationInput: React.FC<EquipmentDepreciationInputProps> = ({
     const parsed = parseFloat(inputValue);
     if (!isNaN(parsed) && parsed >= 0) {
       let maxValue = 9999999;
-      if (field === 'usefulLifeYears') maxValue = 50;
+      if (field === 'usefulLifeYears') maxValue = unit === 'months' ? 600 : 50;
       if (field === 'usagePercentage') maxValue = 100;
       onDataChange({ ...data, [field]: Math.min(parsed, maxValue) });
     }
+  };
+
+  const handleUnitChange = (next: UsefulLifeUnit) => {
+    onDataChange({ ...data, usefulLifeUnit: next });
   };
 
   const costPerMinute = calculateEquipmentCostPerMinute(data);
