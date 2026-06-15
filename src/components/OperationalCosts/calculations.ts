@@ -25,15 +25,18 @@ const safeValue = (value: number): number => {
  */
 export const calculateEquipmentCostPerMinute = (data: EquipmentDepreciationData): number => {
   if (data.equipmentValue <= 0 || data.usefulLifeYears <= 0) return 0;
-  
-  const annualDepreciation = data.equipmentValue / data.usefulLifeYears;
-  const monthlyDepreciation = annualDepreciation / 12;
+
+  const unit = data.usefulLifeUnit ?? 'years';
+  const totalMonths = unit === 'months' ? data.usefulLifeYears : data.usefulLifeYears * 12;
+  if (totalMonths <= 0) return 0;
+
+  const monthlyDepreciation = data.equipmentValue / totalMonths;
   const dailyDepreciation = monthlyDepreciation / 30;
   const hourlyDepreciation = dailyDepreciation / 24;
   const minuteDepreciation = hourlyDepreciation / 60;
-  
+
   const usageMultiplier = data.usagePercentage / 100;
-  
+
   return safeValue(minuteDepreciation * usageMultiplier);
 };
 
@@ -44,6 +47,7 @@ export const calculateEquipmentItemCostPerMinute = (item: EquipmentItem): number
   return calculateEquipmentCostPerMinute({
     equipmentValue: item.equipmentValue,
     usefulLifeYears: item.usefulLifeYears,
+    usefulLifeUnit: item.usefulLifeUnit,
     usagePercentage: item.usagePercentage,
   });
 };
