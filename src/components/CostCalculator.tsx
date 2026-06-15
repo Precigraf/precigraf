@@ -450,7 +450,7 @@ const CostCalculator: React.FC = () => {
     paper: rawMaterialCosts.paper,
     ink: rawMaterialCosts.handle,
     varnish: rawMaterialCosts.ink,
-    otherMaterials: rawMaterialCosts.packaging + rawMaterialCosts.other,
+    otherMaterials: rawMaterialCosts.packaging + rawMaterialCosts.other + rawMaterialCosts.roll,
     labor: calculatedOperationalCosts.labor.appliedCost,
     energy: calculatedOperationalCosts.electricity.appliedCost,
     equipment: calculatedOperationalCosts.equipment.appliedCost + calculatedOperationalCosts.equipments.reduce((sum, e) => sum + e.appliedCost, 0),
