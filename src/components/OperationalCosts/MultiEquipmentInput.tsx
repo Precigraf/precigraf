@@ -156,19 +156,34 @@ const MultiEquipmentInput: React.FC<MultiEquipmentInputProps> = ({
 
                   <div className="space-y-1.5">
                     <TooltipLabel
-                      label="Vida útil (anos)"
-                      tooltip="Tempo estimado de uso do equipamento. Padrão: 5 anos"
+                      label="Vida útil"
+                      tooltip="Tempo estimado de uso do equipamento. Escolha entre anos ou meses."
                     />
-                    <Input
-                      type="number"
-                      value={item.usefulLifeYears || ''}
-                      onChange={(e) => handleFieldChange(item.id, 'usefulLifeYears', e.target.value)}
-                      placeholder="5"
-                      disabled={disabled}
-                      className="input-currency h-9 text-sm"
-                      min={1}
-                      max={50}
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        value={item.usefulLifeYears || ''}
+                        onChange={(e) => handleFieldChange(item.id, 'usefulLifeYears', e.target.value)}
+                        placeholder={(item.usefulLifeUnit ?? 'years') === 'months' ? '60' : '5'}
+                        disabled={disabled}
+                        className="input-currency h-9 text-sm flex-1"
+                        min={1}
+                        max={(item.usefulLifeUnit ?? 'years') === 'months' ? 600 : 50}
+                      />
+                      <Select
+                        value={item.usefulLifeUnit ?? 'years'}
+                        onValueChange={(v) => handleUnitChange(item.id, v as UsefulLifeUnit)}
+                        disabled={disabled}
+                      >
+                        <SelectTrigger className="w-[92px] h-9 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="years">Anos</SelectItem>
+                          <SelectItem value="months">Meses</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">
