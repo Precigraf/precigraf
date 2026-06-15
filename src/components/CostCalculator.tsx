@@ -320,6 +320,11 @@ const CostCalculator: React.FC = () => {
     return otherMaterialsItems.reduce((sum, item) => sum + calculateOtherMaterialItemCost(item), 0);
   }, [otherMaterialsItems]);
 
+  // Calcular custo total de materiais por rolo / área
+  const rollMaterialsTotalCost = useMemo(() => {
+    return rollMaterialsItems.reduce((sum, item) => sum + calculateRollMaterialItemCost(item), 0);
+  }, [rollMaterialsItems]);
+
   // Calcular custos de matéria-prima por unidade
   const rawMaterialCosts = useMemo(() => {
     return {
@@ -328,8 +333,9 @@ const CostCalculator: React.FC = () => {
       ink: inkCost,
       packaging: calculateRawMaterialCost(packagingData),
       other: otherMaterialsTotalCost,
+      roll: rollMaterialsTotalCost,
     };
-  }, [paperData, handleData, inkCost, packagingData, otherMaterialsTotalCost]);
+  }, [paperData, handleData, inkCost, packagingData, otherMaterialsTotalCost, rollMaterialsTotalCost]);
 
   // Cálculos em tempo real
   const calculations = useMemo(() => {
