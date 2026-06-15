@@ -375,7 +375,8 @@ const CostCalculator: React.FC = () => {
       rawMaterialCosts.handle + 
       rawMaterialCosts.ink + 
       rawMaterialCosts.packaging + 
-      rawMaterialCosts.other;
+      rawMaterialCosts.other +
+      rawMaterialCosts.roll;
     
     // Matéria-prima total = unitário × quantidade
     const rawMaterialsCost = unitRawMaterialsCost * safeLotQuantity;
