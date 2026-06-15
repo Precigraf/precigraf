@@ -2,9 +2,10 @@ import React from 'react';
 import { Settings, Plus, Trash2, Calculator } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TooltipLabel from '@/components/TooltipLabel';
 import CostItemDisplay from './CostItemDisplay';
-import { EquipmentItem } from './types';
+import { EquipmentItem, UsefulLifeUnit } from './types';
 import { calculateEquipmentItemCostPerMinute, calculateAppliedCost } from './calculations';
 
 interface MultiEquipmentInputProps {
