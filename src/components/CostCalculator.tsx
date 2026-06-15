@@ -190,6 +190,8 @@ const CostCalculator: React.FC = () => {
       if (ri.inkData) setInkData(ri.inkData);
       if (ri.packagingData) setPackagingData(ri.packagingData);
       if (ri.otherMaterialsItems) setOtherMaterialsItems(ri.otherMaterialsItems);
+      if (ri.rollMaterialsItems) setRollMaterialsItems(ri.rollMaterialsItems);
+      else setRollMaterialsItems([]);
       if (ri.operationalCostsData) setOperationalCostsData(ri.operationalCostsData);
       if (ri.taxesFees) setTaxesFees(ri.taxesFees);
       else setTaxesFees(DEFAULT_TAXES_FEES);
