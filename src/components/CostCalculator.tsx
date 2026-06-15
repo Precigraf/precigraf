@@ -93,6 +93,7 @@ const CostCalculator: React.FC = () => {
   const [handleData, setHandleData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
   const [packagingData, setPackagingData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
   const [otherMaterialsItems, setOtherMaterialsItems] = useState<OtherMaterialItem[]>([]);
+  const [rollMaterialsItems, setRollMaterialsItems] = useState<RollMaterialItem[]>([]);
   
   // Tinta - Nova estrutura avançada com cálculo por ML
   const [inkData, setInkData] = useState<InkCostData>({ 
