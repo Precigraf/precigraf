@@ -37,6 +37,7 @@ const MultiEquipmentInput: React.FC<MultiEquipmentInputProps> = ({
       name: '',
       equipmentValue: 0,
       usefulLifeYears: 5,
+      usefulLifeUnit: 'years',
       usagePercentage: 100,
     };
     onItemsChange([...items, newItem]);
@@ -44,6 +45,10 @@ const MultiEquipmentInput: React.FC<MultiEquipmentInputProps> = ({
 
   const handleRemoveItem = (id: string) => {
     onItemsChange(items.filter(item => item.id !== id));
+  };
+
+  const handleUnitChange = (id: string, unit: UsefulLifeUnit) => {
+    onItemsChange(items.map(item => item.id === id ? { ...item, usefulLifeUnit: unit } : item));
   };
 
   const handleFieldChange = (id: string, field: keyof EquipmentItem, rawValue: string) => {
@@ -54,7 +59,7 @@ const MultiEquipmentInput: React.FC<MultiEquipmentInputProps> = ({
       if (rawValue === '') return { ...item, [field]: 0 };
       if (isNaN(parsed) || parsed < 0) return item;
       let maxValue = 9999999;
-      if (field === 'usefulLifeYears') maxValue = 50;
+      if (field === 'usefulLifeYears') maxValue = (item.usefulLifeUnit ?? 'years') === 'months' ? 600 : 50;
       if (field === 'usagePercentage') maxValue = 100;
       return { ...item, [field]: Math.min(parsed, maxValue) };
     }));
