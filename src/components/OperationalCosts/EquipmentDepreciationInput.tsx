@@ -1,9 +1,10 @@
 import React from 'react';
 import { Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TooltipLabel from '@/components/TooltipLabel';
 import CostItemDisplay from './CostItemDisplay';
-import { EquipmentDepreciationData } from './types';
+import { EquipmentDepreciationData, UsefulLifeUnit } from './types';
 import { calculateEquipmentCostPerMinute, calculateAppliedCost } from './calculations';
 
 interface EquipmentDepreciationInputProps {
