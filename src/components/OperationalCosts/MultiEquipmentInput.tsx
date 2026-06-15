@@ -2,9 +2,10 @@ import React from 'react';
 import { Settings, Plus, Trash2, Calculator } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TooltipLabel from '@/components/TooltipLabel';
 import CostItemDisplay from './CostItemDisplay';
-import { EquipmentItem } from './types';
+import { EquipmentItem, UsefulLifeUnit } from './types';
 import { calculateEquipmentItemCostPerMinute, calculateAppliedCost } from './calculations';
 
 interface MultiEquipmentInputProps {
@@ -36,6 +37,7 @@ const MultiEquipmentInput: React.FC<MultiEquipmentInputProps> = ({
       name: '',
       equipmentValue: 0,
       usefulLifeYears: 5,
+      usefulLifeUnit: 'years',
       usagePercentage: 100,
     };
     onItemsChange([...items, newItem]);
@@ -43,6 +45,10 @@ const MultiEquipmentInput: React.FC<MultiEquipmentInputProps> = ({
 
   const handleRemoveItem = (id: string) => {
     onItemsChange(items.filter(item => item.id !== id));
+  };
+
+  const handleUnitChange = (id: string, unit: UsefulLifeUnit) => {
+    onItemsChange(items.map(item => item.id === id ? { ...item, usefulLifeUnit: unit } : item));
   };
 
   const handleFieldChange = (id: string, field: keyof EquipmentItem, rawValue: string) => {
@@ -53,7 +59,7 @@ const MultiEquipmentInput: React.FC<MultiEquipmentInputProps> = ({
       if (rawValue === '') return { ...item, [field]: 0 };
       if (isNaN(parsed) || parsed < 0) return item;
       let maxValue = 9999999;
-      if (field === 'usefulLifeYears') maxValue = 50;
+      if (field === 'usefulLifeYears') maxValue = (item.usefulLifeUnit ?? 'years') === 'months' ? 600 : 50;
       if (field === 'usagePercentage') maxValue = 100;
       return { ...item, [field]: Math.min(parsed, maxValue) };
     }));
@@ -150,19 +156,34 @@ const MultiEquipmentInput: React.FC<MultiEquipmentInputProps> = ({
 
                   <div className="space-y-1.5">
                     <TooltipLabel
-                      label="Vida útil (anos)"
-                      tooltip="Tempo estimado de uso do equipamento. Padrão: 5 anos"
+                      label="Vida útil"
+                      tooltip="Tempo estimado de uso do equipamento. Escolha entre anos ou meses."
                     />
-                    <Input
-                      type="number"
-                      value={item.usefulLifeYears || ''}
-                      onChange={(e) => handleFieldChange(item.id, 'usefulLifeYears', e.target.value)}
-                      placeholder="5"
-                      disabled={disabled}
-                      className="input-currency h-9 text-sm"
-                      min={1}
-                      max={50}
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        type="number"
+                        value={item.usefulLifeYears || ''}
+                        onChange={(e) => handleFieldChange(item.id, 'usefulLifeYears', e.target.value)}
+                        placeholder={(item.usefulLifeUnit ?? 'years') === 'months' ? '60' : '5'}
+                        disabled={disabled}
+                        className="input-currency h-9 text-sm flex-1"
+                        min={1}
+                        max={(item.usefulLifeUnit ?? 'years') === 'months' ? 600 : 50}
+                      />
+                      <Select
+                        value={item.usefulLifeUnit ?? 'years'}
+                        onValueChange={(v) => handleUnitChange(item.id, v as UsefulLifeUnit)}
+                        disabled={disabled}
+                      >
+                        <SelectTrigger className="w-[92px] h-9 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="years">Anos</SelectItem>
+                          <SelectItem value="months">Meses</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">

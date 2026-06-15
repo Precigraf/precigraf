@@ -1,8 +1,11 @@
 // Tipos para o sistema avançado de custos operacionais com rateio por tempo
 
+export type UsefulLifeUnit = 'years' | 'months';
+
 export interface EquipmentDepreciationData {
   equipmentValue: number;
-  usefulLifeYears: number; // padrão: 5
+  usefulLifeYears: number; // quantidade na unidade escolhida (padrão: 5 anos)
+  usefulLifeUnit?: UsefulLifeUnit; // 'years' (default) ou 'months'
   usagePercentage: number; // 0-100
 }
 
@@ -11,6 +14,7 @@ export interface EquipmentItem {
   name: string;
   equipmentValue: number;
   usefulLifeYears: number;
+  usefulLifeUnit?: UsefulLifeUnit;
   usagePercentage: number;
 }
 
