@@ -679,6 +679,7 @@ const CostCalculator: React.FC = () => {
               inkData,
               packagingData,
               otherMaterialsItems,
+              rollMaterialsItems,
               operationalCostsData,
               taxesFees,
             }}
