@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Trash2, ArrowDown, ArrowUp, Package, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, ArrowDown, ArrowUp, Package, AlertTriangle, Tag } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,37 +9,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import SupplyForm from '@/components/gestao/SupplyForm';
 import SupplyMovementModal from '@/components/gestao/SupplyMovementModal';
-import { useSupplyStock, useSupplyMovements, type Supply, type SupplyType } from '@/hooks/useSupplyStock';
-
-const TYPE_LABEL: Record<SupplyType, string> = {
-  paper: 'Papel',
-  ink: 'Tinta',
-  handle: 'Alça',
-  packaging: 'Embalagem',
-  glue: 'Cola',
-  other: 'Outros',
-};
+import SupplyCategoryManager from '@/components/gestao/SupplyCategoryManager';
+import { useSupplyStock, useSupplyMovements, type Supply } from '@/hooks/useSupplyStock';
+import { useSupplyCategories } from '@/hooks/useSupplyCategories';
 
 const formatBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const Estoque: React.FC = () => {
   const { supplies, isLoading, create, update, remove, restock, consume } = useSupplyStock();
+  const { categories } = useSupplyCategories();
   const { movements } = useSupplyMovements();
   const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState<SupplyType | 'all'>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Supply | null>(null);
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveType, setMoveType] = useState<'in' | 'out'>('in');
   const [moveSupply, setMoveSupply] = useState<Supply | null>(null);
+  const [catMgrOpen, setCatMgrOpen] = useState(false);
+
+  const categoryById = useMemo(() => Object.fromEntries(categories.map((c) => [c.id, c])), [categories]);
+
 
   const filtered = useMemo(() => {
     return supplies.filter((s) => {
-      if (filterType !== 'all' && s.type !== filterType) return false;
+      if (filterCategory === 'none' && s.category_id) return false;
+      if (filterCategory !== 'all' && filterCategory !== 'none' && s.category_id !== filterCategory) return false;
       if (search && !s.name.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [supplies, filterType, search]);
+  }, [supplies, filterCategory, search]);
 
   const stats = useMemo(() => {
     const low = supplies.filter((s) => s.is_active && s.min_alert > 0 && s.quantity <= s.min_alert);
