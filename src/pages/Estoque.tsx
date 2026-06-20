@@ -79,9 +79,14 @@ const Estoque: React.FC = () => {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Estoque de Insumos</h1>
             <p className="text-xs sm:text-sm text-muted-foreground">{supplies.length} insumo{supplies.length !== 1 ? 's' : ''}</p>
           </div>
-          <Button onClick={openNew} className="w-full sm:w-auto">
-            <Plus className="w-4 h-4 mr-2" /> Novo insumo
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={() => setCatMgrOpen(true)} className="flex-1 sm:flex-none">
+              <Tag className="w-4 h-4 mr-2" /> Categorias
+            </Button>
+            <Button onClick={openNew} className="flex-1 sm:flex-none">
+              <Plus className="w-4 h-4 mr-2" /> Novo insumo
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
@@ -126,16 +131,30 @@ const Estoque: React.FC = () => {
                 <Input placeholder="Buscar insumo..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
               </div>
               <div className="flex gap-1 flex-wrap">
-                {(['all', 'paper', 'ink', 'handle', 'packaging', 'glue', 'other'] as const).map((t) => (
+                <Badge
+                  variant={filterCategory === 'all' ? 'default' : 'outline'}
+                  className="cursor-pointer"
+                  onClick={() => setFilterCategory('all')}
+                >
+                  Todas
+                </Badge>
+                {categories.map((c) => (
                   <Badge
-                    key={t}
-                    variant={filterType === t ? 'default' : 'outline'}
+                    key={c.id}
+                    variant={filterCategory === c.id ? 'default' : 'outline'}
                     className="cursor-pointer"
-                    onClick={() => setFilterType(t)}
+                    onClick={() => setFilterCategory(c.id)}
                   >
-                    {t === 'all' ? 'Todos' : TYPE_LABEL[t]}
+                    {c.name}
                   </Badge>
                 ))}
+                <Badge
+                  variant={filterCategory === 'none' ? 'default' : 'outline'}
+                  className="cursor-pointer"
+                  onClick={() => setFilterCategory('none')}
+                >
+                  Sem categoria
+                </Badge>
               </div>
             </div>
 
@@ -143,11 +162,13 @@ const Estoque: React.FC = () => {
               <div className="text-center py-12 text-muted-foreground">Carregando...</div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                {search || filterType !== 'all' ? 'Nenhum insumo encontrado.' : 'Nenhum insumo cadastrado. Clique em "Novo insumo" para começar.'}
+                {search || filterCategory !== 'all' ? 'Nenhum insumo encontrado.' : 'Nenhum insumo cadastrado. Clique em "Novo insumo" para começar.'}
               </div>
             ) : (
               <div className="space-y-2">
-                {filtered.map((s) => (
+                {filtered.map((s) => {
+                  const cat = s.category_id ? categoryById[s.category_id] : null;
+                  return (
                   <Card key={s.id} className="p-3 sm:p-4 bg-card border-border">
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -155,7 +176,7 @@ const Estoque: React.FC = () => {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-semibold text-foreground truncate">{s.name}</h3>
-                            <Badge variant="secondary" className="text-xs">{TYPE_LABEL[s.type]}</Badge>
+                            {cat && <Badge variant="secondary" className="text-xs">{cat.name}</Badge>}
                             {statusBadge(s)}
                           </div>
                           <div className="text-sm text-muted-foreground mt-1 flex flex-wrap gap-x-3">
