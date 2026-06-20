@@ -216,7 +216,8 @@ const Estoque: React.FC = () => {
                       </div>
                     </div>
                   </Card>
-                ))}
+                  );
+                })}
               </div>
             )}
           </TabsContent>
