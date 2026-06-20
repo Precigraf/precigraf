@@ -37,7 +37,7 @@ export const CoverBannerManager: React.FC = () => {
     }
     try {
       setUploading(true);
-      const blob = await compressImage(file, 1600, 0.9);
+      const blob = await compressImage(file, 1500, 0.9);
       const ext = (blob.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg');
       const path = `${user.id}/banner/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabase.storage
@@ -45,7 +45,7 @@ export const CoverBannerManager: React.FC = () => {
         .upload(path, blob, { upsert: false, contentType: blob.type });
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from('catalog-images').getPublicUrl(path);
-      const payload: Record<string, unknown> = {
+      await create.mutateAsync({
         title: '',
         eyebrow: null,
         subtitle: null,
@@ -55,8 +55,7 @@ export const CoverBannerManager: React.FC = () => {
         image_desktop_url: pub.publicUrl,
         image_mobile_url: pub.publicUrl,
         storage_path_desktop: path,
-      };
-      await create.mutateAsync(payload as Partial<CatalogBanner>);
+      });
     } catch (e: any) {
       toast({ title: 'Erro no upload', description: e.message, variant: 'destructive' });
     } finally {
@@ -89,8 +88,8 @@ export const CoverBannerManager: React.FC = () => {
       </div>
 
       <div className="text-[11px] text-muted-foreground bg-muted/40 rounded-md p-2.5 space-y-0.5">
-        <div>• Até <strong>3 imagens</strong> (tamanho ideal: 1080 × 500 px)</div>
-        <div>• Formatos: <strong>JPG, PNG</strong> ou WebP — qualquer proporção é aceita</div>
+        <div>• Até <strong>3 imagens</strong> (tamanho ideal: <strong>1500 × 500 px</strong> — proporção 3:1)</div>
+        <div>• Formatos: <strong>JPG, PNG</strong> ou WebP</div>
         <div>• Com 2 ou mais imagens, elas alternam automaticamente a cada 3 segundos</div>
       </div>
 

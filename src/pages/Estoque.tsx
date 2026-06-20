@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Trash2, ArrowDown, ArrowUp, Package, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, ArrowDown, ArrowUp, Package, AlertTriangle, Tag } from 'lucide-react';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,37 +9,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import SupplyForm from '@/components/gestao/SupplyForm';
 import SupplyMovementModal from '@/components/gestao/SupplyMovementModal';
-import { useSupplyStock, useSupplyMovements, type Supply, type SupplyType } from '@/hooks/useSupplyStock';
-
-const TYPE_LABEL: Record<SupplyType, string> = {
-  paper: 'Papel',
-  ink: 'Tinta',
-  handle: 'Alça',
-  packaging: 'Embalagem',
-  glue: 'Cola',
-  other: 'Outros',
-};
+import SupplyCategoryManager from '@/components/gestao/SupplyCategoryManager';
+import { useSupplyStock, useSupplyMovements, type Supply } from '@/hooks/useSupplyStock';
+import { useSupplyCategories } from '@/hooks/useSupplyCategories';
 
 const formatBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 const Estoque: React.FC = () => {
   const { supplies, isLoading, create, update, remove, restock, consume } = useSupplyStock();
+  const { categories } = useSupplyCategories();
   const { movements } = useSupplyMovements();
   const [search, setSearch] = useState('');
-  const [filterType, setFilterType] = useState<SupplyType | 'all'>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Supply | null>(null);
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveType, setMoveType] = useState<'in' | 'out'>('in');
   const [moveSupply, setMoveSupply] = useState<Supply | null>(null);
+  const [catMgrOpen, setCatMgrOpen] = useState(false);
+
+  const categoryById = useMemo(() => Object.fromEntries(categories.map((c) => [c.id, c])), [categories]);
+
 
   const filtered = useMemo(() => {
     return supplies.filter((s) => {
-      if (filterType !== 'all' && s.type !== filterType) return false;
+      if (filterCategory === 'none' && s.category_id) return false;
+      if (filterCategory !== 'all' && filterCategory !== 'none' && s.category_id !== filterCategory) return false;
       if (search && !s.name.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [supplies, filterType, search]);
+  }, [supplies, filterCategory, search]);
 
   const stats = useMemo(() => {
     const low = supplies.filter((s) => s.is_active && s.min_alert > 0 && s.quantity <= s.min_alert);
@@ -80,9 +79,14 @@ const Estoque: React.FC = () => {
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">Estoque de Insumos</h1>
             <p className="text-xs sm:text-sm text-muted-foreground">{supplies.length} insumo{supplies.length !== 1 ? 's' : ''}</p>
           </div>
-          <Button onClick={openNew} className="w-full sm:w-auto">
-            <Plus className="w-4 h-4 mr-2" /> Novo insumo
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={() => setCatMgrOpen(true)} className="flex-1 sm:flex-none">
+              <Tag className="w-4 h-4 mr-2" /> Categorias
+            </Button>
+            <Button onClick={openNew} className="flex-1 sm:flex-none">
+              <Plus className="w-4 h-4 mr-2" /> Novo insumo
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
@@ -127,16 +131,30 @@ const Estoque: React.FC = () => {
                 <Input placeholder="Buscar insumo..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
               </div>
               <div className="flex gap-1 flex-wrap">
-                {(['all', 'paper', 'ink', 'handle', 'packaging', 'glue', 'other'] as const).map((t) => (
+                <Badge
+                  variant={filterCategory === 'all' ? 'default' : 'outline'}
+                  className="cursor-pointer"
+                  onClick={() => setFilterCategory('all')}
+                >
+                  Todas
+                </Badge>
+                {categories.map((c) => (
                   <Badge
-                    key={t}
-                    variant={filterType === t ? 'default' : 'outline'}
+                    key={c.id}
+                    variant={filterCategory === c.id ? 'default' : 'outline'}
                     className="cursor-pointer"
-                    onClick={() => setFilterType(t)}
+                    onClick={() => setFilterCategory(c.id)}
                   >
-                    {t === 'all' ? 'Todos' : TYPE_LABEL[t]}
+                    {c.name}
                   </Badge>
                 ))}
+                <Badge
+                  variant={filterCategory === 'none' ? 'default' : 'outline'}
+                  className="cursor-pointer"
+                  onClick={() => setFilterCategory('none')}
+                >
+                  Sem categoria
+                </Badge>
               </div>
             </div>
 
@@ -144,11 +162,13 @@ const Estoque: React.FC = () => {
               <div className="text-center py-12 text-muted-foreground">Carregando...</div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                {search || filterType !== 'all' ? 'Nenhum insumo encontrado.' : 'Nenhum insumo cadastrado. Clique em "Novo insumo" para começar.'}
+                {search || filterCategory !== 'all' ? 'Nenhum insumo encontrado.' : 'Nenhum insumo cadastrado. Clique em "Novo insumo" para começar.'}
               </div>
             ) : (
               <div className="space-y-2">
-                {filtered.map((s) => (
+                {filtered.map((s) => {
+                  const cat = s.category_id ? categoryById[s.category_id] : null;
+                  return (
                   <Card key={s.id} className="p-3 sm:p-4 bg-card border-border">
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       <div className="flex items-start gap-3 min-w-0 flex-1">
@@ -156,7 +176,7 @@ const Estoque: React.FC = () => {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-semibold text-foreground truncate">{s.name}</h3>
-                            <Badge variant="secondary" className="text-xs">{TYPE_LABEL[s.type]}</Badge>
+                            {cat && <Badge variant="secondary" className="text-xs">{cat.name}</Badge>}
                             {statusBadge(s)}
                           </div>
                           <div className="text-sm text-muted-foreground mt-1 flex flex-wrap gap-x-3">
@@ -196,7 +216,8 @@ const Estoque: React.FC = () => {
                       </div>
                     </div>
                   </Card>
-                ))}
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -247,6 +268,7 @@ const Estoque: React.FC = () => {
           onSubmit={onMove}
           isLoading={restock.isPending || consume.isPending}
         />
+        <SupplyCategoryManager open={catMgrOpen} onOpenChange={setCatMgrOpen} />
       </div>
     </AppLayout>
   );

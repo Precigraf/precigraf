@@ -38,6 +38,9 @@ export interface CatalogBanner {
   cta_url: string | null;
   sort_order: number;
   is_active: boolean;
+  image_desktop_url: string | null;
+  image_mobile_url: string | null;
+  storage_path_desktop: string | null;
 }
 
 export interface CatalogFeatured {
@@ -126,14 +129,17 @@ export function useCatalogBanners() {
         .from('catalog_banners' as any)
         .insert({
           user_id: user.id,
-          title: input.title || 'Novo banner',
+          title: input.title ?? '',
           eyebrow: input.eyebrow ?? null,
           subtitle: input.subtitle ?? null,
-          bg_color: input.bg_color ?? '#26215C',
+          bg_color: input.bg_color ?? '#000000',
           cta_label: input.cta_label ?? null,
           cta_url: input.cta_url ?? null,
           sort_order: input.sort_order ?? 0,
           is_active: input.is_active ?? true,
+          image_desktop_url: input.image_desktop_url ?? null,
+          image_mobile_url: input.image_mobile_url ?? null,
+          storage_path_desktop: input.storage_path_desktop ?? null,
         })
         .select()
         .single();
