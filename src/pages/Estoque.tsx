@@ -268,6 +268,7 @@ const Estoque: React.FC = () => {
           onSubmit={onMove}
           isLoading={restock.isPending || consume.isPending}
         />
+        <SupplyCategoryManager open={catMgrOpen} onOpenChange={setCatMgrOpen} />
       </div>
     </AppLayout>
   );
