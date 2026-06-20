@@ -1324,6 +1324,33 @@ export type Database = {
         }
         Relationships: []
       }
+      supply_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       supply_movements: {
         Row: {
           created_at: string
@@ -1377,6 +1404,7 @@ export type Database = {
       }
       supply_stock: {
         Row: {
+          category_id: string | null
           created_at: string
           expiry_date: string | null
           id: string
@@ -1392,6 +1420,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category_id?: string | null
           created_at?: string
           expiry_date?: string | null
           id?: string
@@ -1407,6 +1436,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category_id?: string | null
           created_at?: string
           expiry_date?: string | null
           id?: string
@@ -1421,7 +1451,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "supply_stock_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "supply_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_ticket_messages: {
         Row: {
