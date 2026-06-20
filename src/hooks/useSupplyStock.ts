@@ -11,6 +11,7 @@ export interface Supply {
   user_id: string;
   name: string;
   type: SupplyType;
+  category_id: string | null;
   unit: string;
   quantity: number;
   unit_cost: number;
