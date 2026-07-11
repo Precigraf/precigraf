@@ -157,7 +157,18 @@ const Produtos: React.FC = () => {
                 <Card key={p.id} className="p-4 bg-card border-border">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 flex-1 min-w-0">
-                      <Package className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                      {p.image_url ? (
+                        <img
+                          src={p.image_url}
+                          alt={p.name}
+                          className="w-14 h-14 rounded-lg object-cover border border-border shrink-0"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 rounded-lg bg-muted border border-border flex items-center justify-center shrink-0">
+                          <Package className="w-5 h-5 text-primary" />
+                        </div>
+                      )}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-semibold text-foreground truncate">{p.name}</h3>
