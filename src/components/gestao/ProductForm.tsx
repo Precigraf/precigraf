@@ -451,7 +451,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">Cancelar</Button>
-              <Button type="submit" disabled={isLoading || !name.trim()} className="flex-1 sm:flex-none">
+              <Button type="submit" disabled={isLoading || uploadingImage || !name.trim()} className="flex-1 sm:flex-none">
                 {initialData ? 'Salvar' : 'Criar'}
               </Button>
             </div>
