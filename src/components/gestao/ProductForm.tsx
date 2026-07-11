@@ -63,6 +63,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
   const [isActive, setIsActive] = useState(true);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [supplyRows, setSupplyRows] = useState<SupplyRow[]>([]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initialData) {
