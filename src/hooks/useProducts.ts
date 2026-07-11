@@ -25,6 +25,8 @@ export interface Product {
   production_time: string | null;
   is_active: boolean;
   price_tiers: PriceTier[];
+  image_url: string | null;
+  image_path: string | null;
   created_at: string;
   updated_at: string;
 }
