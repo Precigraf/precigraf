@@ -225,6 +225,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       is_active: isActive,
       price_tiers: parsed,
       category_id: categoryId,
+      image_url: imageUrl,
+      image_path: imagePath,
     }, supplyPayload);
   };
 
