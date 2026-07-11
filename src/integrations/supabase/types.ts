@@ -882,6 +882,8 @@ export type Database = {
           description: string | null
           finish: string | null
           id: string
+          image_path: string | null
+          image_url: string | null
           is_active: boolean
           material: string | null
           name: string
@@ -901,6 +903,8 @@ export type Database = {
           description?: string | null
           finish?: string | null
           id?: string
+          image_path?: string | null
+          image_url?: string | null
           is_active?: boolean
           material?: string | null
           name: string
@@ -920,6 +924,8 @@ export type Database = {
           description?: string | null
           finish?: string | null
           id?: string
+          image_path?: string | null
+          image_url?: string | null
           is_active?: boolean
           material?: string | null
           name?: string
