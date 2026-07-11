@@ -78,7 +78,7 @@ const LandingPage: React.FC = () => {
               className="mb-5 border-border text-muted-foreground gap-1.5"
             >
               <Sparkles className="w-3 h-3" />
-              Feito para gráficas brasileiras
+              7 dias grátis
             </Badge>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight">
