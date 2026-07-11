@@ -40,7 +40,7 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const ctaPrimary = user ? '/app' : '/cadastro';
-  const ctaPrimaryLabel = user ? 'Ir para o app' : 'Começar período grátis';
+  const ctaPrimaryLabel = user ? 'Ir para o app' : 'Começar 7 dias grátis';
 
   const handleSubscribePro = async () => {
     setIsCheckoutLoading(true);
