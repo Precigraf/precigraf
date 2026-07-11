@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, ImagePlus, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,11 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCategories } from '@/hooks/useCategories';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSupplyStock, useProductSupplies } from '@/hooks/useSupplyStock';
+import { uploadCatalogImage } from '@/hooks/useCatalogProducts';
+import { compressImage } from '@/lib/imageCompress';
+import { supabase } from '@/integrations/supabase/client';
 import type { Product, ProductInput, PriceTier } from '@/hooks/useProducts';
 
 export interface SupplyLinkPayload {
@@ -44,6 +48,7 @@ const newSupplyRow = (): SupplyRow => ({ id: crypto.randomUUID(), supply_id: '',
 const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit, initialData, isLoading }) => {
   const { categories } = useCategories();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { supplies } = useSupplyStock();
   const { links: existingLinks, save: saveLinks } = useProductSupplies(initialData?.id ?? null);
 
@@ -58,6 +63,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
   const [isActive, setIsActive] = useState(true);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [supplyRows, setSupplyRows] = useState<SupplyRow[]>([]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (initialData) {
@@ -70,6 +79,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       setProductionTime(initialData.production_time || '');
       setIsActive(initialData.is_active ?? true);
       setCategoryId(initialData.category_id ?? null);
+      setImageUrl(initialData.image_url ?? null);
+      setImagePath(initialData.image_path ?? null);
 
       const existing = Array.isArray(initialData.price_tiers) ? initialData.price_tiers : [];
       if (existing.length > 0) {
@@ -93,6 +104,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       setIsActive(true); setCategoryId(null);
       setTiers([newRow()]);
       setSupplyRows([]);
+      setImageUrl(null); setImagePath(null);
     }
   }, [initialData, open]);
 
@@ -113,6 +125,44 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
   };
   const addSupplyRow = () => setSupplyRows((prev) => [...prev, newSupplyRow()]);
   const removeSupplyRow = (id: string) => setSupplyRows((prev) => prev.filter((r) => r.id !== id));
+
+  const handleImageFile = async (file: File | null | undefined) => {
+    if (!file || !user) return;
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      toast({ title: 'Formato inválido', description: 'Use JPG, PNG ou WebP.', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast({ title: 'Arquivo muito grande', description: 'Máximo 8 MB.', variant: 'destructive' });
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const compressedBlob = await compressImage(file, 1080, 0.88);
+      const compressed = new File([compressedBlob], file.name, { type: compressedBlob.type || file.type });
+      const tempId = initialData?.id ?? `products-${crypto.randomUUID()}`;
+      const { url, storage_path } = await uploadCatalogImage(user.id, tempId, compressed);
+      // remove previous image from storage if any
+      if (imagePath) {
+        await supabase.storage.from('catalog-images').remove([imagePath]).catch(() => undefined);
+      }
+      setImageUrl(url);
+      setImagePath(storage_path);
+    } catch (e: any) {
+      toast({ title: 'Falha no upload', description: e.message ?? 'Tente novamente', variant: 'destructive' });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    if (imagePath) {
+      await supabase.storage.from('catalog-images').remove([imagePath]).catch(() => undefined);
+    }
+    setImageUrl(null);
+    setImagePath(null);
+  };
 
   const updateTier = (id: string, patch: Partial<TierRow>) => {
     setTiers((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
@@ -175,6 +225,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       is_active: isActive,
       price_tiers: parsed,
       category_id: categoryId,
+      image_url: imageUrl,
+      image_path: imagePath,
     }, supplyPayload);
   };
 
@@ -186,6 +238,50 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
           <DialogDescription>Produtos são usados apenas em pedidos e orçamentos.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Foto do produto</Label>
+            <div className="flex items-center gap-3">
+              <label className="cursor-pointer">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => { handleImageFile(e.target.files?.[0]); e.currentTarget.value = ''; }}
+                  disabled={uploadingImage}
+                />
+                {imageUrl ? (
+                  <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-border group">
+                    <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                    {uploadingImage && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className={`w-24 h-24 rounded-lg border border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/40 ${uploadingImage ? 'opacity-50' : ''}`}>
+                    {uploadingImage ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
+                    <span className="text-[10px] mt-1">Adicionar</span>
+                  </div>
+                )}
+              </label>
+              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                <span>Recomendado 1080×1080 px.</span>
+                <span>JPG, PNG ou WebP, até 8 MB.</span>
+                {imageUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="text-destructive hover:underline text-xs w-fit"
+                  >
+                    Remover foto
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label>Nome do Produto *</Label>
             <Input value={name} onChange={e => setName(e.target.value)} required maxLength={150} placeholder="Nome do produto personalizado" />
@@ -355,7 +451,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">Cancelar</Button>
-              <Button type="submit" disabled={isLoading || !name.trim()} className="flex-1 sm:flex-none">
+              <Button type="submit" disabled={isLoading || uploadingImage || !name.trim()} className="flex-1 sm:flex-none">
                 {initialData ? 'Salvar' : 'Criar'}
               </Button>
             </div>

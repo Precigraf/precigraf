@@ -40,7 +40,7 @@ const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
   const ctaPrimary = user ? '/app' : '/cadastro';
-  const ctaPrimaryLabel = user ? 'Ir para o app' : 'Começar período grátis';
+  const ctaPrimaryLabel = user ? 'Ir para o app' : 'Começar 7 dias grátis';
 
   const handleSubscribePro = async () => {
     setIsCheckoutLoading(true);
@@ -78,7 +78,7 @@ const LandingPage: React.FC = () => {
               className="mb-5 border-border text-muted-foreground gap-1.5"
             >
               <Sparkles className="w-3 h-3" />
-              Feito para gráficas brasileiras
+              7 dias grátis
             </Badge>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] tracking-tight">
@@ -405,7 +405,7 @@ const LandingPage: React.FC = () => {
               </ul>
 
               <Button asChild variant="outline" className="mt-7 w-full h-11">
-                <Link to="/cadastro">Começar grátis</Link>
+                <Link to="/cadastro">Começar 7 dias grátis</Link>
               </Button>
             </Card>
 
