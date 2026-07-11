@@ -405,7 +405,7 @@ const LandingPage: React.FC = () => {
               </ul>
 
               <Button asChild variant="outline" className="mt-7 w-full h-11">
-                <Link to="/cadastro">Começar grátis</Link>
+                <Link to="/cadastro">Começar 7 dias grátis</Link>
               </Button>
             </Card>
 
