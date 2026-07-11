@@ -239,6 +239,50 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
+            <Label>Foto do produto</Label>
+            <div className="flex items-center gap-3">
+              <label className="cursor-pointer">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => { handleImageFile(e.target.files?.[0]); e.currentTarget.value = ''; }}
+                  disabled={uploadingImage}
+                />
+                {imageUrl ? (
+                  <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-border group">
+                    <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+                    {uploadingImage && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <Loader2 className="w-5 h-5 text-white animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className={`w-24 h-24 rounded-lg border border-dashed border-border flex flex-col items-center justify-center text-muted-foreground hover:text-foreground hover:border-foreground/40 ${uploadingImage ? 'opacity-50' : ''}`}>
+                    {uploadingImage ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
+                    <span className="text-[10px] mt-1">Adicionar</span>
+                  </div>
+                )}
+              </label>
+              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
+                <span>Recomendado 1080×1080 px.</span>
+                <span>JPG, PNG ou WebP, até 8 MB.</span>
+                {imageUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveImage}
+                    className="text-destructive hover:underline text-xs w-fit"
+                  >
+                    Remover foto
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-2">
             <Label>Nome do Produto *</Label>
             <Input value={name} onChange={e => setName(e.target.value)} required maxLength={150} placeholder="Nome do produto personalizado" />
           </div>
