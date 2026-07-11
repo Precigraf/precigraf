@@ -79,6 +79,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       setProductionTime(initialData.production_time || '');
       setIsActive(initialData.is_active ?? true);
       setCategoryId(initialData.category_id ?? null);
+      setImageUrl(initialData.image_url ?? null);
+      setImagePath(initialData.image_path ?? null);
 
       const existing = Array.isArray(initialData.price_tiers) ? initialData.price_tiers : [];
       if (existing.length > 0) {
@@ -102,6 +104,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
       setIsActive(true); setCategoryId(null);
       setTiers([newRow()]);
       setSupplyRows([]);
+      setImageUrl(null); setImagePath(null);
     }
   }, [initialData, open]);
 
