@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Trash2, ImagePlus, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,11 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCategories } from '@/hooks/useCategories';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSupplyStock, useProductSupplies } from '@/hooks/useSupplyStock';
+import { uploadCatalogImage } from '@/hooks/useCatalogProducts';
+import { compressImage } from '@/lib/imageCompress';
+import { supabase } from '@/integrations/supabase/client';
 import type { Product, ProductInput, PriceTier } from '@/hooks/useProducts';
 
 export interface SupplyLinkPayload {
