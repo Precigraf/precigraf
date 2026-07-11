@@ -125,8 +125,8 @@ const Estoque: React.FC = () => {
           </TabsList>
 
           <TabsContent value="list">
-            <div className="flex flex-col sm:flex-row gap-2 mb-4">
-              <div className="relative flex-1">
+            <div className="space-y-2 mb-4">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input placeholder="Buscar insumo..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
               </div>
