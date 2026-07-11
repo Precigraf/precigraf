@@ -48,6 +48,7 @@ const newSupplyRow = (): SupplyRow => ({ id: crypto.randomUUID(), supply_id: '',
 const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit, initialData, isLoading }) => {
   const { categories } = useCategories();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { supplies } = useSupplyStock();
   const { links: existingLinks, save: saveLinks } = useProductSupplies(initialData?.id ?? null);
 
