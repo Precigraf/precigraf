@@ -126,6 +126,44 @@ const ProductForm: React.FC<ProductFormProps> = ({ open, onOpenChange, onSubmit,
   const addSupplyRow = () => setSupplyRows((prev) => [...prev, newSupplyRow()]);
   const removeSupplyRow = (id: string) => setSupplyRows((prev) => prev.filter((r) => r.id !== id));
 
+  const handleImageFile = async (file: File | null | undefined) => {
+    if (!file || !user) return;
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.type)) {
+      toast({ title: 'Formato inválido', description: 'Use JPG, PNG ou WebP.', variant: 'destructive' });
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      toast({ title: 'Arquivo muito grande', description: 'Máximo 8 MB.', variant: 'destructive' });
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const compressedBlob = await compressImage(file, 1080, 0.88);
+      const compressed = new File([compressedBlob], file.name, { type: compressedBlob.type || file.type });
+      const tempId = initialData?.id ?? `products-${crypto.randomUUID()}`;
+      const { url, storage_path } = await uploadCatalogImage(user.id, tempId, compressed);
+      // remove previous image from storage if any
+      if (imagePath) {
+        await supabase.storage.from('catalog-images').remove([imagePath]).catch(() => undefined);
+      }
+      setImageUrl(url);
+      setImagePath(storage_path);
+    } catch (e: any) {
+      toast({ title: 'Falha no upload', description: e.message ?? 'Tente novamente', variant: 'destructive' });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    if (imagePath) {
+      await supabase.storage.from('catalog-images').remove([imagePath]).catch(() => undefined);
+    }
+    setImageUrl(null);
+    setImagePath(null);
+  };
+
   const updateTier = (id: string, patch: Partial<TierRow>) => {
     setTiers((prev) => prev.map((t) => (t.id === id ? { ...t, ...patch } : t)));
   };
