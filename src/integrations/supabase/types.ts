@@ -881,6 +881,7 @@ export type Database = {
       }
       products: {
         Row: {
+          calculation_id: string | null
           category_id: string | null
           cost: number
           created_at: string
@@ -902,6 +903,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          calculation_id?: string | null
           category_id?: string | null
           cost?: number
           created_at?: string
@@ -923,6 +925,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          calculation_id?: string | null
           category_id?: string | null
           cost?: number
           created_at?: string
@@ -944,6 +947,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "products_calculation_id_fkey"
+            columns: ["calculation_id"]
+            isOneToOne: false
+            referencedRelation: "calculations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]

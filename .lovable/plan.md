@@ -1,102 +1,60 @@
+## Objetivo
 
-# Agenda de Entregas
+Substituir o botão **"Salvar cálculo"** da calculadora por **"Cadastrar produto"**. Ao clicar, o sistema salva o cálculo no histórico (como hoje) **e** cria um produto vinculado em `products`. Editar o cálculo depois atualiza automaticamente o produto correspondente, mantendo preço de venda e custo sincronizados.
 
-Novo módulo "Agenda" com calendário mensal que mostra todos os pedidos (orçamentos aprovados convertidos) na data estimada de entrega, com cadastro da data no momento da aprovação e alertas de pedidos próximos ou atrasados.
+## Comportamento
 
-## 1. Banco de dados
+1. **Calculadora → botão único "Cadastrar produto"**
+   - Valida nome, quantidade e preço final (como hoje).
+   - Salva o registro em `calculations` (histórico completo mantido).
+   - Cria em `products` um novo produto vinculado com:
+     - `name` = nome do produto do cálculo
+     - `unit_price` = `unitPrice` (preço unitário de venda)
+     - `cost` = `productionCost / quantity` (custo unitário)
+     - `default_quantity` = quantidade do lote
+     - `price_tiers` = `[{ quantity, price: finalSellingPrice, cost: productionCost }]`
+     - `is_active` = true
+     - `calculation_id` = id do cálculo recém-criado (vínculo)
+   - Toast: "Produto cadastrado a partir do cálculo".
+   - Botão fica desabilitado enquanto salva; ao concluir mostra "Cadastrado!".
 
-Adicionar 2 campos na tabela `orders`:
-- `delivery_date` (date, nullable) — data estimada de entrega
-- `delivery_notes` (text, nullable) — observações opcionais sobre a entrega
+2. **Edição do histórico sincroniza o produto**
+   - Ao atualizar um cálculo já vinculado (mode `edit` no `SaveCalculationButton` / `EditCalculationModal`), depois do `UPDATE` em `calculations`, executa `UPDATE` em `products` onde `calculation_id = calc.id` com os novos `unit_price`, `cost`, `default_quantity`, `price_tiers` e, se o usuário mudou, `name`.
+   - Se o produto vinculado tiver sido excluído manualmente, o update simplesmente não afeta linhas — nenhum erro.
 
-Sem alteração em RLS: o dono do pedido continua controlando via `user_id`.
+3. **Duplicação de cálculo**
+   - Duplicar não recria o produto (evita duplicidade). O cálculo duplicado nasce sem `product_id`; o usuário pode salvá-lo, e nesse fluxo um novo produto é criado.
 
-## 2. Cadastro da data de entrega ao aprovar
+4. **Regras de negócio preservadas**
+   - Limites de plano (`canSaveCalculation`, trial) continuam bloqueando cadastros novos.
+   - Toda a página **Produtos** continua funcionando: o produto criado aparece na lista com miniatura padrão (sem imagem inicialmente) e pode ser editado manualmente. Edições manuais no produto **não** voltam para o cálculo (fluxo unidirecional cálculo → produto), evitando loop de sincronização.
 
-Ao converter um orçamento em pedido (fluxo do `ConvertToOrderModal` no admin e o `respond_to_quote_by_token` quando o cliente aprova):
+## Detalhes técnicos
 
-- **Admin (ConvertToOrderModal)**: adicionar campo "Data estimada de entrega" (date picker shadcn) + "Observações". Salvo em `orders.delivery_date` na criação.
-- **Aprovação pelo cliente via link público**: o cliente não define prazo. Ao aprovar, o pedido é criado sem `delivery_date` e aparece como "Sem data" na Agenda — o usuário define depois pelo modal de detalhes.
-- **OrderDetailsModal**: adicionar bloco "Entrega" com data + observações, editável a qualquer momento.
+**Migração (schema):**
+- Adicionar `products.calculation_id UUID NULL` com `REFERENCES calculations(id) ON DELETE SET NULL` e índice único parcial `(calculation_id) WHERE calculation_id IS NOT NULL` para garantir 1:1.
+- `products.image_url`/`image_path` permanecem opcionais (produto nasce sem imagem, usuário adiciona depois em Produtos).
 
-## 3. Página `/agenda`
+**Arquivos a editar:**
+- `src/components/SaveCalculationButton.tsx`
+  - Renomear label para "Cadastrar produto" / "Atualizar produto" (quando `isEditing`).
+  - Após `insert` em `calculations`, chamar `products.insert` com os campos derivados e `calculation_id`.
+  - Após `update` em `calculations`, chamar `products.update ... where calculation_id = id`.
+  - Invalidar cache `['products']` via `queryClient` (import `useQueryClient`).
+  - Mensagens de toast ajustadas.
+- `src/components/ResultPanel.tsx`
+  - Nenhuma mudança de props; o botão renderizado ganha novo texto automaticamente.
+- `src/components/EditCalculationModal.tsx` (verificar): garantir que ao editar um cálculo pela tela de histórico, o mesmo caminho de update no `products` seja acionado — se o modal usa `SaveCalculationButton`, herda automaticamente; se faz update direto, adicionar a mesma sincronização.
+- `src/hooks/useProducts.ts`: sem mudança obrigatória (já expõe `products` via TanStack). Apenas garantir que `useProducts` invalida ao alterar via SQL externo — usaremos `queryClient.invalidateQueries(['products'])` no botão.
 
-Nova rota e item no sidebar (ícone `CalendarDays`), entre "Pedidos" e "Produção".
+**Prevenção de erros de sincronização:**
+- Vínculo unidirecional (cálculo é a fonte de verdade para produtos criados pela calculadora).
+- `ON DELETE SET NULL` no FK: apagar o cálculo não quebra o produto; apagar o produto não quebra o cálculo.
+- Índice único garante que um cálculo nunca gere dois produtos.
+- Se o `insert` em `products` falhar (ex.: RLS), o cálculo permanece salvo e o toast alerta "Cálculo salvo, mas não foi possível cadastrar o produto" — o usuário pode tentar novamente pelo botão "Cadastrar produto" (idempotente: reusar `calculation_id` via upsert em turnos futuros, fora deste escopo).
 
-Layout:
+## Não incluso (fora do escopo)
 
-```text
-┌─────────────────────────────────────────────┐
-│ Agenda de Entregas          [◀ Mês ▶ ] [Hoje]│
-├─────────────────────────────────────────────┤
-│ KPIs: Atrasados · Hoje · Próximos 7d · Mês  │
-├─────────────────────────────────────────────┤
-│ Seg  Ter  Qua  Qui  Sex  Sáb  Dom           │
-│ ┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐               │
-│ │15││16││17││18││19││20││21│  células       │
-│ │● ││●●││  ││●││●●●│... com pills de       │
-│ └──┘└──┘└──┘└──┘└──┘└──┘└──┘  pedidos       │
-├─────────────────────────────────────────────┤
-│ Lista lateral: pedidos do dia selecionado   │
-└─────────────────────────────────────────────┘
-```
-
-- **Grade mensal**: cada célula lista até 3 pedidos como pills coloridas por status (mesmas cores do Kanban). Overflow com "+N mais".
-- **Cores especiais**:
-  - Vermelho: `delivery_date < hoje` e status ≠ `delivered`
-  - Amarelo: entrega em ≤ 2 dias
-  - Verde: entregue
-- **Clique na célula**: abre painel/drawer com todos os pedidos do dia.
-- **Clique no pedido**: abre o `OrderDetailsModal` existente.
-- **Pedidos sem data**: seção "Sem data de entrega" abaixo do calendário com CTA para definir.
-- **Filtro**: seletor de status (reutiliza `KANBAN_COLUMNS`).
-- **Mobile**: cai para "Agenda list view" (lista agrupada por dia, sem grade), mantendo padrão responsivo do sistema.
-
-## 4. Alertas
-
-**Central de notificações** (tabela `notifications` já existente): novo tipo `order_delivery_due`.
-
-Gatilho: função edge diária (`cron` via `pg_cron` ou trigger acionado ao abrir a Agenda com verificação `last_checked_at` em profile) que cria notificações para:
-- Pedidos com `delivery_date = amanhã` → "Entrega amanhã: PED-X"
-- Pedidos com `delivery_date < hoje` e status ≠ `delivered` → "Pedido atrasado: PED-X"
-
-MVP simples: verificação client-side ao carregar a Agenda + `SmartAlerts` no Dashboard mostrando contadores (atrasados / hoje / próximos 3 dias) com link para `/agenda`.
-
-## 5. Aproveitamento no restante do sistema
-
-- **Dashboard (`/gestao`)**: novo card "Próximas entregas" com 5 mais próximas + contador de atrasados.
-- **Kanban de Pedidos**: badge de data de entrega no `OrderCard` (com destaque vermelho se atrasado).
-- **Página Pedidos**: nova coluna "Entrega" e filtro "Atrasados / Hoje / Esta semana".
-- **Portal do cliente** (`/cliente/{token}`): mostrar previsão de entrega em cada pedido, aumentando transparência.
-- **Rastreio público** (`/rastreio/{token}`): incluir "Previsão de entrega" além do status.
-- **Produção**: pedidos podem ser ordenados por `delivery_date` (priorização automática).
-- **Notificações WhatsApp** (futuro): D-1 automático ao cliente confirmando data.
-
-## 6. Detalhes técnicos
-
-Arquivos novos:
-- `src/pages/Agenda.tsx` — grade mensal + lista lateral
-- `src/components/agenda/CalendarGrid.tsx` — grade 7×N com células
-- `src/components/agenda/DayCell.tsx` — célula com pills
-- `src/components/agenda/DayOrdersDrawer.tsx` — detalhe do dia
-- `src/hooks/useDeliverySchedule.ts` — query dos pedidos com data
-- Migration adicionando colunas em `orders` + índice em `delivery_date`
-
-Arquivos alterados:
-- `src/App.tsx` — rota `/agenda`
-- `src/components/AppSidebar.tsx` — item Agenda
-- `src/components/AppLayout.tsx` — `ROUTE_TITLES`
-- `src/components/gestao/ConvertToOrderModal.tsx` — campo data
-- `src/components/gestao/OrderDetailsModal.tsx` — bloco entrega
-- `src/components/gestao/OrderCard.tsx` — badge data
-- `src/hooks/useOrders.ts` — tipos + mutação `updateOrderDelivery`
-- `src/pages/Pedidos.tsx` — coluna e filtro entrega
-- `src/pages/Gestao.tsx` — card próximas entregas
-
-Padrão visual: shadcn `Calendar`, `Card`, `Badge`, tokens do design system (sem cores hardcoded), totalmente responsivo com layout mobile em lista.
-
-## Pontos a confirmar
-
-1. Quando o cliente aprova via link público, tudo bem o pedido nascer **sem** data (usuário define depois), ou você quer que apareça um campo opcional para o cliente sugerir prazo?
-2. Alertas via **notificações internas** (sino) já cobrem o cenário, ou você também quer WhatsApp automático para o cliente D-1?
-3. Regra de "atrasado" = `delivery_date < hoje` E status ≠ `delivered` — ok?
+- Sincronização reversa (editar produto atualiza cálculo).
+- Migrar cálculos antigos já salvos para virar produtos automaticamente (usuário faz manualmente reabrindo/editando).
+- Imagem do produto na calculadora — segue sendo adicionada em Produtos.
