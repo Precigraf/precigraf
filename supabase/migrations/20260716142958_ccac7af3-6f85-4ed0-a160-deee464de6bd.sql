@@ -1,0 +1,2 @@
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS calculation_id UUID REFERENCES public.calculations(id) ON DELETE SET NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS products_calculation_id_unique ON public.products(calculation_id) WHERE calculation_id IS NOT NULL;
