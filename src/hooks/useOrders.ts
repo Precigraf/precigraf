@@ -31,6 +31,8 @@ export interface Order {
   amount_pending: number;
   created_at: string;
   updated_at: string;
+  delivery_date: string | null;
+  delivery_notes: string | null;
   clients?: { name: string; whatsapp: string | null } | null;
   quotes?: { total_value: number; description: string | null; product_name: string | null; items: any; quote_number: number | null; raw_data: any; client_id?: string } | null;
 }
