@@ -14,6 +14,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/clientes': 'Clientes',
   '/orcamentos': 'Orçamentos',
   '/pedidos': 'Pedidos',
+  '/agenda': 'Agenda',
   '/producao': 'Produção',
   '/financeiro': 'Financeiro',
   '/marketplace': 'Marketplace',
