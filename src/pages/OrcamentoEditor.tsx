@@ -366,6 +366,8 @@ const OrcamentoEditor: React.FC = () => {
         total_cost: orderTotalCost + shippingAmount,
         amount_received: data.amountReceived,
         amount_pending: Math.max(0, orderTotalRevenue - data.amountReceived),
+        delivery_date: data.deliveryDate,
+        delivery_notes: data.deliveryNotes,
       }).select().single();
       if (orderError) throw orderError;
 
