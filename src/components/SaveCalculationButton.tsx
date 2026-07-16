@@ -259,10 +259,20 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
         toast.warning(isEditing
           ? 'Cálculo atualizado, mas não foi possível sincronizar o produto.'
           : 'Cálculo salvo, mas não foi possível cadastrar o produto.');
+      } else if (createdNew) {
+        toast.success('Novo produto cadastrado!', {
+          description: `"${data.productName.trim()}" foi criado com o preço calculado.`,
+        });
       } else if (mergedVariation) {
-        toast.success('Variação adicionada ao produto!');
+        toast.success('Nova variação de preço adicionada!', {
+          description: `Variação de ${data.quantity} un. adicionada ao produto "${existingProductName}".`,
+        });
+      } else if (updatedExisting) {
+        toast.success('Variação existente atualizada!', {
+          description: `A variação de ${data.quantity} un. de "${existingProductName}" foi atualizada com o novo preço.`,
+        });
       } else {
-        toast.success(isEditing ? 'Produto atualizado com sucesso!' : 'Produto cadastrado a partir do cálculo!');
+        toast.success(isEditing ? 'Cálculo atualizado com sucesso!' : 'Cálculo salvo com sucesso!');
       }
       onSaved?.();
       await refetch(); // Update calculations count
