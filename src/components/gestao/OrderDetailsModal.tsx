@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, User, Mail, MapPin, Package, Copy, Link2, Trash2 } from 'lucide-react';
+import { Plus, User, Mail, MapPin, Package, Copy, Link2, Trash2, CalendarDays, Save } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useOrders, KANBAN_COLUMNS, type Order } from '@/hooks/useOrders';
+import { useDeliverySchedule } from '@/hooks/useDeliverySchedule';
 import { useProducts } from '@/hooks/useProducts';
 import { buildOrderTrackingUrl } from '@/lib/publicUrl';
 
@@ -34,11 +35,21 @@ const formatCurrency = (v: number) => (Number.isFinite(v) ? v : 0).toLocaleStrin
 
 const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChange, order }) => {
   const { updateOrderStatus, addItemToOrder, removeItemFromOrder } = useOrders();
+  const { updateDelivery } = useDeliverySchedule();
   const { products } = useProducts();
   const [productId, setProductId] = useState<string>('');
   const [qty, setQty] = useState('1');
   const [unitValue, setUnitValue] = useState('');
   const [confirming, setConfirming] = useState(false);
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+
+  React.useEffect(() => {
+    if (order) {
+      setDeliveryDate(order.delivery_date || '');
+      setDeliveryNotes(order.delivery_notes || '');
+    }
+  }, [order?.id, order?.delivery_date, order?.delivery_notes]);
 
   const items = useMemo(() => {
     if (!order?.quotes?.items) return [];
