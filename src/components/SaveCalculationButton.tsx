@@ -166,6 +166,9 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
       // Sincronizar produto vinculado (merge por nome)
       let productWarning = false;
       let mergedVariation = false;
+      let updatedExisting = false;
+      let createdNew = false;
+      let existingProductName = '';
       if (calculationId) {
         try {
           const newTier = buildNewTier();
