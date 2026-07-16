@@ -153,7 +153,37 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
             </Select>
           </div>
 
-          {/* Link público para o cliente acompanhar */}
+          {/* Entrega */}
+          <div className="rounded-lg border border-border p-4 bg-muted/20">
+            <Label className="text-base font-semibold mb-3 flex items-center gap-2">
+              <CalendarDays className="w-4 h-4" /> Entrega
+            </Label>
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-end">
+              <div>
+                <Label className="text-xs text-muted-foreground">Data estimada</Label>
+                <Input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Observações</Label>
+                <Input value={deliveryNotes} onChange={e => setDeliveryNotes(e.target.value)} placeholder="Ex.: retirar às 14h" />
+              </div>
+              <Button
+                type="button"
+                onClick={() => updateDelivery.mutate({
+                  orderId: order.id,
+                  delivery_date: deliveryDate || null,
+                  delivery_notes: deliveryNotes.trim() || null,
+                })}
+                disabled={updateDelivery.isPending || (
+                  (deliveryDate || '') === (order.delivery_date || '') &&
+                  (deliveryNotes || '') === (order.delivery_notes || '')
+                )}
+              >
+                <Save className="w-4 h-4 mr-2" /> Salvar
+              </Button>
+            </div>
+          </div>
+
           {order.tracking_token && (
             <div className="rounded-lg border border-primary/30 p-4 bg-primary/5">
               <Label className="text-base font-semibold mb-2 flex items-center gap-2">
