@@ -32,6 +32,7 @@ import CatalogoAdmin from "./pages/CatalogoAdmin";
 import CatalogoDestaques from "./pages/CatalogoDestaques";
 import CatalogoPersonalizar from "./pages/CatalogoPersonalizar";
 import CatalogoPublico from "./pages/CatalogoPublico";
+import Agenda from "./pages/Agenda";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const App = () => (
               <Route path="/orcamentos/:id" element={<ProtectedRoute><OrcamentoEditor /></ProtectedRoute>} />
               <Route path="/produtos" element={<ProtectedRoute><Produtos /></ProtectedRoute>} />
               <Route path="/pedidos" element={<ProtectedRoute><Pedidos /></ProtectedRoute>} />
+              <Route path="/agenda" element={<ProtectedRoute><Agenda /></ProtectedRoute>} />
               <Route path="/gestao" element={<ProtectedRoute><Gestao /></ProtectedRoute>} />
               <Route path="/financeiro" element={<ProtectedRoute><Financeiro /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />

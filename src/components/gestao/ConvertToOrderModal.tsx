@@ -13,6 +13,8 @@ export interface ConvertToOrderData {
   clientId: string;
   status: string;
   amountReceived: number;
+  deliveryDate: string | null;
+  deliveryNotes: string | null;
   formData: Partial<Client>;
 }
 
@@ -44,6 +46,8 @@ const ConvertToOrderModal: React.FC<Props> = ({ open, onOpenChange, totalValue, 
   const [popOpen, setPopOpen] = useState(false);
   const [status, setStatus] = useState('approved');
   const [amountReceived, setAmountReceived] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
 
   const [name, setName] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
@@ -78,6 +82,8 @@ const ConvertToOrderModal: React.FC<Props> = ({ open, onOpenChange, totalValue, 
       setClientId(initialClientId || '');
       setStatus('approved');
       setAmountReceived('');
+      setDeliveryDate('');
+      setDeliveryNotes('');
       if (!initialClientId) {
         setName(''); setWhatsapp(''); setCpf(''); setEmail('');
         setCep(''); setAddress(''); setAddressNumber('');
@@ -102,6 +108,8 @@ const ConvertToOrderModal: React.FC<Props> = ({ open, onOpenChange, totalValue, 
       clientId,
       status,
       amountReceived: received,
+      deliveryDate: deliveryDate || null,
+      deliveryNotes: deliveryNotes.trim() || null,
       formData: {
         name: name.trim(), whatsapp, cpf, email, cep,
         address, address_number: addressNumber, neighborhood, city, state,
@@ -210,6 +218,17 @@ const ConvertToOrderModal: React.FC<Props> = ({ open, onOpenChange, totalValue, 
                 {STATUS_OPTIONS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label>Data estimada de entrega</Label>
+              <Input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} />
+            </div>
+            <div>
+              <Label>Observações da entrega</Label>
+              <Input value={deliveryNotes} onChange={e => setDeliveryNotes(e.target.value)} placeholder="Ex.: retirar no balcão" />
+            </div>
           </div>
 
           {/* Pagamento */}

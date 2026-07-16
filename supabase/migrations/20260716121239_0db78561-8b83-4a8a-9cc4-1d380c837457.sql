@@ -1,0 +1,2 @@
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS delivery_date date, ADD COLUMN IF NOT EXISTS delivery_notes text;
+CREATE INDEX IF NOT EXISTS idx_orders_delivery_date ON public.orders(delivery_date) WHERE delivery_date IS NOT NULL;

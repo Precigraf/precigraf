@@ -5,11 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, User, Mail, MapPin, Package, Copy, Link2, Trash2 } from 'lucide-react';
+import { Plus, User, Mail, MapPin, Package, Copy, Link2, Trash2, CalendarDays, Save } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { useOrders, KANBAN_COLUMNS, type Order } from '@/hooks/useOrders';
+import { useDeliverySchedule } from '@/hooks/useDeliverySchedule';
 import { useProducts } from '@/hooks/useProducts';
 import { buildOrderTrackingUrl } from '@/lib/publicUrl';
 
@@ -34,11 +35,21 @@ const formatCurrency = (v: number) => (Number.isFinite(v) ? v : 0).toLocaleStrin
 
 const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChange, order }) => {
   const { updateOrderStatus, addItemToOrder, removeItemFromOrder } = useOrders();
+  const { updateDelivery } = useDeliverySchedule();
   const { products } = useProducts();
   const [productId, setProductId] = useState<string>('');
   const [qty, setQty] = useState('1');
   const [unitValue, setUnitValue] = useState('');
   const [confirming, setConfirming] = useState(false);
+  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+
+  React.useEffect(() => {
+    if (order) {
+      setDeliveryDate(order.delivery_date || '');
+      setDeliveryNotes(order.delivery_notes || '');
+    }
+  }, [order?.id, order?.delivery_date, order?.delivery_notes]);
 
   const items = useMemo(() => {
     if (!order?.quotes?.items) return [];
@@ -142,7 +153,37 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ open, onOpenChang
             </Select>
           </div>
 
-          {/* Link público para o cliente acompanhar */}
+          {/* Entrega */}
+          <div className="rounded-lg border border-border p-4 bg-muted/20">
+            <Label className="text-base font-semibold mb-3 flex items-center gap-2">
+              <CalendarDays className="w-4 h-4" /> Entrega
+            </Label>
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2 items-end">
+              <div>
+                <Label className="text-xs text-muted-foreground">Data estimada</Label>
+                <Input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Observações</Label>
+                <Input value={deliveryNotes} onChange={e => setDeliveryNotes(e.target.value)} placeholder="Ex.: retirar às 14h" />
+              </div>
+              <Button
+                type="button"
+                onClick={() => updateDelivery.mutate({
+                  orderId: order.id,
+                  delivery_date: deliveryDate || null,
+                  delivery_notes: deliveryNotes.trim() || null,
+                })}
+                disabled={updateDelivery.isPending || (
+                  (deliveryDate || '') === (order.delivery_date || '') &&
+                  (deliveryNotes || '') === (order.delivery_notes || '')
+                )}
+              >
+                <Save className="w-4 h-4 mr-2" /> Salvar
+              </Button>
+            </div>
+          </div>
+
           {order.tracking_token && (
             <div className="rounded-lg border border-primary/30 p-4 bg-primary/5">
               <Label className="text-base font-semibold mb-2 flex items-center gap-2">
