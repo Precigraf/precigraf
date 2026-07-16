@@ -57,20 +57,35 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
   // Block saving if trial expired or can't save calculation (only for new calculations)
   const canSave = isEditing || (canCreateCalculation && canSaveCalculation);
 
-  const buildProductPayload = (userId: string, calculationId: string) => {
+  const round2 = (v: number) => Math.round((Number(v) || 0) * 100) / 100;
+
+  const buildNewTier = () => {
     const qty = Math.max(1, data.quantity);
-    const unitCost = data.productionCost / qty;
     return {
-      user_id: userId,
-      calculation_id: calculationId,
-      name: data.productName.trim(),
-      unit_price: data.unitPrice,
-      cost: unitCost,
+      quantity: qty,
+      price: round2(data.finalSellingPrice),
+      cost: round2(data.productionCost),
+    };
+  };
+
+  const mergeTier = (existing: any[], newTier: { quantity: number; price: number; cost: number }) => {
+    const list = Array.isArray(existing) ? [...existing] : [];
+    const idx = list.findIndex((t) => Number(t?.quantity) === newTier.quantity);
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], ...newTier };
+    } else {
+      list.push(newTier);
+    }
+    return list.sort((a, b) => Number(a.quantity) - Number(b.quantity));
+  };
+
+  const derivedFromTiers = (tiers: { quantity: number; price: number; cost: number }[]) => {
+    const smallest = tiers.reduce((acc, t) => (Number(t.quantity) < Number(acc.quantity) ? t : acc), tiers[0]);
+    const qty = Math.max(1, Number(smallest.quantity) || 1);
+    return {
       default_quantity: qty,
-      price_tiers: [
-        { quantity: qty, price: data.finalSellingPrice, cost: data.productionCost },
-      ] as any,
-      is_active: true,
+      unit_price: round2(Number(smallest.price) / qty),
+      cost: round2(Number(smallest.cost) / qty),
     };
   };
 
