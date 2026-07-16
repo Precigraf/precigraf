@@ -1,60 +1,52 @@
 ## Objetivo
 
-Substituir o botão **"Salvar cálculo"** da calculadora por **"Cadastrar produto"**. Ao clicar, o sistema salva o cálculo no histórico (como hoje) **e** cria um produto vinculado em `products`. Editar o cálculo depois atualiza automaticamente o produto correspondente, mantendo preço de venda e custo sincronizados.
+Ao clicar em **Cadastrar produto** na calculadora:
+1. Se já existir um produto vinculado ao **mesmo nome** do usuário, a nova quantidade/preço vira **mais uma variação** (price tier) do produto — sem duplicar.
+2. Se o **nome do produto for diferente**, cria um novo produto.
+3. Preços gravados e exibidos com **2 casas decimais** (ex.: `55,66`), sem arredondar o cálculo interno.
 
-## Comportamento
+## Comportamento detalhado
 
-1. **Calculadora → botão único "Cadastrar produto"**
-   - Valida nome, quantidade e preço final (como hoje).
-   - Salva o registro em `calculations` (histórico completo mantido).
-   - Cria em `products` um novo produto vinculado com:
-     - `name` = nome do produto do cálculo
-     - `unit_price` = `unitPrice` (preço unitário de venda)
-     - `cost` = `productionCost / quantity` (custo unitário)
-     - `default_quantity` = quantidade do lote
-     - `price_tiers` = `[{ quantity, price: finalSellingPrice, cost: productionCost }]`
-     - `is_active` = true
-     - `calculation_id` = id do cálculo recém-criado (vínculo)
-   - Toast: "Produto cadastrado a partir do cálculo".
-   - Botão fica desabilitado enquanto salva; ao concluir mostra "Cadastrado!".
+**Regra de vínculo (calc → produto):**
 
-2. **Edição do histórico sincroniza o produto**
-   - Ao atualizar um cálculo já vinculado (mode `edit` no `SaveCalculationButton` / `EditCalculationModal`), depois do `UPDATE` em `calculations`, executa `UPDATE` em `products` onde `calculation_id = calc.id` com os novos `unit_price`, `cost`, `default_quantity`, `price_tiers` e, se o usuário mudou, `name`.
-   - Se o produto vinculado tiver sido excluído manualmente, o update simplesmente não afeta linhas — nenhum erro.
+```text
+salvar cálculo (novo ou edição)
+        │
+        ▼
+existe produto do usuário com mesmo nome (case-insensitive, trim)?
+   ├── SIM → adiciona/atualiza tier {quantity, price, cost} em price_tiers
+   │         • se já existe tier com a mesma quantity → substitui preço/custo
+   │         • senão → adiciona novo tier e reordena por quantity ASC
+   │         • atualiza unit_price/cost/default_quantity com o menor tier
+   │         • se o produto ainda não tem calculation_id, vincula ao cálculo atual
+   ├── NÃO → cria novo produto (fluxo atual) com o tier inicial
+```
 
-3. **Duplicação de cálculo**
-   - Duplicar não recria o produto (evita duplicidade). O cálculo duplicado nasce sem `product_id`; o usuário pode salvá-lo, e nesse fluxo um novo produto é criado.
+**Edição de cálculo existente:**
+- Se o nome não mudou → atualiza o tier daquela quantidade no produto vinculado.
+- Se o nome mudou → desvincula do produto antigo e aplica a mesma regra acima com o novo nome (achar por nome ou criar novo).
 
-4. **Regras de negócio preservadas**
-   - Limites de plano (`canSaveCalculation`, trial) continuam bloqueando cadastros novos.
-   - Toda a página **Produtos** continua funcionando: o produto criado aparece na lista com miniatura padrão (sem imagem inicialmente) e pode ser editado manualmente. Edições manuais no produto **não** voltam para o cálculo (fluxo unidirecional cálculo → produto), evitando loop de sincronização.
+**Arredondamento (apenas apresentação/gravação de preço):**
+- `unit_price`, `cost` e cada `price_tiers[i].price / cost` são gravados via `Math.round(v * 100) / 100` (2 casas).
+- O cálculo em memória da calculadora **não muda** — só o valor persistido no produto.
+- Lista de Produtos (`src/pages/Produtos.tsx`) já usa `formatCurrency` (Intl BRL) → exibição fica `R$ 55,66` automaticamente após a gravação correta.
 
-## Detalhes técnicos
+## Arquivos afetados
 
-**Migração (schema):**
-- Adicionar `products.calculation_id UUID NULL` com `REFERENCES calculations(id) ON DELETE SET NULL` e índice único parcial `(calculation_id) WHERE calculation_id IS NOT NULL` para garantir 1:1.
-- `products.image_url`/`image_path` permanecem opcionais (produto nasce sem imagem, usuário adiciona depois em Produtos).
-
-**Arquivos a editar:**
 - `src/components/SaveCalculationButton.tsx`
-  - Renomear label para "Cadastrar produto" / "Atualizar produto" (quando `isEditing`).
-  - Após `insert` em `calculations`, chamar `products.insert` com os campos derivados e `calculation_id`.
-  - Após `update` em `calculations`, chamar `products.update ... where calculation_id = id`.
-  - Invalidar cache `['products']` via `queryClient` (import `useQueryClient`).
-  - Mensagens de toast ajustadas.
-- `src/components/ResultPanel.tsx`
-  - Nenhuma mudança de props; o botão renderizado ganha novo texto automaticamente.
-- `src/components/EditCalculationModal.tsx` (verificar): garantir que ao editar um cálculo pela tela de histórico, o mesmo caminho de update no `products` seja acionado — se o modal usa `SaveCalculationButton`, herda automaticamente; se faz update direto, adicionar a mesma sincronização.
-- `src/hooks/useProducts.ts`: sem mudança obrigatória (já expõe `products` via TanStack). Apenas garantir que `useProducts` invalida ao alterar via SQL externo — usaremos `queryClient.invalidateQueries(['products'])` no botão.
+  - Nova função `mergeTier(existingTiers, newTier)` que substitui por `quantity` ou adiciona e ordena.
+  - Nova função `round2(v)`.
+  - `buildProductPayload` passa a arredondar `unit_price`, `cost` e o tier.
+  - `handleSave` (após salvar o cálculo):
+    1. Busca produto do usuário por `calculation_id` (compatibilidade) **ou** `LOWER(name) = LOWER(nome_do_calc)`.
+    2. Se achar: `UPDATE` mesclando o novo tier e recalculando `unit_price/cost/default_quantity` a partir do menor tier; garante `calculation_id` preenchido.
+    3. Se não achar: `INSERT` novo produto (com 1 tier).
+  - Mensagens de toast atualizadas: "Variação adicionada ao produto" quando faz merge; "Produto cadastrado" quando cria; "Produto atualizado" quando edita tier existente.
 
-**Prevenção de erros de sincronização:**
-- Vínculo unidirecional (cálculo é a fonte de verdade para produtos criados pela calculadora).
-- `ON DELETE SET NULL` no FK: apagar o cálculo não quebra o produto; apagar o produto não quebra o cálculo.
-- Índice único garante que um cálculo nunca gere dois produtos.
-- Se o `insert` em `products` falhar (ex.: RLS), o cálculo permanece salvo e o toast alerta "Cálculo salvo, mas não foi possível cadastrar o produto" — o usuário pode tentar novamente pelo botão "Cadastrar produto" (idempotente: reusar `calculation_id` via upsert em turnos futuros, fora deste escopo).
+Sem migração de banco: o campo `price_tiers` (jsonb) já existe e o `products.calculation_id` também.
 
-## Não incluso (fora do escopo)
+## Fora de escopo
 
-- Sincronização reversa (editar produto atualiza cálculo).
-- Migrar cálculos antigos já salvos para virar produtos automaticamente (usuário faz manualmente reabrindo/editando).
-- Imagem do produto na calculadora — segue sendo adicionada em Produtos.
+- Alterar a lista de Produtos, o formulário de Produto ou a UI da calculadora.
+- Sincronizar variações do lado do Produto de volta para a calculadora (fluxo continua unidirecional).
+- Migrar produtos antigos já duplicados por nome.

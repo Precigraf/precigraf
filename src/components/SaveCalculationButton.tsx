@@ -57,20 +57,35 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
   // Block saving if trial expired or can't save calculation (only for new calculations)
   const canSave = isEditing || (canCreateCalculation && canSaveCalculation);
 
-  const buildProductPayload = (userId: string, calculationId: string) => {
+  const round2 = (v: number) => Math.round((Number(v) || 0) * 100) / 100;
+
+  const buildNewTier = () => {
     const qty = Math.max(1, data.quantity);
-    const unitCost = data.productionCost / qty;
     return {
-      user_id: userId,
-      calculation_id: calculationId,
-      name: data.productName.trim(),
-      unit_price: data.unitPrice,
-      cost: unitCost,
+      quantity: qty,
+      price: round2(data.finalSellingPrice),
+      cost: round2(data.productionCost),
+    };
+  };
+
+  const mergeTier = (existing: any[], newTier: { quantity: number; price: number; cost: number }) => {
+    const list = Array.isArray(existing) ? [...existing] : [];
+    const idx = list.findIndex((t) => Number(t?.quantity) === newTier.quantity);
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], ...newTier };
+    } else {
+      list.push(newTier);
+    }
+    return list.sort((a, b) => Number(a.quantity) - Number(b.quantity));
+  };
+
+  const derivedFromTiers = (tiers: { quantity: number; price: number; cost: number }[]) => {
+    const smallest = tiers.reduce((acc, t) => (Number(t.quantity) < Number(acc.quantity) ? t : acc), tiers[0]);
+    const qty = Math.max(1, Number(smallest.quantity) || 1);
+    return {
       default_quantity: qty,
-      price_tiers: [
-        { quantity: qty, price: data.finalSellingPrice, cost: data.productionCost },
-      ] as any,
-      is_active: true,
+      unit_price: round2(Number(smallest.price) / qty),
+      cost: round2(Number(smallest.cost) / qty),
     };
   };
 
@@ -148,39 +163,78 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
         return;
       }
 
-      // Sincronizar produto vinculado
+      // Sincronizar produto vinculado (merge por nome)
       let productWarning = false;
+      let mergedVariation = false;
       if (calculationId) {
         try {
-          const productPayload = buildProductPayload(userId, calculationId);
-          if (isEditing) {
-            // Atualiza o produto vinculado (se existir). Se não houver, cria um.
-            const { data: existing } = await supabase
-              .from('products')
-              .select('id')
-              .eq('calculation_id', calculationId)
-              .eq('user_id', userId)
-              .maybeSingle();
+          const newTier = buildNewTier();
+          const productName = data.productName.trim();
 
-            if (existing?.id) {
-              const { error: upErr } = await supabase
-                .from('products')
-                .update({
-                  name: productPayload.name,
-                  unit_price: productPayload.unit_price,
-                  cost: productPayload.cost,
-                  default_quantity: productPayload.default_quantity,
-                  price_tiers: productPayload.price_tiers,
-                })
-                .eq('id', existing.id)
-                .eq('user_id', userId);
-              if (upErr) productWarning = true;
-            } else {
-              const { error: insErr } = await supabase.from('products').insert(productPayload as any);
-              if (insErr) productWarning = true;
-            }
+          // Busca por calculation_id primeiro (produto já vinculado)
+          let existingProduct: any = null;
+          const byCalc = await supabase
+            .from('products')
+            .select('id, name, price_tiers, calculation_id')
+            .eq('user_id', userId)
+            .eq('calculation_id', calculationId)
+            .maybeSingle();
+          existingProduct = byCalc.data ?? null;
+
+          // Se o nome mudou em relação ao vinculado, desvincula e busca por nome
+          if (existingProduct && String(existingProduct.name).trim().toLowerCase() !== productName.toLowerCase()) {
+            await supabase
+              .from('products')
+              .update({ calculation_id: null })
+              .eq('id', existingProduct.id)
+              .eq('user_id', userId);
+            existingProduct = null;
+          }
+
+          // Se não achou por calculation_id, busca por nome (case-insensitive)
+          if (!existingProduct) {
+            const byName = await supabase
+              .from('products')
+              .select('id, name, price_tiers, calculation_id')
+              .eq('user_id', userId)
+              .ilike('name', productName)
+              .limit(1)
+              .maybeSingle();
+            existingProduct = byName.data ?? null;
+          }
+
+          if (existingProduct?.id) {
+            const currentTiers = Array.isArray(existingProduct.price_tiers) ? existingProduct.price_tiers : [];
+            const hadSameQty = currentTiers.some((t: any) => Number(t?.quantity) === newTier.quantity);
+            const mergedTiers = mergeTier(currentTiers, newTier);
+            const derived = derivedFromTiers(mergedTiers as any);
+            const updatePayload: any = {
+              price_tiers: mergedTiers as any,
+              default_quantity: derived.default_quantity,
+              unit_price: derived.unit_price,
+              cost: derived.cost,
+            };
+            if (!existingProduct.calculation_id) updatePayload.calculation_id = calculationId;
+            const { error: upErr } = await supabase
+              .from('products')
+              .update(updatePayload)
+              .eq('id', existingProduct.id)
+              .eq('user_id', userId);
+            if (upErr) productWarning = true;
+            else mergedVariation = !hadSameQty;
           } else {
-            const { error: insErr } = await supabase.from('products').insert(productPayload as any);
+            const derived = derivedFromTiers([newTier]);
+            const insertPayload: any = {
+              user_id: userId,
+              calculation_id: calculationId,
+              name: productName,
+              unit_price: derived.unit_price,
+              cost: derived.cost,
+              default_quantity: derived.default_quantity,
+              price_tiers: [newTier] as any,
+              is_active: true,
+            };
+            const { error: insErr } = await supabase.from('products').insert(insertPayload);
             if (insErr) productWarning = true;
           }
         } catch (e) {
@@ -189,6 +243,7 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
         }
       }
 
+
       queryClient.invalidateQueries({ queryKey: ['products'] });
 
       setJustSaved(true);
@@ -196,6 +251,8 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
         toast.warning(isEditing
           ? 'Cálculo atualizado, mas não foi possível sincronizar o produto.'
           : 'Cálculo salvo, mas não foi possível cadastrar o produto.');
+      } else if (mergedVariation) {
+        toast.success('Variação adicionada ao produto!');
       } else {
         toast.success(isEditing ? 'Produto atualizado com sucesso!' : 'Produto cadastrado a partir do cálculo!');
       }
