@@ -251,6 +251,8 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
         toast.warning(isEditing
           ? 'Cálculo atualizado, mas não foi possível sincronizar o produto.'
           : 'Cálculo salvo, mas não foi possível cadastrar o produto.');
+      } else if (mergedVariation) {
+        toast.success('Variação adicionada ao produto!');
       } else {
         toast.success(isEditing ? 'Produto atualizado com sucesso!' : 'Produto cadastrado a partir do cálculo!');
       }
