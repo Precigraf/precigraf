@@ -707,6 +707,8 @@ export type Database = {
           amount_received: number
           client_id: string
           created_at: string
+          delivery_date: string | null
+          delivery_notes: string | null
           id: string
           kanban_position: number
           last_reminder_at: string | null
@@ -724,6 +726,8 @@ export type Database = {
           amount_received?: number
           client_id: string
           created_at?: string
+          delivery_date?: string | null
+          delivery_notes?: string | null
           id?: string
           kanban_position?: number
           last_reminder_at?: string | null
@@ -741,6 +745,8 @@ export type Database = {
           amount_received?: number
           client_id?: string
           created_at?: string
+          delivery_date?: string | null
+          delivery_notes?: string | null
           id?: string
           kanban_position?: number
           last_reminder_at?: string | null
