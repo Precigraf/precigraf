@@ -49,12 +49,30 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { canSaveCalculation, canCreateCalculation, isTrialExpired, refetch } = useUserPlan();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const isValid = data.productName.trim().length > 0 && data.quantity > 0 && data.finalSellingPrice > 0;
   const isEditing = editingCalculation?.mode === 'edit';
 
   // Block saving if trial expired or can't save calculation (only for new calculations)
   const canSave = isEditing || (canCreateCalculation && canSaveCalculation);
+
+  const buildProductPayload = (userId: string, calculationId: string) => {
+    const qty = Math.max(1, data.quantity);
+    const unitCost = data.productionCost / qty;
+    return {
+      user_id: userId,
+      calculation_id: calculationId,
+      name: data.productName.trim(),
+      unit_price: data.unitPrice,
+      cost: unitCost,
+      default_quantity: qty,
+      price_tiers: [
+        { quantity: qty, price: data.finalSellingPrice, cost: data.productionCost },
+      ] as any,
+      is_active: true,
+    };
+  };
 
   const handleSave = async () => {
     if (!isValid) return;
@@ -74,6 +92,8 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
         toast.error('Você precisa estar logado para salvar cálculos');
         return;
       }
+
+      const userId = session.session.user.id;
 
       const calculationData = {
         product_name: data.productName.trim(),
@@ -97,6 +117,7 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
       };
 
       let error;
+      let calculationId: string | null = null;
 
       if (isEditing && editingCalculation) {
         // Atualizar cálculo existente
@@ -104,19 +125,21 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
           .from('calculations')
           .update(calculationData)
           .eq('id', editingCalculation.id)
-          .eq('user_id', session.session.user.id); // Segurança adicional
+          .eq('user_id', userId); // Segurança adicional
         error = result.error;
+        calculationId = editingCalculation.id;
       } else {
         // Criar novo cálculo (incluindo duplicações)
         const insertData = {
-          user_id: session.session.user.id,
+          user_id: userId,
           ...calculationData,
           is_favorite: false,
           duplicated_from: (editingCalculation?.mode === 'duplicate' && duplicatedFrom) ? duplicatedFrom : null,
         };
         
-        const result = await supabase.from('calculations').insert(insertData);
+        const result = await supabase.from('calculations').insert(insertData).select('id').single();
         error = result.error;
+        calculationId = result.data?.id ?? null;
       }
 
       if (error) {
@@ -125,8 +148,57 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
         return;
       }
 
+      // Sincronizar produto vinculado
+      let productWarning = false;
+      if (calculationId) {
+        try {
+          const productPayload = buildProductPayload(userId, calculationId);
+          if (isEditing) {
+            // Atualiza o produto vinculado (se existir). Se não houver, cria um.
+            const { data: existing } = await supabase
+              .from('products')
+              .select('id')
+              .eq('calculation_id', calculationId)
+              .eq('user_id', userId)
+              .maybeSingle();
+
+            if (existing?.id) {
+              const { error: upErr } = await supabase
+                .from('products')
+                .update({
+                  name: productPayload.name,
+                  unit_price: productPayload.unit_price,
+                  cost: productPayload.cost,
+                  default_quantity: productPayload.default_quantity,
+                  price_tiers: productPayload.price_tiers,
+                })
+                .eq('id', existing.id)
+                .eq('user_id', userId);
+              if (upErr) productWarning = true;
+            } else {
+              const { error: insErr } = await supabase.from('products').insert(productPayload as any);
+              if (insErr) productWarning = true;
+            }
+          } else {
+            const { error: insErr } = await supabase.from('products').insert(productPayload as any);
+            if (insErr) productWarning = true;
+          }
+        } catch (e) {
+          logError('Error syncing product:', e);
+          productWarning = true;
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+
       setJustSaved(true);
-      toast.success(isEditing ? 'Cálculo atualizado com sucesso!' : 'Cálculo salvo com sucesso!');
+      if (productWarning) {
+        toast.warning(isEditing
+          ? 'Cálculo atualizado, mas não foi possível sincronizar o produto.'
+          : 'Cálculo salvo, mas não foi possível cadastrar o produto.');
+      } else {
+        toast.success(isEditing ? 'Produto atualizado com sucesso!' : 'Produto cadastrado a partir do cálculo!');
+      }
       onSaved?.();
       await refetch(); // Update calculations count
 
@@ -157,12 +229,12 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
         ) : justSaved ? (
           <>
             <Check className="w-4 h-4 text-success" />
-            {isEditing ? 'Atualizado!' : 'Salvo!'}
+            {isEditing ? 'Atualizado!' : 'Cadastrado!'}
           </>
         ) : (
           <>
-            <Save className="w-4 h-4" />
-            {isEditing ? 'Atualizar cálculo' : 'Salvar cálculo'}
+            <Package className="w-4 h-4" />
+            {isEditing ? 'Atualizar produto' : 'Cadastrar produto'}
           </>
         )}
       </Button>
