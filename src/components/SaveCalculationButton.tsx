@@ -221,7 +221,11 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
               .eq('id', existingProduct.id)
               .eq('user_id', userId);
             if (upErr) productWarning = true;
-            else mergedVariation = !hadSameQty;
+            else {
+              mergedVariation = !hadSameQty;
+              updatedExisting = hadSameQty;
+              existingProductName = String(existingProduct.name || productName);
+            }
           } else {
             const derived = derivedFromTiers([newTier]);
             const insertPayload: any = {
@@ -236,6 +240,7 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
             };
             const { error: insErr } = await supabase.from('products').insert(insertPayload);
             if (insErr) productWarning = true;
+            else createdNew = true;
           }
         } catch (e) {
           logError('Error syncing product:', e);
