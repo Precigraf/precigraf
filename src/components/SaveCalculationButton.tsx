@@ -166,6 +166,9 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
       // Sincronizar produto vinculado (merge por nome)
       let productWarning = false;
       let mergedVariation = false;
+      let updatedExisting = false;
+      let createdNew = false;
+      let existingProductName = '';
       if (calculationId) {
         try {
           const newTier = buildNewTier();
@@ -221,7 +224,11 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
               .eq('id', existingProduct.id)
               .eq('user_id', userId);
             if (upErr) productWarning = true;
-            else mergedVariation = !hadSameQty;
+            else {
+              mergedVariation = !hadSameQty;
+              updatedExisting = hadSameQty;
+              existingProductName = String(existingProduct.name || productName);
+            }
           } else {
             const derived = derivedFromTiers([newTier]);
             const insertPayload: any = {
@@ -236,6 +243,7 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
             };
             const { error: insErr } = await supabase.from('products').insert(insertPayload);
             if (insErr) productWarning = true;
+            else createdNew = true;
           }
         } catch (e) {
           logError('Error syncing product:', e);
@@ -251,10 +259,20 @@ const SaveCalculationButton: React.FC<SaveCalculationButtonProps> = ({
         toast.warning(isEditing
           ? 'Cálculo atualizado, mas não foi possível sincronizar o produto.'
           : 'Cálculo salvo, mas não foi possível cadastrar o produto.');
+      } else if (createdNew) {
+        toast.success('Novo produto cadastrado!', {
+          description: `"${data.productName.trim()}" foi criado com o preço calculado.`,
+        });
       } else if (mergedVariation) {
-        toast.success('Variação adicionada ao produto!');
+        toast.success('Nova variação de preço adicionada!', {
+          description: `Variação de ${data.quantity} un. adicionada ao produto "${existingProductName}".`,
+        });
+      } else if (updatedExisting) {
+        toast.success('Variação existente atualizada!', {
+          description: `A variação de ${data.quantity} un. de "${existingProductName}" foi atualizada com o novo preço.`,
+        });
       } else {
-        toast.success(isEditing ? 'Produto atualizado com sucesso!' : 'Produto cadastrado a partir do cálculo!');
+        toast.success(isEditing ? 'Cálculo atualizado com sucesso!' : 'Cálculo salvo com sucesso!');
       }
       onSaved?.();
       await refetch(); // Update calculations count
