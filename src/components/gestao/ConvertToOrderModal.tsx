@@ -220,6 +220,17 @@ const ConvertToOrderModal: React.FC<Props> = ({ open, onOpenChange, totalValue, 
             </Select>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label>Data estimada de entrega</Label>
+              <Input type="date" value={deliveryDate} onChange={e => setDeliveryDate(e.target.value)} />
+            </div>
+            <div>
+              <Label>Observações da entrega</Label>
+              <Input value={deliveryNotes} onChange={e => setDeliveryNotes(e.target.value)} placeholder="Ex.: retirar no balcão" />
+            </div>
+          </div>
+
           {/* Pagamento */}
           <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
             <div className="flex justify-between items-baseline">
