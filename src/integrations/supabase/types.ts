@@ -1712,6 +1712,51 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_integrations: {
+        Row: {
+          access_token: string
+          business_name: string | null
+          connected_at: string
+          created_at: string
+          last_error: string | null
+          phone_display: string | null
+          phone_number_id: string
+          status: string
+          token_type: string
+          updated_at: string
+          user_id: string
+          waba_id: string
+        }
+        Insert: {
+          access_token: string
+          business_name?: string | null
+          connected_at?: string
+          created_at?: string
+          last_error?: string | null
+          phone_display?: string | null
+          phone_number_id: string
+          status?: string
+          token_type?: string
+          updated_at?: string
+          user_id: string
+          waba_id: string
+        }
+        Update: {
+          access_token?: string
+          business_name?: string | null
+          connected_at?: string
+          created_at?: string
+          last_error?: string | null
+          phone_display?: string | null
+          phone_number_id?: string
+          status?: string
+          token_type?: string
+          updated_at?: string
+          user_id?: string
+          waba_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       pending_payments_safe: {
@@ -1777,6 +1822,42 @@ export type Database = {
           unit?: string | null
           unit_cost?: number | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_integration_status: {
+        Row: {
+          business_name: string | null
+          connected_at: string | null
+          last_error: string | null
+          phone_display: string | null
+          phone_number_id: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+          waba_id: string | null
+        }
+        Insert: {
+          business_name?: string | null
+          connected_at?: string | null
+          last_error?: string | null
+          phone_display?: string | null
+          phone_number_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          waba_id?: string | null
+        }
+        Update: {
+          business_name?: string | null
+          connected_at?: string | null
+          last_error?: string | null
+          phone_display?: string | null
+          phone_number_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          waba_id?: string | null
         }
         Relationships: []
       }
