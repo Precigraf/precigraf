@@ -1085,6 +1085,95 @@ export type Database = {
           },
         ]
       }
+      quote_followup_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          message_rendered: string | null
+          quote_id: string
+          sent_at: string
+          status: string
+          user_id: string
+          whatsapp_message_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_rendered?: string | null
+          quote_id: string
+          sent_at?: string
+          status: string
+          user_id: string
+          whatsapp_message_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_rendered?: string | null
+          quote_id?: string
+          sent_at?: string
+          status?: string
+          user_id?: string
+          whatsapp_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_followup_logs_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_followup_settings: {
+        Row: {
+          business_days_only: boolean
+          created_at: string
+          delay_hours: number
+          enabled: boolean
+          message_template: string
+          send_window_end: string
+          send_window_start: string
+          timezone: string
+          updated_at: string
+          user_id: string
+          whatsapp_template_lang: string
+          whatsapp_template_name: string
+        }
+        Insert: {
+          business_days_only?: boolean
+          created_at?: string
+          delay_hours?: number
+          enabled?: boolean
+          message_template?: string
+          send_window_end?: string
+          send_window_start?: string
+          timezone?: string
+          updated_at?: string
+          user_id: string
+          whatsapp_template_lang?: string
+          whatsapp_template_name?: string
+        }
+        Update: {
+          business_days_only?: boolean
+          created_at?: string
+          delay_hours?: number
+          enabled?: boolean
+          message_template?: string
+          send_window_end?: string
+          send_window_start?: string
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp_template_lang?: string
+          whatsapp_template_name?: string
+        }
+        Relationships: []
+      }
       quote_responses: {
         Row: {
           action: string
@@ -1118,10 +1207,13 @@ export type Database = {
           client_id: string
           client_marked_paid_at: string | null
           client_marked_paid_method: string | null
+          client_responded_at: string | null
           created_at: string
           description: string | null
           discount_type: string | null
           discount_value: number | null
+          followup_scheduled_at: string | null
+          followup_sent_count: number
           id: string
           items: Json | null
           last_reminder_at: string | null
@@ -1131,6 +1223,7 @@ export type Database = {
           quantity: number | null
           quote_number: number | null
           raw_data: Json | null
+          sent_at: string | null
           shipping_value: number | null
           status: string
           subtotal: number | null
@@ -1145,10 +1238,13 @@ export type Database = {
           client_id: string
           client_marked_paid_at?: string | null
           client_marked_paid_method?: string | null
+          client_responded_at?: string | null
           created_at?: string
           description?: string | null
           discount_type?: string | null
           discount_value?: number | null
+          followup_scheduled_at?: string | null
+          followup_sent_count?: number
           id?: string
           items?: Json | null
           last_reminder_at?: string | null
@@ -1158,6 +1254,7 @@ export type Database = {
           quantity?: number | null
           quote_number?: number | null
           raw_data?: Json | null
+          sent_at?: string | null
           shipping_value?: number | null
           status?: string
           subtotal?: number | null
@@ -1172,10 +1269,13 @@ export type Database = {
           client_id?: string
           client_marked_paid_at?: string | null
           client_marked_paid_method?: string | null
+          client_responded_at?: string | null
           created_at?: string
           description?: string | null
           discount_type?: string | null
           discount_value?: number | null
+          followup_scheduled_at?: string | null
+          followup_sent_count?: number
           id?: string
           items?: Json | null
           last_reminder_at?: string | null
@@ -1185,6 +1285,7 @@ export type Database = {
           quantity?: number | null
           quote_number?: number | null
           raw_data?: Json | null
+          sent_at?: string | null
           shipping_value?: number | null
           status?: string
           subtotal?: number | null
@@ -1779,10 +1880,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_quote_client_responded: {
+        Args: { p_quote_id: string }
+        Returns: Json
+      }
       mark_quote_paid_by_token: {
         Args: { p_method: string; p_token: string }
         Returns: Json
       }
+      mark_quote_sent: { Args: { p_quote_id: string }; Returns: Json }
       register_client_portal_upload: {
         Args: {
           p_file_name: string
