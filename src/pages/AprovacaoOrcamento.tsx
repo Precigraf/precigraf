@@ -220,14 +220,20 @@ const AprovacaoOrcamento: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-3">Resumo</h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between text-gray-600">
-              <span>Subtotal</span>
+              <span>Material</span>
               <span className="tabular-nums">{fmt(quote.subtotal)}</span>
             </div>
             {quote.discount_value > 0 && (
-              <div className="flex justify-between text-red-600">
-                <span>Desconto</span>
-                <span className="tabular-nums">−{fmt(discountAmount)}</span>
-              </div>
+              <>
+                <div className="flex justify-between text-red-600">
+                  <span>Desconto</span>
+                  <span className="tabular-nums">−{fmt(discountAmount)}</span>
+                </div>
+                <div className="flex justify-between text-gray-900 font-medium">
+                  <span>Subtotal</span>
+                  <span className="tabular-nums">{fmt(quote.subtotal - discountAmount)}</span>
+                </div>
+              </>
             )}
             {quote.shipping_value > 0 && (
               <div className="flex justify-between text-gray-600">
@@ -235,6 +241,7 @@ const AprovacaoOrcamento: React.FC = () => {
                 <span className="tabular-nums">+{fmt(quote.shipping_value)}</span>
               </div>
             )}
+
             <div className="flex justify-between text-lg font-bold pt-3 mt-2 border-t-2 border-gray-900 text-gray-900">
               <span>Total</span>
               <span className="tabular-nums">{fmt(quote.total_value)}</span>
