@@ -544,7 +544,7 @@ const OrcamentoEditor: React.FC = () => {
     doc.setFontSize(11);
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'normal');
-    doc.text('Subtotal:', summaryX - 60, y);
+    doc.text('Material:', summaryX - 60, y);
     doc.text(formatCurrency(subtotal), summaryX, y, { align: 'right' });
     y += 6;
 
@@ -552,6 +552,11 @@ const OrcamentoEditor: React.FC = () => {
       doc.setTextColor(220, 38, 38);
       doc.text('Desconto:', summaryX - 60, y);
       doc.text(`-${formatCurrency(discountAmount)}`, summaryX, y, { align: 'right' });
+      y += 6;
+
+      doc.setTextColor(0, 0, 0);
+      doc.text('Subtotal:', summaryX - 60, y);
+      doc.text(formatCurrency(subtotal - discountAmount), summaryX, y, { align: 'right' });
       y += 6;
     }
 
@@ -569,6 +574,7 @@ const OrcamentoEditor: React.FC = () => {
     doc.text('Total:', summaryX - 60, y);
     doc.text(formatCurrency(total), summaryX, y, { align: 'right' });
     y += 10;
+
 
     // Notes
     if (notes) {
