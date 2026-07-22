@@ -599,7 +599,23 @@ const OrcamentoEditor: React.FC = () => {
       doc.text(`Validade: ${format(validUntil, 'dd/MM/yyyy')}`, 14, y);
     }
 
+    // Signatures (Vendedor / Cliente) — no rodapé da última página
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const sigY = Math.max(y + 25, pageHeight - 35);
+    const colW = (pageWidth - 28) / 2;
+    const leftX = 14;
+    const rightX = 14 + colW;
+    doc.setDrawColor(120, 120, 120);
+    doc.line(leftX + 8, sigY, leftX + colW - 8, sigY);
+    doc.line(rightX + 8, sigY, rightX + colW - 8, sigY);
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Assinatura do Vendedor', leftX + colW / 2, sigY + 5, { align: 'center' });
+    doc.text('Assinatura do Cliente', rightX + colW / 2, sigY + 5, { align: 'center' });
+
     doc.save(`orcamento-ORC-${quoteNumber || 'novo'}.pdf`);
+
   };
 
   if (loading) {
