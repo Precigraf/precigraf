@@ -248,6 +248,14 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
             <span className="font-medium text-foreground">Custo Total de Produção</span>
             <span className="font-bold text-foreground">{formatCurrency(productionCost)}</span>
           </div>
+          {outsourcingCost > 0 && (
+            <div className="flex justify-between items-center py-1">
+              <span className="text-secondary-foreground">
+                Terceirização <span className="text-xs text-muted-foreground">(repasse, sem margem)</span>
+              </span>
+              <span className="font-medium text-foreground">{formatCurrency(outsourcingCost)}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -266,7 +274,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         finalSellingPrice={finalSellingPrice}
         unitPrice={unitPrice}
         quantity={safeQuantity}
-        totalCost={productionCost}
+        totalCost={productionCost + outsourcingCost}
         profit={desiredProfit}
         isPro={isPro}
         onShowUpgrade={onShowUpgrade}
@@ -278,6 +286,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
         operationalCost={operationalCost}
         profit={desiredProfit}
         marketplaceFees={0}
+        outsourcingCost={outsourcingCost}
       />
 
       {/* Simulador de Quantidade */}
