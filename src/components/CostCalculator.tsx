@@ -618,6 +618,11 @@ const CostCalculator: React.FC = () => {
               items={rollMaterialsItems}
               onItemsChange={setRollMaterialsItems}
             />
+            <OutsourcingInput
+              items={outsourcingItems}
+              onItemsChange={setOutsourcingItems}
+              lotQuantity={lotQuantity}
+            />
           </FormSection>
 
           {/* Seção 4: Custos Operacionais Avançados */}
