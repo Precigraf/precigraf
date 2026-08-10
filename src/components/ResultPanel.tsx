@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, Package, DollarSign, Wallet, BadgeDollarSign } from 'lucide-react';
+import { TrendingUp, Package, DollarSign, Wallet, BadgeDollarSign, Truck } from 'lucide-react';
 import SmartAlerts from './SmartAlerts';
 import QuantitySimulator from './QuantitySimulator';
 import CostChart from './CostChart';
@@ -190,6 +190,25 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
             </div>
           </div>
         </div>
+
+        <div className="bg-secondary/50 rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Truck className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Terceirização</span>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-semibold text-foreground">
+                {formatCurrency(outsourcingCost)}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {formatCurrency(unitOutsourcingCost)}/un
+              </div>
+            </div>
+          </div>
+        </div>
+
+
 
         <div className="bg-secondary/50 rounded-lg p-3">
           <div className="flex items-center justify-between">
