@@ -6,6 +6,7 @@ import { MarketplaceType, ShopeeAccountType, calcShopeeCost } from './Marketplac
 
 interface QuantitySimulatorProps {
   unitRawMaterialsCost: number;
+  unitOutsourcingCost?: number;
   operationalTotal: number;
   marginPercentage: number;
   fixedProfit: number;
@@ -20,6 +21,7 @@ interface QuantitySimulatorProps {
 
 const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
   unitRawMaterialsCost,
+  unitOutsourcingCost = 0,
   operationalTotal,
   marginPercentage,
   fixedProfit,
@@ -57,7 +59,9 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
       ? safeFixedProfit / safeQty
       : unitProductionCost * (safeMarginPercentage / 100);
 
-    const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
+    // Terceirização: repasse puro por unidade, sem margem
+    const safeUnitOutsourcing = Math.max(0, unitOutsourcingCost || 0);
+    const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit + safeUnitOutsourcing;
 
     // Marketplace fees: Shopee tier-based or custom flat
     let unitMarketplaceCommission = 0;
@@ -79,7 +83,7 @@ const QuantitySimulator: React.FC<QuantitySimulatorProps> = ({
     return { 
       unitPrice, 
       lotPrice, 
-      unitCosts: unitProductionCost,
+      unitCosts: unitProductionCost + safeUnitOutsourcing,
       unitFees: unitTotalFees,
       unitProfit: unitDesiredProfit,
     };

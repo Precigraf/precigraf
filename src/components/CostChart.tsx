@@ -6,6 +6,7 @@ interface CostChartProps {
   operationalCost: number;
   profit: number;
   marketplaceFees: number;
+  outsourcingCost?: number;
 }
 
 const CostChart: React.FC<CostChartProps> = ({
@@ -13,14 +14,16 @@ const CostChart: React.FC<CostChartProps> = ({
   operationalCost,
   profit,
   marketplaceFees,
+  outsourcingCost = 0,
 }) => {
-  const total = rawMaterialsCost + operationalCost + profit + marketplaceFees;
+  const total = rawMaterialsCost + operationalCost + profit + marketplaceFees + outsourcingCost;
   
   if (total <= 0) return null;
 
   const data = [
     { name: 'Matéria-prima', value: rawMaterialsCost, color: 'hsl(var(--primary))' },
     { name: 'Operacional', value: operationalCost, color: 'hsl(var(--muted-foreground))' },
+    { name: 'Terceirização', value: outsourcingCost, color: 'hsl(var(--accent-foreground))' },
     { name: 'Lucro', value: profit, color: 'hsl(var(--success))' },
   ];
 

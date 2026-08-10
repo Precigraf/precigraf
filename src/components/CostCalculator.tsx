@@ -9,6 +9,7 @@ import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
 import OtherMaterialsInput, { OtherMaterialItem, calculateOtherMaterialItemCost } from './OtherMaterialsInput';
 import RollMaterialsInput, { RollMaterialItem, calculateRollMaterialItemCost } from './RollMaterialsInput';
+import OutsourcingInput, { OutsourcingItem, calculateOutsourcingItemCost } from './OutsourcingInput';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -94,6 +95,7 @@ const CostCalculator: React.FC = () => {
   const [packagingData, setPackagingData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
   const [otherMaterialsItems, setOtherMaterialsItems] = useState<OtherMaterialItem[]>([]);
   const [rollMaterialsItems, setRollMaterialsItems] = useState<RollMaterialItem[]>([]);
+  const [outsourcingItems, setOutsourcingItems] = useState<OutsourcingItem[]>([]);
   
   // Tinta - Nova estrutura avançada com cálculo por ML
   const [inkData, setInkData] = useState<InkCostData>({ 
@@ -192,6 +194,8 @@ const CostCalculator: React.FC = () => {
       if (ri.otherMaterialsItems) setOtherMaterialsItems(ri.otherMaterialsItems);
       if (ri.rollMaterialsItems) setRollMaterialsItems(ri.rollMaterialsItems);
       else setRollMaterialsItems([]);
+      if (ri.outsourcingItems) setOutsourcingItems(ri.outsourcingItems);
+      else setOutsourcingItems([]);
       if (ri.operationalCostsData) setOperationalCostsData(ri.operationalCostsData);
       if (ri.taxesFees) setTaxesFees(ri.taxesFees);
       else setTaxesFees(DEFAULT_TAXES_FEES);
@@ -202,6 +206,7 @@ const CostCalculator: React.FC = () => {
       setInkData({ totalValue: calculation.varnish_cost, bottleCount: 1, mlPerBottle: 1, mlPerPrint: 1, printQuantity: 1 });
       setPackagingData({ packageValue: 0, packageQuantity: 1, quantityUsed: 1 });
       setOtherMaterialsItems(calculation.other_material_cost > 0 ? [{ id: 'edit-other', name: 'Outros insumos', packageValue: calculation.other_material_cost, packageQuantity: 1, quantityUsed: 1 }] : []);
+      setOutsourcingItems([]);
     }
     
     // Margem e lucro
@@ -325,6 +330,12 @@ const CostCalculator: React.FC = () => {
     return rollMaterialsItems.reduce((sum, item) => sum + calculateRollMaterialItemCost(item), 0);
   }, [rollMaterialsItems]);
 
+  // Terceirização (repasse puro, por unidade — não recebe margem)
+  const unitOutsourcingCost = useMemo(() => {
+    return outsourcingItems.reduce((sum, item) => sum + calculateOutsourcingItemCost(item), 0);
+  }, [outsourcingItems]);
+
+
   // Calcular custos de matéria-prima por unidade
   const rawMaterialCosts = useMemo(() => {
     return {
@@ -362,6 +373,8 @@ const CostCalculator: React.FC = () => {
         finalSellingPrice: 0,
         unitPrice: 0,
         unitRawMaterialsCost: 0,
+        outsourcingCost: 0,
+        unitOutsourcingCost: 0,
         netProfit: 0,
         totalCost: 0,
         profitValue: 0,
@@ -394,7 +407,8 @@ const CostCalculator: React.FC = () => {
       : unitProductionCost * (safeProfitMargin / 100);
 
     // Preço base de venda por unidade (sem taxas)
-    const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
+    // Terceirização entra como repasse puro: soma DEPOIS do lucro, sem receber margem
+    const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit + unitOutsourcingCost;
 
     // Acréscimos de taxas e impostos (sobre o preço base)
     const feesPct = totalFeesPercentage(taxesFees);
@@ -410,11 +424,12 @@ const CostCalculator: React.FC = () => {
     const operationalCost = operationalTotal;
     const productionCost = unitProductionCost * safeLotQuantity;
     const desiredProfit = unitDesiredProfit * safeLotQuantity;
+    const outsourcingCost = unitOutsourcingCost * safeLotQuantity;
     const baseSellingPrice = unitBaseSellingPrice * safeLotQuantity;
     const feesAmount = finalSellingPrice - baseSellingPrice;
 
-    // Lucro líquido = preço final - custo - taxas (cliente paga as taxas, mas elas saem do bruto)
-    const netProfit = finalSellingPrice - productionCost - feesAmount;
+    // Lucro líquido = preço final - custo - terceirização (repasse) - taxas
+    const netProfit = finalSellingPrice - productionCost - outsourcingCost - feesAmount;
 
     return {
       rawMaterialsCost,
@@ -430,8 +445,10 @@ const CostCalculator: React.FC = () => {
       finalSellingPrice,
       unitPrice,
       unitRawMaterialsCost,
+      outsourcingCost,
+      unitOutsourcingCost,
       netProfit,
-      totalCost: productionCost,
+      totalCost: productionCost + outsourcingCost,
       profitValue: desiredProfit,
       sellingPrice: finalSellingPrice,
     };
@@ -442,6 +459,7 @@ const CostCalculator: React.FC = () => {
     profitMargin,
     fixedProfit,
     taxesFees,
+    unitOutsourcingCost,
   ]);
 
   // Valores para salvar (compatibilidade com banco de dados)
@@ -450,13 +468,13 @@ const CostCalculator: React.FC = () => {
     paper: rawMaterialCosts.paper,
     ink: rawMaterialCosts.handle,
     varnish: rawMaterialCosts.ink,
-    otherMaterials: rawMaterialCosts.packaging + rawMaterialCosts.other + rawMaterialCosts.roll,
+    otherMaterials: rawMaterialCosts.packaging + rawMaterialCosts.other + rawMaterialCosts.roll + unitOutsourcingCost,
     labor: calculatedOperationalCosts.labor.appliedCost,
     energy: calculatedOperationalCosts.electricity.appliedCost,
     equipment: calculatedOperationalCosts.equipment.appliedCost + calculatedOperationalCosts.equipments.reduce((sum, e) => sum + e.appliedCost, 0),
     rent: calculatedOperationalCosts.internet.appliedCost,
     otherCosts: calculatedOperationalCosts.otherFixedCosts.reduce((sum, cost) => sum + cost.appliedCost, 0),
-  }), [rawMaterialCosts, calculatedOperationalCosts]);
+  }), [rawMaterialCosts, calculatedOperationalCosts, unitOutsourcingCost]);
 
   return (
     <>
@@ -600,6 +618,11 @@ const CostCalculator: React.FC = () => {
               items={rollMaterialsItems}
               onItemsChange={setRollMaterialsItems}
             />
+            <OutsourcingInput
+              items={outsourcingItems}
+              onItemsChange={setOutsourcingItems}
+              lotQuantity={lotQuantity}
+            />
           </FormSection>
 
           {/* Seção 4: Custos Operacionais Avançados */}
@@ -673,6 +696,8 @@ const CostCalculator: React.FC = () => {
             feesPercentage={calculations.feesPercentage}
             feesAmount={calculations.feesAmount}
             baseSellingPrice={calculations.baseSellingPrice}
+            outsourcingCost={calculations.outsourcingCost}
+            unitOutsourcingCost={calculations.unitOutsourcingCost}
             rawInputs={{
               paperData,
               handleData,
@@ -680,6 +705,7 @@ const CostCalculator: React.FC = () => {
               packagingData,
               otherMaterialsItems,
               rollMaterialsItems,
+              outsourcingItems,
               operationalCostsData,
               taxesFees,
             }}
