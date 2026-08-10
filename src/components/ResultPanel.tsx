@@ -292,6 +292,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
       {/* Simulador de Quantidade */}
       <QuantitySimulator
         unitRawMaterialsCost={unitRawMaterialsCost}
+        unitOutsourcingCost={unitOutsourcingCost}
         operationalTotal={operationalTotal}
         marginPercentage={profitMargin}
         fixedProfit={fixedProfit}
