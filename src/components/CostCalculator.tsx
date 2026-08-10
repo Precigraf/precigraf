@@ -407,7 +407,8 @@ const CostCalculator: React.FC = () => {
       : unitProductionCost * (safeProfitMargin / 100);
 
     // Preço base de venda por unidade (sem taxas)
-    const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit;
+    // Terceirização entra como repasse puro: soma DEPOIS do lucro, sem receber margem
+    const unitBaseSellingPrice = unitProductionCost + unitDesiredProfit + unitOutsourcingCost;
 
     // Acréscimos de taxas e impostos (sobre o preço base)
     const feesPct = totalFeesPercentage(taxesFees);
@@ -423,11 +424,12 @@ const CostCalculator: React.FC = () => {
     const operationalCost = operationalTotal;
     const productionCost = unitProductionCost * safeLotQuantity;
     const desiredProfit = unitDesiredProfit * safeLotQuantity;
+    const outsourcingCost = unitOutsourcingCost * safeLotQuantity;
     const baseSellingPrice = unitBaseSellingPrice * safeLotQuantity;
     const feesAmount = finalSellingPrice - baseSellingPrice;
 
-    // Lucro líquido = preço final - custo - taxas (cliente paga as taxas, mas elas saem do bruto)
-    const netProfit = finalSellingPrice - productionCost - feesAmount;
+    // Lucro líquido = preço final - custo - terceirização (repasse) - taxas
+    const netProfit = finalSellingPrice - productionCost - outsourcingCost - feesAmount;
 
     return {
       rawMaterialsCost,
@@ -443,8 +445,10 @@ const CostCalculator: React.FC = () => {
       finalSellingPrice,
       unitPrice,
       unitRawMaterialsCost,
+      outsourcingCost,
+      unitOutsourcingCost,
       netProfit,
-      totalCost: productionCost,
+      totalCost: productionCost + outsourcingCost,
       profitValue: desiredProfit,
       sellingPrice: finalSellingPrice,
     };
@@ -455,6 +459,7 @@ const CostCalculator: React.FC = () => {
     profitMargin,
     fixedProfit,
     taxesFees,
+    unitOutsourcingCost,
   ]);
 
   // Valores para salvar (compatibilidade com banco de dados)
