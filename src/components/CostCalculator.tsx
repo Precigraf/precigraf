@@ -468,13 +468,13 @@ const CostCalculator: React.FC = () => {
     paper: rawMaterialCosts.paper,
     ink: rawMaterialCosts.handle,
     varnish: rawMaterialCosts.ink,
-    otherMaterials: rawMaterialCosts.packaging + rawMaterialCosts.other + rawMaterialCosts.roll,
+    otherMaterials: rawMaterialCosts.packaging + rawMaterialCosts.other + rawMaterialCosts.roll + unitOutsourcingCost,
     labor: calculatedOperationalCosts.labor.appliedCost,
     energy: calculatedOperationalCosts.electricity.appliedCost,
     equipment: calculatedOperationalCosts.equipment.appliedCost + calculatedOperationalCosts.equipments.reduce((sum, e) => sum + e.appliedCost, 0),
     rent: calculatedOperationalCosts.internet.appliedCost,
     otherCosts: calculatedOperationalCosts.otherFixedCosts.reduce((sum, cost) => sum + cost.appliedCost, 0),
-  }), [rawMaterialCosts, calculatedOperationalCosts]);
+  }), [rawMaterialCosts, calculatedOperationalCosts, unitOutsourcingCost]);
 
   return (
     <>
