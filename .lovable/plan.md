@@ -1,105 +1,76 @@
+# Custo de Terceirização na Calculadora
 
-# Follow-up Automático de Orçamentos via WhatsApp
+## O que será criado
 
-## Visão geral
+Uma nova seção **Terceirização** na calculadora, para lançar serviços que você contrata de terceiros (laminação, corte especial, bordado, plotagem, acabamento, etc.).
 
-Quando um orçamento é enviado (link público gerado ou PDF baixado), o sistema marca `sent_at` e agenda um follow-up. Após X horas configuráveis (padrão 24h), um cron roda uma Edge Function que revalida o status, respeita janela horária/dias úteis, envia via **WhatsApp Cloud API (Meta)** usando template aprovado, e registra tudo no histórico.
+Regras confirmadas:
+- Cobrança **por unidade** — você informa o valor unitário e o sistema multiplica pela quantidade do lote.
+- **Repasse puro** — o custo do terceiro não recebe sua margem de lucro. Você repassa exatamente o que paga.
 
-## Configuração inicial (usuário)
+## Como vai funcionar na tela
 
-Antes de funcionar, o usuário precisará:
-1. Ter uma conta **Meta Business + WhatsApp Business Account** com número aprovado.
-2. Cadastrar um **template HSM** aprovado pela Meta (mensagens iniciadas fora da janela de 24h exigem template). Vamos guiá-lo a criar um template chamado `orcamento_followup` com 1 variável (nome) — o texto padrão será fornecido.
-3. Fornecer 3 secrets: `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID`, `WHATSAPP_ACCESS_TOKEN` (token permanente do System User).
+Bloco com lista de itens (mesmo padrão visual de "Outros Insumos"), cada item com:
 
-## Banco de dados (migração)
+| Campo | Exemplo |
+|---|---|
+| Nome do serviço | Laminação fosca |
+| Fornecedor (opcional) | Gráfica Silva |
+| Valor por unidade | R$ 0,80 |
+| Qtd. por produto | 1 |
 
-Novas colunas em `quotes`:
-- `sent_at timestamptz` — quando o link/PDF foi gerado pela 1ª vez.
-- `followup_scheduled_at timestamptz` — quando o próximo envio deve ocorrer.
-- `followup_sent_count int default 0`.
-- `client_responded_at timestamptz` — marcado manualmente pelo usuário ("cliente respondeu").
+Cada linha mostra o custo unitário e o custo total daquele serviço no lote. No rodapé do bloco, o total de terceirização.
 
-Nova tabela `quote_followup_settings` (1 por user):
-- `user_id uuid PK`, `enabled bool default true`
-- `delay_hours int default 24`
-- `message_template text` (com variáveis {nome_cliente} etc.)
-- `whatsapp_template_name text` (nome HSM na Meta, ex: `orcamento_followup`)
-- `whatsapp_template_lang text default 'pt_BR'`
-- `send_window_start time default '08:00'`, `send_window_end time default '18:00'`
-- `business_days_only bool default true`
-- `timezone text default 'America/Sao_Paulo'`
+Limite de 10 itens, igual aos outros blocos.
 
-Nova tabela `quote_followup_logs`:
-- `id`, `quote_id`, `user_id`, `sent_at`, `message_rendered text`, `status text` (`success`|`error`|`skipped`), `error_message text`, `whatsapp_message_id text`.
+## Impacto no cálculo
 
-RLS: tudo escopado por `user_id`, GRANTs padrão para authenticated + service_role.
+A terceirização entra **fora** do bloco que recebe margem:
 
-## Backend: Edge Functions
-
-**1. `whatsapp-send-followup`** (cron, verify_jwt=false, service_role):
-- Roda a cada 15 min via pg_cron + pg_net.
-- Seleciona quotes onde `followup_scheduled_at <= now()`, `status='pending'`, `client_responded_at IS NULL`, `followup_sent_count = 0`, respeitando janela horária e dias úteis do settings do dono.
-- Renderiza template substituindo variáveis: `{nome_cliente}`, `{numero_orcamento}`, `{valor}`, `{empresa}`, `{link_orcamento}` (`/orcamento/{public_token}`), `{telefone}`.
-- Chama Meta Graph API `POST /{phone_number_id}/messages` com type=`template`, nome do template e parâmetros. Se a mensagem customizada divergir do template aprovado, envia o template padrão (a Meta exige match exato) — o campo "mensagem" no admin serve para o preview/histórico e para futura mensagem livre dentro da janela.
-- Grava em `quote_followup_logs` e incrementa `followup_sent_count`.
-- Trata erros HTTP da Meta e registra em `error_message`.
-
-**2. `quote-mark-sent`** (chamada do frontend ao gerar link/baixar PDF):
-- Se `sent_at IS NULL`, seta `sent_at=now()` e `followup_scheduled_at = now() + delay_hours` conforme settings.
-- Idempotente.
-
-**3. Cron job** via `supabase--insert`:
-```sql
-select cron.schedule('whatsapp-followup-tick', '*/15 * * * *', $$ ... net.http_post ... $$);
+```text
+Custo de produção      = matéria-prima + operacional        (recebe margem)
+Lucro desejado         = custo de produção x margem %
+Preço base             = custo de produção + lucro
+Terceirização          = valor unitário x qtd por produto   (SEM margem)
+Preço antes de taxas   = preço base + terceirização
+Preço final            = preço antes de taxas x (1 + taxas %)
 ```
 
-## Frontend
+Detalhe importante: a terceirização **entra na base de taxas/impostos**. Se você paga 3,5% de maquininha, esse percentual incide sobre o total cobrado — incluir a terceirização na base garante que você receba líquido exatamente o valor que precisa pagar ao terceiro. Sem isso, a taxa sairia do seu bolso.
 
-**Nova página `/configuracoes/followup`** (`src/pages/FollowupSettings.tsx`):
-- Toggle ativar/desativar.
-- Slider/input de "horas até o 1º lembrete".
-- Textarea da mensagem com chips clicáveis para inserir variáveis.
-- Campo do nome do template Meta + idioma.
-- Time pickers janela permitida.
-- Toggle "somente dias úteis".
-- Botão "Testar envio" (envia para o próprio WhatsApp do perfil).
-- Link no `AppSidebar` dentro de Configurações ou aba em Perfil.
+O **lucro líquido** não muda com a terceirização: ela entra como custo e sai como receita na mesma proporção.
 
-**Marcação de "enviado"**:
-- Em `OrcamentoEditor.tsx`, ao clicar em "Copiar link público" / "Baixar PDF" / "Enviar por WhatsApp", chamar `quote-mark-sent`.
-- Badge visual no card do orçamento: "Follow-up agendado para {data}" ou "Follow-up enviado em {data}".
+## Onde aparece
 
-**Botão "Marcar como respondido"** na lista de orçamentos (`src/pages/Orcamentos.tsx`) — seta `client_responded_at=now()`, cancela follow-up.
+- **Painel de resultado / Detalhamento de preço**: nova linha "Terceirização (repasse)" separada dos custos com margem, deixando claro que é repasse.
+- **Gráfico de custos**: nova fatia "Terceirização".
+- **Simulador de quantidades (Pro)**: recalcula corretamente, já que é linear por unidade.
+- **PDF do orçamento**: incluído no valor do produto (sem linha separada, para não expor seu fornecedor ao cliente).
 
-**Histórico**: nova aba/seção no detalhe do orçamento mostrando `quote_followup_logs` (data, mensagem enviada, status, erro se houver).
+## Persistência e edição
 
-## Regras de segurança / anti-duplicidade
-
-- `followup_sent_count` bloqueia reenvio.
-- Revalida `status='pending'` e `client_responded_at IS NULL` **dentro da mesma query** que atualiza o log (com transação/CTE) para evitar race.
-- Se `approved/rejected/cancelled` antes do prazo → automaticamente ignorado pelo filtro.
+- Os itens são salvos em `raw_inputs.outsourcingItems` no histórico de cálculos — mesmo mecanismo já usado por "Outros Insumos" e "Material por rolo".
+- Ao editar um cálculo salvo, os itens de terceirização voltam preenchidos.
+- Para compatibilidade com o banco atual, o total de terceirização é somado ao campo `other_material_cost` da tabela `calculations` (que já agrega embalagem, outros insumos e rolo). Nenhuma migração de banco é necessária.
+- Ao clicar em "Cadastrar produto", o custo de terceirização já está embutido no custo total e no preço, então os tiers de preço saem corretos.
 
 ## Detalhes técnicos
 
-- **Substituição de variáveis**: helper `renderTemplate(text, ctx)` compartilhado (edge + frontend preview).
-- **Formato do WhatsApp**: número normalizado E.164 (`55XXXXXXXXXXX`), pego de `clients.whatsapp` (fallback erro se vazio).
-- **Timezone**: cálculos de janela horária usando `America/Sao_Paulo` via `Intl.DateTimeFormat` na edge function.
-- **Dias úteis**: seg-sex simples (feriados fora do escopo desta v1).
-- **Secrets**: solicitados via `add_secret` após aprovação do plano.
-
-## O que fica fora desta v1
-
-- Múltiplos lembretes escalonados (só o 1º de 24h). Estrutura de `followup_sent_count` já prepara para v2.
-- Recepção de respostas via webhook da Meta (marcar respondido automaticamente) — pode ser adicionado depois.
-- Feriados nacionais.
+- Novo componente `src/components/OutsourcingInput.tsx`, exportando o tipo `OutsourcingItem` e o helper `calculateOutsourcingItemCost(item)` — mesmo padrão de `OtherMaterialsInput.tsx`.
+- Em `src/components/CostCalculator.tsx`:
+  - novo estado `outsourcingItems`;
+  - `outsourcingTotalCost` via `useMemo`;
+  - dentro de `calculations`, `unitBaseSellingPrice` passa a somar `unitOutsourcingCost` antes de aplicar `feesMultiplier`, mas **depois** de calcular `unitDesiredProfit` (que continua baseado só em `unitProductionCost`);
+  - `netProfit` recalculado descontando a terceirização, para não inflar o lucro;
+  - inclusão em `raw_inputs` no bloco de salvamento e no bloco de restauração de edição;
+  - soma ao `saveDataValues.otherMaterials`.
+- `PriceBreakdown.tsx` e `CostChart.tsx` recebem a nova parcela como prop.
+- Cálculo sem arredondamento intermediário, seguindo a regra de precisão exata já adotada no projeto.
 
 ## Ordem de implementação
 
-1. Migração DB (colunas + tabelas + RLS + GRANTs).
-2. `add_secret` para credenciais Meta.
-3. Edge `quote-mark-sent` + integração nos botões do editor.
-4. Página de configurações + link no sidebar.
-5. Edge `whatsapp-send-followup` + cron job.
-6. UI de histórico e botão "marcar respondido".
-7. Botão "Testar envio".
+1. Criar `OutsourcingInput.tsx` com o helper de cálculo.
+2. Integrar estado e fórmula no `CostCalculator.tsx`.
+3. Exibir no `PriceBreakdown` e `CostChart`.
+4. Persistir e restaurar em `raw_inputs`.
+5. Validar com um caso real: 100 un., laminação R$ 0,80/un., conferir que o lucro líquido não subiu.
