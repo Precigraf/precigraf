@@ -330,6 +330,12 @@ const CostCalculator: React.FC = () => {
     return rollMaterialsItems.reduce((sum, item) => sum + calculateRollMaterialItemCost(item), 0);
   }, [rollMaterialsItems]);
 
+  // Terceirização (repasse puro, por unidade — não recebe margem)
+  const unitOutsourcingCost = useMemo(() => {
+    return outsourcingItems.reduce((sum, item) => sum + calculateOutsourcingItemCost(item), 0);
+  }, [outsourcingItems]);
+
+
   // Calcular custos de matéria-prima por unidade
   const rawMaterialCosts = useMemo(() => {
     return {
