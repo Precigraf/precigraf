@@ -25,6 +25,8 @@ interface ResultPanelProps {
   feesPercentage?: number;
   feesAmount?: number;
   baseSellingPrice?: number;
+  outsourcingCost?: number;
+  unitOutsourcingCost?: number;
   saveData?: {
     paper: number;
     ink: number;
@@ -64,6 +66,8 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   feesPercentage = 0,
   feesAmount = 0,
   baseSellingPrice = 0,
+  outsourcingCost = 0,
+  unitOutsourcingCost = 0,
   saveData,
   onSaved,
   onApplySuggestedMargin,
@@ -87,7 +91,7 @@ const ResultPanel: React.FC<ResultPanelProps> = ({
   const safeQuantity = Math.max(0, Math.floor(quantity || 0));
   const unitProductionCost = safeQuantity > 0 ? productionCost / safeQuantity : 0;
   const unitProfit = safeQuantity > 0 ? desiredProfit / safeQuantity : 0;
-  const netProfit = finalSellingPrice - productionCost - feesAmount;
+  const netProfit = finalSellingPrice - productionCost - outsourcingCost - feesAmount;
   const unitNetProfit = safeQuantity > 0 ? netProfit / safeQuantity : 0;
 
   const realMarginPercentage = productionCost > 0 
