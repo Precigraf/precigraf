@@ -206,6 +206,7 @@ const CostCalculator: React.FC = () => {
       setInkData({ totalValue: calculation.varnish_cost, bottleCount: 1, mlPerBottle: 1, mlPerPrint: 1, printQuantity: 1 });
       setPackagingData({ packageValue: 0, packageQuantity: 1, quantityUsed: 1 });
       setOtherMaterialsItems(calculation.other_material_cost > 0 ? [{ id: 'edit-other', name: 'Outros insumos', packageValue: calculation.other_material_cost, packageQuantity: 1, quantityUsed: 1 }] : []);
+      setOutsourcingItems([]);
     }
     
     // Margem e lucro
