@@ -373,6 +373,8 @@ const CostCalculator: React.FC = () => {
         finalSellingPrice: 0,
         unitPrice: 0,
         unitRawMaterialsCost: 0,
+        outsourcingCost: 0,
+        unitOutsourcingCost: 0,
         netProfit: 0,
         totalCost: 0,
         profitValue: 0,
