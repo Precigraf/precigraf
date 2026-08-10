@@ -9,6 +9,7 @@ import RawMaterialInput from './RawMaterialInput';
 import InkCostInput, { InkCostData } from './InkCostInput';
 import OtherMaterialsInput, { OtherMaterialItem, calculateOtherMaterialItemCost } from './OtherMaterialsInput';
 import RollMaterialsInput, { RollMaterialItem, calculateRollMaterialItemCost } from './RollMaterialsInput';
+import OutsourcingInput, { OutsourcingItem, calculateOutsourcingItemCost } from './OutsourcingInput';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -94,6 +95,7 @@ const CostCalculator: React.FC = () => {
   const [packagingData, setPackagingData] = useState<RawMaterialData>({ packageValue: 0, packageQuantity: 0, quantityUsed: 1 });
   const [otherMaterialsItems, setOtherMaterialsItems] = useState<OtherMaterialItem[]>([]);
   const [rollMaterialsItems, setRollMaterialsItems] = useState<RollMaterialItem[]>([]);
+  const [outsourcingItems, setOutsourcingItems] = useState<OutsourcingItem[]>([]);
   
   // Tinta - Nova estrutura avançada com cálculo por ML
   const [inkData, setInkData] = useState<InkCostData>({ 
@@ -192,6 +194,8 @@ const CostCalculator: React.FC = () => {
       if (ri.otherMaterialsItems) setOtherMaterialsItems(ri.otherMaterialsItems);
       if (ri.rollMaterialsItems) setRollMaterialsItems(ri.rollMaterialsItems);
       else setRollMaterialsItems([]);
+      if (ri.outsourcingItems) setOutsourcingItems(ri.outsourcingItems);
+      else setOutsourcingItems([]);
       if (ri.operationalCostsData) setOperationalCostsData(ri.operationalCostsData);
       if (ri.taxesFees) setTaxesFees(ri.taxesFees);
       else setTaxesFees(DEFAULT_TAXES_FEES);
