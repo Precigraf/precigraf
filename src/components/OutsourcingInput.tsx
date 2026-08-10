@@ -82,18 +82,6 @@ const OutsourcingInput: React.FC<OutsourcingInputProps> = ({
     onItemsChange(items.map((item) => (item.id === id ? { ...item, unitValue: numericValue } : item)));
   };
 
-  const handleQuantityChange = (id: string, rawValue: string) => {
-    if (rawValue === '') {
-      onItemsChange(items.map((item) => (item.id === id ? { ...item, quantityPerProduct: 1 } : item)));
-      return;
-    }
-    const parsed = parseFloat(rawValue);
-    if (!isNaN(parsed) && parsed >= 0) {
-      onItemsChange(
-        items.map((item) => (item.id === id ? { ...item, quantityPerProduct: Math.min(parsed, 9999) } : item))
-      );
-    }
-  };
 
   const getDisplayValue = (item: OutsourcingItem): string => {
     if (displayValues[item.id] !== undefined) return displayValues[item.id];
@@ -162,7 +150,7 @@ const OutsourcingInput: React.FC<OutsourcingInputProps> = ({
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs text-muted-foreground">Fornecedor (opcional)</label>
                     <Input
@@ -195,20 +183,6 @@ const OutsourcingInput: React.FC<OutsourcingInputProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs text-muted-foreground">Qtd. por produto</label>
-                    <Input
-                      type="number"
-                      value={item.quantityPerProduct || ''}
-                      onChange={(e) => handleQuantityChange(item.id, e.target.value)}
-                      placeholder="1"
-                      disabled={disabled}
-                      className="h-9 text-sm"
-                      min={0}
-                      max={9999}
-                      step="0.5"
-                    />
-                  </div>
                 </div>
 
                 {unitCost > 0 && (
