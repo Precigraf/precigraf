@@ -696,6 +696,8 @@ const CostCalculator: React.FC = () => {
             feesPercentage={calculations.feesPercentage}
             feesAmount={calculations.feesAmount}
             baseSellingPrice={calculations.baseSellingPrice}
+            outsourcingCost={calculations.outsourcingCost}
+            unitOutsourcingCost={calculations.unitOutsourcingCost}
             rawInputs={{
               paperData,
               handleData,
@@ -703,6 +705,7 @@ const CostCalculator: React.FC = () => {
               packagingData,
               otherMaterialsItems,
               rollMaterialsItems,
+              outsourcingItems,
               operationalCostsData,
               taxesFees,
             }}
