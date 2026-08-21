@@ -809,6 +809,50 @@ export type Database = {
         }
         Relationships: []
       }
+      price_catalogs: {
+        Row: {
+          configuration: Json
+          created_at: string
+          id: string
+          name: string
+          product_id: string | null
+          template_id: string
+          thumbnail_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          configuration?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          product_id?: string | null
+          template_id?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          configuration?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          product_id?: string | null
+          template_id?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_catalogs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_categories: {
         Row: {
           created_at: string
