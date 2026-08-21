@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import LogoIcon from '@/components/LogoIcon';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserPlan } from '@/hooks/useUserPlan';
 import { canAccessCatalog } from '@/lib/featureFlags';
 import NotificationBell from '@/components/NotificationBell';
 
@@ -47,6 +48,7 @@ export function AppSidebar() {
   
 
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || 'Usuário';
+  const { plan } = useUserPlan();
   const showCatalogAdmin = canAccessCatalog(user?.email);
   const visibleNavItems = navItems.filter(
     (i) => i.url !== '/catalogo-admin' || showCatalogAdmin,
@@ -88,6 +90,11 @@ export function AppSidebar() {
                     >
                       <item.icon className="h-4 w-4 shrink-0" />
                       {!collapsed && <span className="text-sm font-medium">{item.title}</span>}
+                      {!collapsed && item.url === '/catalogos' && plan !== 'pro' && (
+                        <span className="ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                          PRO
+                        </span>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
