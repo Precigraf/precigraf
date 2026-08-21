@@ -33,6 +33,8 @@ import CatalogoDestaques from "./pages/CatalogoDestaques";
 import CatalogoPersonalizar from "./pages/CatalogoPersonalizar";
 import CatalogoPublico from "./pages/CatalogoPublico";
 import Agenda from "./pages/Agenda";
+import Catalogos from "./pages/Catalogos";
+import CatalogoBuilderEditor from "./pages/CatalogoBuilderEditor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
