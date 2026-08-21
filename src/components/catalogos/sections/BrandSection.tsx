@@ -3,7 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Loader2, Trash2, Upload } from 'lucide-react';
-import { CatalogConfig, TEXT_LIMITS } from '@/lib/catalogBuilder/types';
+import { BrandHeaderLayout, CatalogConfig, TEXT_LIMITS } from '@/lib/catalogBuilder/types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { LimitedInput } from '../EditorFields';
 import { ACCEPTED_IMAGE_TYPES } from '@/lib/catalogBuilder/storage';
 
@@ -102,12 +109,38 @@ const BrandSection: React.FC<Props> = ({ config, update, onUploadLogo, onRemoveL
         onChange={(v) => update((c) => ({ ...c, brand: { ...c.brand, slogan: v } }))}
       />
 
+      <div className="space-y-2">
+        <Label className="text-xs">Layout do cabeçalho</Label>
+        <Select
+          value={brand.headerLayout ?? 'centered'}
+          onValueChange={(v) =>
+            update((c) => ({ ...c, brand: { ...c.brand, headerLayout: v as BrandHeaderLayout } }))
+          }
+        >
+          <SelectTrigger className="h-9" aria-label="Layout do cabeçalho">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="centered">Centralizado</SelectItem>
+            <SelectItem value="side">Lateral</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="flex items-center justify-between">
         <Label htmlFor="show-logo" className="text-xs">Mostrar logo</Label>
         <Switch
           id="show-logo"
           checked={brand.showLogo}
           onCheckedChange={(v) => update((c) => ({ ...c, brand: { ...c.brand, showLogo: v } }))}
+        />
+      </div>
+      <div className="flex items-center justify-between">
+        <Label htmlFor="show-name" className="text-xs">Mostrar nome da marca</Label>
+        <Switch
+          id="show-name"
+          checked={brand.showName !== false}
+          onCheckedChange={(v) => update((c) => ({ ...c, brand: { ...c.brand, showName: v } }))}
         />
       </div>
       <div className="flex items-center justify-between">

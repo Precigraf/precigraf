@@ -144,13 +144,17 @@ export type CornerStyle = 'straight' | 'rounded';
 export type PricingType = 'unit' | 'total';
 export type PricingSource = 'manual' | 'precigraf';
 
+export type BrandHeaderLayout = 'centered' | 'side';
+
 export interface CatalogBrand {
   logoUrl: string | null;
   logoPath: string | null;
   name: string;
   slogan: string;
   showLogo: boolean;
+  showName: boolean;
   showSlogan: boolean;
+  headerLayout: BrandHeaderLayout;
 }
 
 export interface CatalogImageTransform {
@@ -248,7 +252,9 @@ export function createDefaultConfig(): CatalogConfig {
       name: 'Sua Marca',
       slogan: 'Embalagens que valorizam o seu produto',
       showLogo: true,
+      showName: true,
       showSlogan: true,
+      headerLayout: 'centered',
     },
     product: {
       title: 'SACOLA',

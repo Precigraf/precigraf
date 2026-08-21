@@ -12,6 +12,8 @@ interface Props {
   config: CatalogConfig;
 }
 
+type Typography = (typeof TYPOGRAPHY_PRESETS)[keyof typeof TYPOGRAPHY_PRESETS];
+
 /** Reduz a fonte proporcionalmente quando o texto é longo (limite controlado). */
 function fitFont(text: string, base: number, comfortable: number, min = 0.72) {
   if (!text) return base;
@@ -19,8 +21,140 @@ function fitFont(text: string, base: number, comfortable: number, min = 0.72) {
   return Math.round(base * ratio);
 }
 
+/** Cabeçalho institucional da marca — variantes centralizada e lateral. */
+const BrandHeader: React.FC<{ config: CatalogConfig; type: Typography }> = ({ config, type }) => {
+  const { brand, appearance } = config;
+  const showLogo = brand.showLogo && !!brand.logoUrl;
+  const showName = brand.showName !== false && !!brand.name.trim();
+  const showSlogan = brand.showSlogan && !!brand.slogan.trim();
+  const centered = brand.headerLayout !== 'side';
+
+  if (!showLogo && !showName && !showSlogan) return null;
+
+  const logo = showLogo ? (
+    <img
+      src={brand.logoUrl as string}
+      alt=""
+      crossOrigin="anonymous"
+      style={{
+        maxWidth: centered ? 150 : 120,
+        maxHeight: centered ? 84 : 100,
+        width: 'auto',
+        height: 'auto',
+        objectFit: 'contain',
+        flexShrink: 0,
+      }}
+    />
+  ) : null;
+
+  const name = showName ? (
+    <div
+      style={{
+        fontFamily: type.heading,
+        fontWeight: type.headingWeight,
+        letterSpacing: type.tracking,
+        fontSize: fitFont(brand.name, 46, 20),
+        lineHeight: 1.05,
+        color: appearance.textColor,
+        maxWidth: centered ? 900 : 520,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {brand.name}
+    </div>
+  ) : null;
+
+  const slogan = showSlogan ? (
+    <div
+      style={{
+        fontSize: fitFont(brand.slogan, 19, 42, 0.8),
+        fontWeight: 400,
+        letterSpacing: '0.28em',
+        textTransform: 'uppercase',
+        color: appearance.secondaryColor,
+        lineHeight: 1.3,
+        marginTop: showLogo || showName ? 12 : 0,
+        maxWidth: centered ? 1100 : 520,
+        textAlign: centered ? 'center' : 'left',
+      }}
+    >
+      {brand.slogan}
+    </div>
+  ) : null;
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: centered ? 'center' : 'flex-start',
+        justifyContent: 'center',
+        width: '100%',
+        maxHeight: CATALOG_HEIGHT * 0.17,
+        flexShrink: 0,
+      }}
+    >
+      {(logo || name) && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, minWidth: 0 }}>
+          {logo}
+          {name}
+        </div>
+      )}
+      {slogan}
+    </div>
+  );
+};
+
+/** Bloco de título do produto — title + highlight na mesma linha. */
+const ProductTitleBlock: React.FC<{ config: CatalogConfig; type: Typography }> = ({ config, type }) => {
+  const { product, appearance } = config;
+  const inline = `${product.title} ${product.highlight}`.trim();
+  if (!inline && !product.subtitle) return null;
+
+  return (
+    <div style={{ marginBottom: 26 }}>
+      {inline && (
+        <div
+          style={{
+            fontFamily: type.heading,
+            fontWeight: type.headingWeight,
+            letterSpacing: type.tracking,
+            fontSize: fitFont(inline, 58, 14, 0.62),
+            lineHeight: 1.05,
+            color: appearance.textColor,
+            overflowWrap: 'break-word',
+          }}
+        >
+          {product.title}
+          {product.title && product.highlight ? ' ' : ''}
+          {product.highlight && (
+            <span style={{ color: appearance.secondaryColor }}>{product.highlight}</span>
+          )}
+        </div>
+      )}
+      {product.subtitle && (
+        <div
+          style={{
+            fontSize: fitFont(product.subtitle, 20, 26, 0.8),
+            fontWeight: 400,
+            letterSpacing: '0.26em',
+            textTransform: 'uppercase',
+            marginTop: 8,
+            opacity: 0.65,
+            color: appearance.textColor,
+          }}
+        >
+          {product.subtitle}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ClassicCatalog: React.FC<Props> = ({ config }) => {
-  const { brand, product, pricing, idealFor, specifications, appearance } = config;
+  const { product, pricing, idealFor, specifications, appearance } = config;
   const type = TYPOGRAPHY_PRESETS[appearance.typography] ?? TYPOGRAPHY_PRESETS.moderna;
   const radius = appearance.corners === 'rounded' ? 24 : 0;
   const smallRadius = appearance.corners === 'rounded' ? 12 : 0;
@@ -48,95 +182,15 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
         overflow: 'hidden',
       }}
     >
-      {/* Cabeçalho */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 48 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, maxWidth: 620 }}>
-          {brand.showLogo && brand.logoUrl && (
-            <img
-              src={brand.logoUrl}
-              alt=""
-              crossOrigin="anonymous"
-              style={{ width: 108, height: 108, objectFit: 'contain', flexShrink: 0 }}
-            />
-          )}
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                fontFamily: type.heading,
-                fontWeight: type.headingWeight,
-                letterSpacing: type.tracking,
-                fontSize: fitFont(brand.name, 40, 18),
-                lineHeight: 1.1,
-                color: appearance.primaryColor,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {brand.name}
-            </div>
-            {brand.showSlogan && brand.slogan && (
-              <div
-                style={{
-                  fontSize: 20,
-                  marginTop: 8,
-                  opacity: 0.7,
-                  lineHeight: 1.3,
-                  maxWidth: 460,
-                }}
-              >
-                {brand.slogan}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div style={{ textAlign: 'right', fontFamily: type.heading, letterSpacing: type.tracking }}>
-          <div
-            style={{
-              fontSize: fitFont(product.title, 62, 10),
-              fontWeight: type.headingWeight,
-              lineHeight: 1,
-              color: appearance.textColor,
-            }}
-          >
-            {product.title}
-          </div>
-          {product.highlight && (
-            <div
-              style={{
-                fontSize: fitFont(product.highlight, 78, 8),
-                fontWeight: 800,
-                lineHeight: 1,
-                color: appearance.secondaryColor,
-                marginTop: 4,
-              }}
-            >
-              {product.highlight}
-            </div>
-          )}
-          {product.subtitle && (
-            <div
-              style={{
-                fontSize: fitFont(product.subtitle, 30, 16),
-                fontWeight: 400,
-                letterSpacing: '0.24em',
-                marginTop: 10,
-                opacity: 0.75,
-              }}
-            >
-              {product.subtitle}
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Cabeçalho da marca */}
+      <BrandHeader config={config} type={type} />
 
       <div
         style={{
-          height: 4,
-          backgroundColor: appearance.primaryColor,
-          opacity: 0.15,
-          margin: '36px 0',
+          height: 3,
+          backgroundColor: appearance.secondaryColor,
+          opacity: 0.28,
+          margin: '28px 0 32px',
           flexShrink: 0,
         }}
       />
@@ -188,20 +242,22 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
 
         {/* Coluna direita */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <ProductTitleBlock config={config} type={type} />
+
           <div
             style={{
               fontFamily: type.heading,
               fontWeight: type.headingWeight,
               letterSpacing: type.tracking,
-              fontSize: fitFont(pricing.title, 38, 20),
+              fontSize: fitFont(pricing.title, 34, 20),
               color: appearance.primaryColor,
-              marginBottom: 22,
+              marginBottom: 16,
             }}
           >
             {pricing.title}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {pricing.rows.map((row, i) => (
               <div
                 key={row.id}
@@ -210,7 +266,7 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
                   alignItems: 'baseline',
                   justifyContent: 'space-between',
                   gap: 16,
-                  padding: '14px 20px',
+                  padding: '12px 20px',
                   borderRadius: smallRadius,
                   backgroundColor: i % 2 === 0 ? 'rgba(0,0,0,0.04)' : 'transparent',
                 }}
@@ -244,15 +300,15 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
           </div>
 
           {idealFor.items.length > 0 && (
-            <div style={{ marginTop: 'auto', paddingTop: 36 }}>
+            <div style={{ marginTop: 'auto', paddingTop: 28 }}>
               <div
                 style={{
                   fontFamily: type.heading,
                   fontWeight: type.headingWeight,
                   letterSpacing: type.tracking,
-                  fontSize: 28,
+                  fontSize: 26,
                   color: appearance.primaryColor,
-                  marginBottom: 18,
+                  marginBottom: 14,
                 }}
               >
                 {idealFor.title}
@@ -267,17 +323,17 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
                         flex: 1,
                         minWidth: 0,
                         textAlign: 'center',
-                        padding: '16px 8px',
+                        padding: '14px 8px',
                         borderRadius: smallRadius,
                         border: `2px solid ${appearance.secondaryColor}33`,
                       }}
                     >
                       <Icon
-                        width={34}
-                        height={34}
+                        width={32}
+                        height={32}
                         strokeWidth={1.6}
                         color={appearance.secondaryColor}
-                        style={{ display: 'block', margin: '0 auto 10px' }}
+                        style={{ display: 'block', margin: '0 auto 8px' }}
                       />
                       <div style={{ fontSize: 16, lineHeight: 1.25 }}>{item.label}</div>
                     </div>
@@ -293,11 +349,12 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
       {specifications.length > 0 && (
         <div
           style={{
-            marginTop: 40,
+            marginTop: 36,
             display: 'flex',
             borderRadius: smallRadius,
             backgroundColor: appearance.primaryColor,
             overflow: 'hidden',
+            flexShrink: 0,
           }}
         >
           {specifications.map((spec) => {
