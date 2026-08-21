@@ -33,6 +33,7 @@ const navItems = [
   { title: 'Financeiro', url: '/financeiro', icon: Wallet },
   { title: 'Calculadora', url: '/app', icon: Calculator },
   { title: 'Catálogo', url: '/catalogo-admin', icon: LayoutGrid },
+  { title: 'Catálogos de Preços', url: '/catalogos', icon: LayoutTemplate },
   { title: 'Marketplace', url: '/marketplace', icon: Store },
   { title: 'Suporte', url: '/suporte', icon: LifeBuoy },
 ];
