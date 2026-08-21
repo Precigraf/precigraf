@@ -4,8 +4,9 @@ import { ArrowLeft, Crown, Check, Zap, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/components/AppLayout';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+
+const INFINITEPAY_CHECKOUT_URL =
+  'https://checkout.infinitepay.io/israel-shaina-wanderley/9CuwqG188K';
 
 const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
   const navigate = useNavigate();
@@ -16,34 +17,14 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
     'Exportação para PDF e Excel',
     'Histórico completo',
     'Gestão de clientes, orçamentos e pedidos',
+    'Construtor de Catálogo de Preços',
     'Suporte prioritário',
     'Todas as atualizações futuras',
   ];
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = () => {
     setIsLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('Você precisa estar logado para assinar');
-        navigate('/auth');
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('create-stripe-checkout');
-      if (error || !data?.url) {
-        console.error('Checkout error:', error, data);
-        toast.error(data?.error || 'Erro ao iniciar checkout. Tente novamente.');
-        setIsLoading(false);
-        return;
-      }
-
-      window.location.href = data.url;
-    } catch (error) {
-      console.error('Error starting checkout:', error);
-      toast.error('Erro inesperado. Tente novamente.');
-      setIsLoading(false);
-    }
+    window.location.href = INFINITEPAY_CHECKOUT_URL;
   };
 
   return (
@@ -94,7 +75,7 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
             <div className="text-center p-6 bg-primary/5 border border-primary/20 rounded-lg mb-6">
               <p className="text-sm font-medium text-primary mb-2">Assinatura mensal</p>
               <p className="text-4xl font-bold text-foreground">
-                R$ 15,90<span className="text-lg font-normal text-muted-foreground">/mês</span>
+                R$ 39,90<span className="text-lg font-normal text-muted-foreground">/mês</span>
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 Cancele a qualquer momento
@@ -121,7 +102,7 @@ const Upgrade = forwardRef<HTMLDivElement>((_, ref) => {
             </Button>
 
             <p className="text-center text-xs text-muted-foreground mt-4">
-              Pagamento seguro via Stripe
+              Pagamento seguro via InfinitePay
             </p>
           </CardContent>
         </Card>
