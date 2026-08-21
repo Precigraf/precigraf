@@ -3,7 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Loader2, Trash2, Upload } from 'lucide-react';
-import { CatalogConfig, TEXT_LIMITS } from '@/lib/catalogBuilder/types';
+import { BrandHeaderLayout, CatalogConfig, TEXT_LIMITS } from '@/lib/catalogBuilder/types';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { LimitedInput } from '../EditorFields';
 import { ACCEPTED_IMAGE_TYPES } from '@/lib/catalogBuilder/storage';
 
