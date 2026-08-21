@@ -35,6 +35,9 @@ import HeroMockup from '@/components/landing/HeroMockup';
 import WhatsAppFloat from '@/components/landing/WhatsAppFloat';
 import { useAuth } from '@/contexts/AuthContext';
 
+const INFINITEPAY_CHECKOUT_URL =
+  'https://checkout.infinitepay.io/israel-shaina-wanderley/9CuwqG188K';
+
 const LandingPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
