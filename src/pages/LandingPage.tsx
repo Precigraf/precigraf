@@ -35,6 +35,9 @@ import HeroMockup from '@/components/landing/HeroMockup';
 import WhatsAppFloat from '@/components/landing/WhatsAppFloat';
 import { useAuth } from '@/contexts/AuthContext';
 
+const INFINITEPAY_CHECKOUT_URL =
+  'https://checkout.infinitepay.io/israel-shaina-wanderley/9CuwqG188K';
+
 const LandingPage: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -44,24 +47,7 @@ const LandingPage: React.FC = () => {
 
   const handleSubscribePro = async () => {
     setIsCheckoutLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.info('Crie sua conta para assinar o Pro');
-        navigate('/cadastro?plan=pro');
-        return;
-      }
-      const { data, error } = await supabase.functions.invoke('create-stripe-checkout');
-      if (error || !data?.url) {
-        toast.error(data?.error || 'Erro ao iniciar checkout. Tente novamente.');
-        setIsCheckoutLoading(false);
-        return;
-      }
-      window.location.href = data.url;
-    } catch (e) {
-      toast.error('Erro inesperado. Tente novamente.');
-      setIsCheckoutLoading(false);
-    }
+    window.location.href = INFINITEPAY_CHECKOUT_URL;
   };
 
   return (
@@ -424,7 +410,7 @@ const LandingPage: React.FC = () => {
               </p>
 
               <div className="mt-6 mb-6 flex items-baseline gap-1.5">
-                <span className="text-5xl font-bold tabular-nums">R$ 15,90</span>
+                <span className="text-5xl font-bold tabular-nums">R$ 39,90</span>
                 <span className="text-sm text-muted-foreground">/mês</span>
               </div>
 
@@ -492,7 +478,7 @@ const LandingPage: React.FC = () => {
               },
               {
                 q: 'A assinatura Pro é mensal?',
-                a: 'Sim. O Pro custa R$ 15,90 por mês, sem fidelidade. Você pode cancelar quando quiser direto pela sua conta.',
+                a: 'Sim. O Pro custa R$ 39,90 por mês, sem fidelidade. Você pode cancelar quando quiser direto pela sua conta.',
               },
               {
                 q: 'Posso usar no celular?',
