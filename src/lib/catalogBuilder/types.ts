@@ -252,7 +252,9 @@ export function createDefaultConfig(): CatalogConfig {
       name: 'Sua Marca',
       slogan: 'Embalagens que valorizam o seu produto',
       showLogo: true,
+      showName: true,
       showSlogan: true,
+      headerLayout: 'centered',
     },
     product: {
       title: 'SACOLA',
