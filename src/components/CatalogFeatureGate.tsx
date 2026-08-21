@@ -16,7 +16,7 @@ interface Props {
 
 const CatalogFeatureGate: React.FC<Props> = ({ children, emailAllowlist }) => {
   const { user } = useAuth();
-  const { featuresUnlocked, loading } = useUserPlan();
+  const { plan, loading } = useUserPlan();
   const navigate = useNavigate();
 
   if (emailAllowlist && !canAccessCatalog(user?.email)) {
@@ -31,7 +31,7 @@ const CatalogFeatureGate: React.FC<Props> = ({ children, emailAllowlist }) => {
     );
   }
 
-  if (!featuresUnlocked) {
+  if (plan !== 'pro') {
     return (
       <AppLayout>
         <main className="container mx-auto px-4 py-12 max-w-xl">
