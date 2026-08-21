@@ -77,7 +77,10 @@ const App = () => (
               <Route path="/catalogo-admin/destaques" element={<ProtectedRoute><CatalogFeatureGate><CatalogoDestaques /></CatalogFeatureGate></ProtectedRoute>} />
               <Route path="/catalogo-admin/personalizar" element={<ProtectedRoute><CatalogFeatureGate><CatalogoPersonalizar /></CatalogFeatureGate></ProtectedRoute>} />
               <Route path="/catalogo-admin/configuracoes" element={<ProtectedRoute><CatalogFeatureGate><CatalogoPersonalizar /></CatalogFeatureGate></ProtectedRoute>} />
+              <Route path="/catalogos" element={<ProtectedRoute><CatalogFeatureGate><Catalogos /></CatalogFeatureGate></ProtectedRoute>} />
+              <Route path="/catalogos/:id" element={<ProtectedRoute><CatalogFeatureGate><CatalogoBuilderEditor /></CatalogFeatureGate></ProtectedRoute>} />
               <Route path="/catalogo/:slug" element={<CatalogoPublico />} />
+
               <Route path="/orcamento/:token" element={<AprovacaoOrcamento />} />
               {/* Link público curto: precigraf.com.br/{slug} */}
               <Route path="/:slug" element={<CatalogoPublico />} />
