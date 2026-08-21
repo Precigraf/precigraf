@@ -424,7 +424,7 @@ const LandingPage: React.FC = () => {
               </p>
 
               <div className="mt-6 mb-6 flex items-baseline gap-1.5">
-                <span className="text-5xl font-bold tabular-nums">R$ 15,90</span>
+                <span className="text-5xl font-bold tabular-nums">R$ 39,90</span>
                 <span className="text-sm text-muted-foreground">/mês</span>
               </div>
 
@@ -492,7 +492,7 @@ const LandingPage: React.FC = () => {
               },
               {
                 q: 'A assinatura Pro é mensal?',
-                a: 'Sim. O Pro custa R$ 15,90 por mês, sem fidelidade. Você pode cancelar quando quiser direto pela sua conta.',
+                a: 'Sim. O Pro custa R$ 39,90 por mês, sem fidelidade. Você pode cancelar quando quiser direto pela sua conta.',
               },
               {
                 q: 'Posso usar no celular?',

@@ -73,10 +73,10 @@ const App = () => (
               <Route path="/suporte" element={<ProtectedRoute><Suporte /></ProtectedRoute>} />
               <Route path="/financeiro/receber" element={<ProtectedRoute><ContasReceber /></ProtectedRoute>} />
               <Route path="/estoque" element={<ProtectedRoute><Estoque /></ProtectedRoute>} />
-              <Route path="/catalogo-admin" element={<ProtectedRoute><CatalogFeatureGate><CatalogoAdmin /></CatalogFeatureGate></ProtectedRoute>} />
-              <Route path="/catalogo-admin/destaques" element={<ProtectedRoute><CatalogFeatureGate><CatalogoDestaques /></CatalogFeatureGate></ProtectedRoute>} />
-              <Route path="/catalogo-admin/personalizar" element={<ProtectedRoute><CatalogFeatureGate><CatalogoPersonalizar /></CatalogFeatureGate></ProtectedRoute>} />
-              <Route path="/catalogo-admin/configuracoes" element={<ProtectedRoute><CatalogFeatureGate><CatalogoPersonalizar /></CatalogFeatureGate></ProtectedRoute>} />
+              <Route path="/catalogo-admin" element={<ProtectedRoute><CatalogFeatureGate emailAllowlist><CatalogoAdmin /></CatalogFeatureGate></ProtectedRoute>} />
+              <Route path="/catalogo-admin/destaques" element={<ProtectedRoute><CatalogFeatureGate emailAllowlist><CatalogoDestaques /></CatalogFeatureGate></ProtectedRoute>} />
+              <Route path="/catalogo-admin/personalizar" element={<ProtectedRoute><CatalogFeatureGate emailAllowlist><CatalogoPersonalizar /></CatalogFeatureGate></ProtectedRoute>} />
+              <Route path="/catalogo-admin/configuracoes" element={<ProtectedRoute><CatalogFeatureGate emailAllowlist><CatalogoPersonalizar /></CatalogFeatureGate></ProtectedRoute>} />
               <Route path="/catalogos" element={<ProtectedRoute><CatalogFeatureGate><Catalogos /></CatalogFeatureGate></ProtectedRoute>} />
               <Route path="/catalogos/:id" element={<ProtectedRoute><CatalogFeatureGate><CatalogoBuilderEditor /></CatalogFeatureGate></ProtectedRoute>} />
               <Route path="/catalogo/:slug" element={<CatalogoPublico />} />
