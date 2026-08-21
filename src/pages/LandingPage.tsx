@@ -44,24 +44,7 @@ const LandingPage: React.FC = () => {
 
   const handleSubscribePro = async () => {
     setIsCheckoutLoading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.info('Crie sua conta para assinar o Pro');
-        navigate('/cadastro?plan=pro');
-        return;
-      }
-      const { data, error } = await supabase.functions.invoke('create-stripe-checkout');
-      if (error || !data?.url) {
-        toast.error(data?.error || 'Erro ao iniciar checkout. Tente novamente.');
-        setIsCheckoutLoading(false);
-        return;
-      }
-      window.location.href = data.url;
-    } catch (e) {
-      toast.error('Erro inesperado. Tente novamente.');
-      setIsCheckoutLoading(false);
-    }
+    window.location.href = INFINITEPAY_CHECKOUT_URL;
   };
 
   return (
