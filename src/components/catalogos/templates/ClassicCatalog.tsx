@@ -463,7 +463,8 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
       {footer.showCnpj && footer.cnpj.trim() && (
         <div
           style={{
-            marginTop: 20,
+            marginTop: 'auto',
+            paddingTop: 28,
             textAlign: 'center',
             fontSize: 17,
             letterSpacing: '0.06em',
