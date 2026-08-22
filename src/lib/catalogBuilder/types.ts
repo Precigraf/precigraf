@@ -19,6 +19,64 @@ import {
   Palette,
   Package,
   Star,
+  Truck,
+  Clock,
+  Award,
+  Heart,
+  Baby,
+  PawPrint,
+  Coffee,
+  Wine,
+  Flower2,
+  Leaf,
+  Home,
+  Briefcase,
+  GraduationCap,
+  PartyPopper,
+  Church,
+  Music,
+  Camera,
+  Laptop,
+  Smartphone,
+  Printer,
+  Tag,
+  Percent,
+  BadgeCheck,
+  ShieldCheck,
+  Recycle,
+  Droplets,
+  Flame,
+  Snowflake,
+  Sun,
+  Moon,
+  MapPin,
+  Phone,
+  Mail,
+  Globe,
+  Instagram,
+  Store,
+  Boxes,
+  Weight,
+  Maximize,
+  Type as TypeIcon,
+  Image as ImageIcon,
+  Brush,
+  PenTool,
+  Stamp,
+  Sticker,
+  BookOpen,
+  Bookmark,
+  Calendar,
+  CreditCard,
+  Wallet,
+  ThumbsUp,
+  Smile,
+  Zap,
+  TrendingUp,
+  Crown,
+  Trophy,
+  Rocket,
+  CircleDollarSign,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -26,9 +84,9 @@ import {
 export const CATALOG_WIDTH = 1448;
 export const CATALOG_HEIGHT = 1086;
 
-export const MAX_PRICE_ROWS = 6;
+export const MAX_PRICE_ROWS = 12;
 export const MAX_IDEAL_FOR = 4;
-export const MAX_SPECS = 4;
+export const MAX_SPECS = 10;
 
 export const TEXT_LIMITS = {
   brandName: 28,
@@ -43,6 +101,7 @@ export const TEXT_LIMITS = {
   specValue: 26,
   quantity: 14,
   catalogName: 60,
+  cnpj: 20,
 } as const;
 
 export type CatalogIconKey =
@@ -65,7 +124,65 @@ export type CatalogIconKey =
   | 'layers'
   | 'palette'
   | 'package'
-  | 'star';
+  | 'star'
+  | 'truck'
+  | 'clock'
+  | 'award'
+  | 'heart'
+  | 'baby'
+  | 'pet'
+  | 'coffee'
+  | 'wine'
+  | 'flower'
+  | 'leaf'
+  | 'home'
+  | 'briefcase'
+  | 'graduation'
+  | 'party'
+  | 'church'
+  | 'music'
+  | 'camera'
+  | 'laptop'
+  | 'smartphone'
+  | 'printer'
+  | 'tag'
+  | 'percent'
+  | 'badge'
+  | 'shield'
+  | 'recycle'
+  | 'droplets'
+  | 'flame'
+  | 'snowflake'
+  | 'sun'
+  | 'moon'
+  | 'mappin'
+  | 'phone'
+  | 'mail'
+  | 'globe'
+  | 'instagram'
+  | 'store'
+  | 'boxes'
+  | 'weight'
+  | 'size'
+  | 'font'
+  | 'image'
+  | 'brush'
+  | 'pentool'
+  | 'stamp'
+  | 'sticker'
+  | 'book'
+  | 'bookmark'
+  | 'calendar'
+  | 'card'
+  | 'wallet'
+  | 'thumbsup'
+  | 'smile'
+  | 'zap'
+  | 'trending'
+  | 'crown'
+  | 'trophy'
+  | 'rocket'
+  | 'money';
 
 export const CATALOG_ICONS: Record<CatalogIconKey, { label: string; Icon: LucideIcon }> = {
   gem: { label: 'Joias', Icon: Gem },
@@ -88,6 +205,64 @@ export const CATALOG_ICONS: Record<CatalogIconKey, { label: string; Icon: Lucide
   palette: { label: 'Cores', Icon: Palette },
   package: { label: 'Embalagem', Icon: Package },
   star: { label: 'Outros', Icon: Star },
+  truck: { label: 'Entrega', Icon: Truck },
+  clock: { label: 'Prazo', Icon: Clock },
+  award: { label: 'Qualidade', Icon: Award },
+  heart: { label: 'Favoritos', Icon: Heart },
+  baby: { label: 'Infantil', Icon: Baby },
+  pet: { label: 'Pet', Icon: PawPrint },
+  coffee: { label: 'Cafeteria', Icon: Coffee },
+  wine: { label: 'Bebidas', Icon: Wine },
+  flower: { label: 'Floricultura', Icon: Flower2 },
+  leaf: { label: 'Natural', Icon: Leaf },
+  home: { label: 'Casa', Icon: Home },
+  briefcase: { label: 'Corporativo', Icon: Briefcase },
+  graduation: { label: 'Formatura', Icon: GraduationCap },
+  party: { label: 'Festas', Icon: PartyPopper },
+  church: { label: 'Religioso', Icon: Church },
+  music: { label: 'Música', Icon: Music },
+  camera: { label: 'Fotografia', Icon: Camera },
+  laptop: { label: 'Digital', Icon: Laptop },
+  smartphone: { label: 'Celular', Icon: Smartphone },
+  printer: { label: 'Impressão', Icon: Printer },
+  tag: { label: 'Etiqueta', Icon: Tag },
+  percent: { label: 'Desconto', Icon: Percent },
+  badge: { label: 'Selo', Icon: BadgeCheck },
+  shield: { label: 'Garantia', Icon: ShieldCheck },
+  recycle: { label: 'Reciclável', Icon: Recycle },
+  droplets: { label: 'Impermeável', Icon: Droplets },
+  flame: { label: 'Resistente', Icon: Flame },
+  snowflake: { label: 'Refrigerado', Icon: Snowflake },
+  sun: { label: 'Verão', Icon: Sun },
+  moon: { label: 'Noite', Icon: Moon },
+  mappin: { label: 'Localização', Icon: MapPin },
+  phone: { label: 'Telefone', Icon: Phone },
+  mail: { label: 'E-mail', Icon: Mail },
+  globe: { label: 'Site', Icon: Globe },
+  instagram: { label: 'Instagram', Icon: Instagram },
+  store: { label: 'Loja', Icon: Store },
+  boxes: { label: 'Lote', Icon: Boxes },
+  weight: { label: 'Peso', Icon: Weight },
+  size: { label: 'Tamanho', Icon: Maximize },
+  font: { label: 'Tipografia', Icon: TypeIcon },
+  image: { label: 'Arte', Icon: ImageIcon },
+  brush: { label: 'Pintura', Icon: Brush },
+  pentool: { label: 'Design', Icon: PenTool },
+  stamp: { label: 'Carimbo', Icon: Stamp },
+  sticker: { label: 'Adesivo', Icon: Sticker },
+  book: { label: 'Livro', Icon: BookOpen },
+  bookmark: { label: 'Marcador', Icon: Bookmark },
+  calendar: { label: 'Calendário', Icon: Calendar },
+  card: { label: 'Cartão', Icon: CreditCard },
+  wallet: { label: 'Pagamento', Icon: Wallet },
+  thumbsup: { label: 'Recomendado', Icon: ThumbsUp },
+  smile: { label: 'Satisfação', Icon: Smile },
+  zap: { label: 'Rápido', Icon: Zap },
+  trending: { label: 'Mais vendido', Icon: TrendingUp },
+  crown: { label: 'Premium', Icon: Crown },
+  trophy: { label: 'Destaque', Icon: Trophy },
+  rocket: { label: 'Lançamento', Icon: Rocket },
+  money: { label: 'Preço', Icon: CircleDollarSign },
 };
 
 export const CATALOG_ICON_KEYS = Object.keys(CATALOG_ICONS) as CatalogIconKey[];
@@ -96,7 +271,47 @@ export function getCatalogIcon(key: string): LucideIcon {
   return CATALOG_ICONS[key as CatalogIconKey]?.Icon ?? Star;
 }
 
-export type TypographyPreset = 'moderna' | 'elegante' | 'minimalista' | 'comercial' | 'classica';
+export type TypographyPreset =
+  | 'moderna'
+  | 'elegante'
+  | 'minimalista'
+  | 'comercial'
+  | 'classica'
+  | 'poppins'
+  | 'montserrat'
+  | 'poppins-montserrat'
+  | 'playfair'
+  | 'raleway'
+  | 'oswald'
+  | 'lora'
+  | 'nunito';
+
+/** Famílias Google Fonts usadas pelos presets — precisam ser injetadas na página. */
+export const CATALOG_GOOGLE_FONTS = [
+  'Poppins',
+  'Montserrat',
+  'Playfair Display',
+  'Raleway',
+  'Oswald',
+  'Lora',
+  'Nunito',
+  'Roboto',
+];
+
+/** Injeta as Google Fonts usadas pelo construtor de catálogos. */
+export function injectCatalogBuilderFonts() {
+  if (typeof document === 'undefined') return;
+  const id = 'catalog-builder-google-fonts';
+  if (document.getElementById(id)) return;
+  const families = CATALOG_GOOGLE_FONTS.map(
+    (f) => `family=${encodeURIComponent(f).replace(/%20/g, '+')}:wght@300;400;500;600;700;800`,
+  ).join('&');
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.id = id;
+  link.href = `https://fonts.googleapis.com/css2?${families}&display=swap`;
+  document.head.appendChild(link);
+}
 
 export const TYPOGRAPHY_PRESETS: Record<
   TypographyPreset,
@@ -136,6 +351,62 @@ export const TYPOGRAPHY_PRESETS: Record<
     body: "Georgia, 'Times New Roman', serif",
     headingWeight: 700,
     tracking: '0.02em',
+  },
+  poppins: {
+    label: 'Poppins',
+    heading: "'Poppins', 'Helvetica Neue', Arial, sans-serif",
+    body: "'Poppins', 'Helvetica Neue', Arial, sans-serif",
+    headingWeight: 700,
+    tracking: '-0.01em',
+  },
+  montserrat: {
+    label: 'Montserrat',
+    heading: "'Montserrat', 'Helvetica Neue', Arial, sans-serif",
+    body: "'Montserrat', 'Helvetica Neue', Arial, sans-serif",
+    headingWeight: 800,
+    tracking: '-0.01em',
+  },
+  'poppins-montserrat': {
+    label: 'Montserrat + Poppins',
+    heading: "'Montserrat', 'Helvetica Neue', Arial, sans-serif",
+    body: "'Poppins', 'Helvetica Neue', Arial, sans-serif",
+    headingWeight: 700,
+    tracking: '0em',
+  },
+  playfair: {
+    label: 'Playfair',
+    heading: "'Playfair Display', Georgia, serif",
+    body: "'Montserrat', 'Helvetica Neue', Arial, sans-serif",
+    headingWeight: 700,
+    tracking: '0em',
+  },
+  raleway: {
+    label: 'Raleway',
+    heading: "'Raleway', 'Helvetica Neue', Arial, sans-serif",
+    body: "'Raleway', 'Helvetica Neue', Arial, sans-serif",
+    headingWeight: 700,
+    tracking: '0.02em',
+  },
+  oswald: {
+    label: 'Oswald',
+    heading: "'Oswald', 'Helvetica Neue', Arial, sans-serif",
+    body: "'Nunito', 'Helvetica Neue', Arial, sans-serif",
+    headingWeight: 600,
+    tracking: '0.04em',
+  },
+  lora: {
+    label: 'Lora',
+    heading: "'Lora', Georgia, serif",
+    body: "'Lora', Georgia, serif",
+    headingWeight: 700,
+    tracking: '0.01em',
+  },
+  nunito: {
+    label: 'Nunito',
+    heading: "'Nunito', 'Helvetica Neue', Arial, sans-serif",
+    body: "'Nunito', 'Helvetica Neue', Arial, sans-serif",
+    headingWeight: 800,
+    tracking: '-0.01em',
   },
 };
 
@@ -178,12 +449,16 @@ export interface CatalogPriceRow {
   id: string;
   quantity: string;
   price: number;
+  /** Preço promocional opcional (usado quando showDiscount = true). */
+  promoPrice?: number | null;
 }
 
 export interface CatalogPricing {
   title: string;
   type: PricingType;
   showUnitLabel: boolean;
+  /** Exibe a coluna de preço promocional com o % de desconto. */
+  showDiscount: boolean;
   source: PricingSource;
   sourceProductId: string | null;
   rows: CatalogPriceRow[];
@@ -217,9 +492,15 @@ export interface CatalogAppearance {
   typography: TypographyPreset;
 }
 
+export interface CatalogFooter {
+  showCnpj: boolean;
+  cnpj: string;
+}
+
 export interface CatalogConfig {
   version: number;
   brand: CatalogBrand;
+  footer: CatalogFooter;
   product: CatalogProduct;
   pricing: CatalogPricing;
   idealFor: CatalogIdealFor;
@@ -256,6 +537,7 @@ export function createDefaultConfig(): CatalogConfig {
       showSlogan: true,
       headerLayout: 'centered',
     },
+    footer: { showCnpj: false, cnpj: '' },
     product: {
       title: 'SACOLA',
       highlight: 'MINI',
@@ -270,6 +552,7 @@ export function createDefaultConfig(): CatalogConfig {
       title: 'Tabela de valores',
       type: 'unit',
       showUnitLabel: true,
+      showDiscount: false,
       source: 'manual',
       sourceProductId: null,
       rows: [
@@ -313,6 +596,7 @@ export function normalizeConfig(raw: unknown): CatalogConfig {
     version: cfg.version ?? base.version,
     templateId: cfg.templateId ?? base.templateId,
     brand: { ...base.brand, ...(cfg.brand ?? {}) },
+    footer: { ...base.footer, ...(cfg.footer ?? {}) },
     product: {
       ...base.product,
       ...(cfg.product ?? {}),
