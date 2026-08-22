@@ -31,9 +31,17 @@ interface RenderOptions {
   backgroundColor: string;
 }
 
-const baseOptions = (o: RenderOptions) => ({
-  width: CATALOG_WIDTH,
-  height: CATALOG_HEIGHT,
+/** Dimensões reais do nó renderizado (a altura cresce com o conteúdo). */
+function measure(node: HTMLElement) {
+  return {
+    width: Math.max(Math.round(node.scrollWidth), CATALOG_WIDTH),
+    height: Math.max(Math.round(node.scrollHeight), CATALOG_HEIGHT),
+  };
+}
+
+const baseOptions = (o: RenderOptions, size: { width: number; height: number }) => ({
+  width: size.width,
+  height: size.height,
   pixelRatio: o.pixelRatio ?? 2,
   cacheBust: true,
   backgroundColor: o.backgroundColor,
@@ -50,13 +58,14 @@ export async function renderCatalogImage(
   options: RenderOptions,
 ): Promise<string> {
   await waitForAssets(node);
+  const size = measure(node);
   // Primeira passada aquece o cache de fontes/imagens do html-to-image.
   if (format === 'png') {
-    await toPng(node, { ...baseOptions(options), pixelRatio: 1 });
-    return toPng(node, baseOptions(options));
+    await toPng(node, { ...baseOptions(options, size), pixelRatio: 1 });
+    return toPng(node, baseOptions(options, size));
   }
-  await toJpeg(node, { ...baseOptions(options), pixelRatio: 1, quality: 0.9 });
-  return toJpeg(node, { ...baseOptions(options), quality: 0.94 });
+  await toJpeg(node, { ...baseOptions(options, size), pixelRatio: 1, quality: 0.9 });
+  return toJpeg(node, { ...baseOptions(options, size), quality: 0.94 });
 }
 
 function downloadDataUrl(dataUrl: string, fileName: string) {
@@ -79,13 +88,14 @@ export async function exportCatalog(
 
   if (format === 'pdf') {
     const dataUrl = await renderCatalogImage(node, 'png', { backgroundColor, pixelRatio });
+    const { width, height } = measure(node);
     const pdf = new jsPDF({
-      orientation: 'landscape',
+      orientation: width >= height ? 'landscape' : 'portrait',
       unit: 'px',
-      format: [CATALOG_WIDTH, CATALOG_HEIGHT],
+      format: [width, height],
       compress: true,
     });
-    pdf.addImage(dataUrl, 'PNG', 0, 0, CATALOG_WIDTH, CATALOG_HEIGHT, undefined, 'FAST');
+    pdf.addImage(dataUrl, 'PNG', 0, 0, width, height, undefined, 'FAST');
     pdf.save(`${safeName}.pdf`);
     return;
   }
