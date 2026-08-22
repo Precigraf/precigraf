@@ -71,7 +71,7 @@ const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
         </div>
         <div className="space-y-2">
           {pricing.rows.map((row, i) => (
-            <div key={row.id} className="flex items-center gap-1.5">
+            <div key={row.id} className="flex flex-wrap items-center gap-1.5">
               <Input
                 value={row.quantity}
                 maxLength={TEXT_LIMITS.quantity}
@@ -121,6 +121,30 @@ const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
               >
                 <Trash2 className="w-3.5 h-3.5 text-destructive" />
               </Button>
+
+              {pricing.showDiscount && (
+                <div className="w-full flex items-center gap-2 pl-1">
+                  <span className="text-[11px] text-muted-foreground shrink-0">Promocional</span>
+                  <div className="w-28 shrink-0">
+                    <PriceInput
+                      value={row.promoPrice ?? 0}
+                      ariaLabel={`Preço promocional da linha ${i + 1}`}
+                      onChange={(v) =>
+                        setRows(
+                          pricing.rows.map((r) =>
+                            r.id === row.id ? { ...r, promoPrice: v > 0 ? v : null } : r,
+                          ),
+                        )
+                      }
+                    />
+                  </div>
+                  <span className="text-[11px] font-medium text-primary tabular-nums">
+                    {row.promoPrice && row.promoPrice > 0 && row.promoPrice < row.price
+                      ? `-${Math.round(((row.price - row.promoPrice) / row.price) * 100)}%`
+                      : ''}
+                  </span>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -135,6 +159,24 @@ const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
           <Plus className="w-3.5 h-3.5 mr-1.5" />
           Adicionar quantidade
         </Button>
+      </div>
+
+      <div className="space-y-2 pt-3 border-t border-border">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <Label htmlFor="show-discount" className="text-xs">Ativar preços promocionais</Label>
+            <p className="text-[11px] text-muted-foreground">
+              Mostra o preço atual riscado, o valor da oferta e o % de desconto.
+            </p>
+          </div>
+          <Switch
+            id="show-discount"
+            checked={pricing.showDiscount}
+            onCheckedChange={(v) =>
+              update((c) => ({ ...c, pricing: { ...c.pricing, showDiscount: v } }))
+            }
+          />
+        </div>
       </div>
 
       <div className="space-y-2 pt-2 border-t border-border">
