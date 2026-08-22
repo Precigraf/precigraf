@@ -92,7 +92,6 @@ const BrandHeader: React.FC<{ config: CatalogConfig; type: Typography }> = ({ co
         alignItems: centered ? 'center' : 'flex-start',
         justifyContent: 'center',
         width: '100%',
-        maxHeight: CATALOG_HEIGHT * 0.17,
         flexShrink: 0,
       }}
     >
@@ -154,7 +153,7 @@ const ProductTitleBlock: React.FC<{ config: CatalogConfig; type: Typography }> =
 };
 
 const ClassicCatalog: React.FC<Props> = ({ config }) => {
-  const { product, pricing, idealFor, specifications, appearance } = config;
+  const { product, pricing, idealFor, specifications, appearance, footer } = config;
   const type = TYPOGRAPHY_PRESETS[appearance.typography] ?? TYPOGRAPHY_PRESETS.moderna;
   const radius = appearance.corners === 'rounded' ? 24 : 0;
   const smallRadius = appearance.corners === 'rounded' ? 12 : 0;
@@ -171,7 +170,7 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
     <div
       style={{
         width: CATALOG_WIDTH,
-        height: CATALOG_HEIGHT,
+        minHeight: CATALOG_HEIGHT,
         backgroundColor: appearance.backgroundColor,
         color: appearance.textColor,
         fontFamily: type.body,
@@ -179,7 +178,6 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
         display: 'flex',
         flexDirection: 'column',
         boxSizing: 'border-box',
-        overflow: 'hidden',
       }}
     >
       {/* Cabeçalho da marca */}
@@ -258,45 +256,93 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {pricing.rows.map((row, i) => (
-              <div
-                key={row.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  justifyContent: 'space-between',
-                  gap: 16,
-                  padding: '12px 20px',
-                  borderRadius: smallRadius,
-                  backgroundColor: i % 2 === 0 ? 'rgba(0,0,0,0.04)' : 'transparent',
-                }}
-              >
-                <span
+            {pricing.rows.map((row, i) => {
+              const promo =
+                pricing.showDiscount && typeof row.promoPrice === 'number' && row.promoPrice > 0
+                  ? row.promoPrice
+                  : null;
+              const hasPromo = promo !== null && promo < row.price;
+              const off = hasPromo ? Math.round(((row.price - promo!) / row.price) * 100) : 0;
+              const unitLabel = pricing.type === 'unit' && pricing.showUnitLabel && (
+                <span style={{ fontSize: 16, fontWeight: 400, opacity: 0.65 }}> /un.</span>
+              );
+              return (
+                <div
+                  key={row.id}
                   style={{
-                    fontSize: 26,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    justifyContent: 'space-between',
+                    gap: 16,
+                    padding: '12px 20px',
+                    borderRadius: smallRadius,
+                    backgroundColor: i % 2 === 0 ? 'rgba(0,0,0,0.04)' : 'transparent',
                   }}
                 >
-                  {row.quantity}
-                </span>
-                <span
-                  style={{
-                    fontFamily: type.heading,
-                    fontWeight: 700,
-                    fontSize: 30,
-                    whiteSpace: 'nowrap',
-                    color: appearance.primaryColor,
-                  }}
-                >
-                  {formatBRL(row.price)}
-                  {pricing.type === 'unit' && pricing.showUnitLabel && (
-                    <span style={{ fontSize: 18, fontWeight: 400, opacity: 0.65 }}> /un.</span>
-                  )}
-                </span>
-              </div>
-            ))}
+                  <span
+                    style={{
+                      fontSize: 26,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {row.quantity}
+                  </span>
+                  <span
+                    style={{
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: 12,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: type.heading,
+                        fontWeight: hasPromo ? 500 : 700,
+                        fontSize: hasPromo ? 22 : 30,
+                        color: hasPromo ? appearance.textColor : appearance.primaryColor,
+                        opacity: hasPromo ? 0.55 : 1,
+                        textDecoration: hasPromo ? 'line-through' : 'none',
+                      }}
+                    >
+                      {formatBRL(row.price)}
+                      {!hasPromo && unitLabel}
+                    </span>
+                    {hasPromo && (
+                      <>
+                        <span
+                          style={{
+                            fontFamily: type.heading,
+                            fontWeight: 700,
+                            fontSize: 30,
+                            color: appearance.primaryColor,
+                          }}
+                        >
+                          {formatBRL(promo!)}
+                          {unitLabel}
+                        </span>
+                        {off > 0 && (
+                          <span
+                            style={{
+                              fontSize: 15,
+                              fontWeight: 700,
+                              padding: '4px 10px',
+                              borderRadius: 999,
+                              backgroundColor: appearance.secondaryColor,
+                              color: appearance.backgroundColor,
+                            }}
+                          >
+                            -{off}%
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
           {idealFor.items.length > 0 && (
@@ -351,6 +397,7 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
           style={{
             marginTop: 36,
             display: 'flex',
+            flexWrap: 'wrap',
             borderRadius: smallRadius,
             backgroundColor: appearance.primaryColor,
             overflow: 'hidden',
@@ -363,8 +410,8 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
               <div
                 key={spec.id}
                 style={{
-                  flex: 1,
-                  minWidth: 0,
+                  flex: '1 1 25%',
+                  minWidth: 260,
                   padding: '22px 20px',
                   display: 'flex',
                   alignItems: 'center',
@@ -381,9 +428,7 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
                     style={{
                       fontSize: 20,
                       fontWeight: 600,
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
+                      overflowWrap: 'break-word',
                     }}
                   >
                     {spec.value}
@@ -392,6 +437,22 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {footer.showCnpj && footer.cnpj.trim() && (
+        <div
+          style={{
+            marginTop: 20,
+            textAlign: 'center',
+            fontSize: 17,
+            letterSpacing: '0.06em',
+            opacity: 0.6,
+            color: appearance.textColor,
+            flexShrink: 0,
+          }}
+        >
+          CNPJ: {footer.cnpj}
         </div>
       )}
     </div>
