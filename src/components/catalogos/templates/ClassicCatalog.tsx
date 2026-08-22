@@ -398,7 +398,8 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
           style={{
             marginTop: 36,
             display: 'flex',
-            flexWrap: 'wrap',
+            flexWrap: 'nowrap',
+            gap: Math.max(6, 26 - specifications.length * 2),
             borderRadius: smallRadius,
             backgroundColor: appearance.primaryColor,
             overflow: 'hidden',
@@ -411,25 +412,43 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
               <div
                 key={spec.id}
                 style={{
-                  flex: '1 1 25%',
-                  minWidth: 260,
-                  padding: '22px 20px',
+                  flex: '1 1 0%',
+                  minWidth: 0,
+                  padding: `${22}px ${Math.max(6, 18 - specifications.length)}px`,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 14,
+                  justifyContent: 'center',
+                  gap: 10,
                   color: appearance.backgroundColor,
+                  textAlign: 'center',
                 }}
               >
-                <Icon width={30} height={30} strokeWidth={1.6} style={{ flexShrink: 0, opacity: 0.9 }} />
+                <Icon
+                  width={Math.max(22, 30 - specifications.length)}
+                  height={Math.max(22, 30 - specifications.length)}
+                  strokeWidth={1.6}
+                  style={{ flexShrink: 0, opacity: 0.9 }}
+                />
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 15, opacity: 0.7, letterSpacing: '0.08em' }}>
+                  <div
+                    style={{
+                      fontSize: Math.max(11, 15 - specifications.length * 0.4),
+                      opacity: 0.7,
+                      letterSpacing: '0.08em',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
                     {spec.label.toUpperCase()}
                   </div>
                   <div
                     style={{
-                      fontSize: 20,
+                      fontSize: Math.max(13, 20 - specifications.length * 0.8),
                       fontWeight: 600,
-                      overflowWrap: 'break-word',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
                     }}
                   >
                     {spec.value}
