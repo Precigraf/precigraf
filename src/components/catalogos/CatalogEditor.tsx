@@ -5,7 +5,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Building2, ImageIcon, Table2, Sparkles, Info, Palette } from 'lucide-react';
+import { Building2, ImageIcon, Table2, Sparkles, Info, Palette, PanelBottom } from 'lucide-react';
 import { CatalogConfig } from '@/lib/catalogBuilder/types';
 import BrandSection from './sections/BrandSection';
 import ProductSection from './sections/ProductSection';
@@ -13,6 +13,7 @@ import PricingSection from './sections/PricingSection';
 import IdealForSection from './sections/IdealForSection';
 import SpecificationsSection from './sections/SpecificationsSection';
 import AppearanceSection from './sections/AppearanceSection';
+import FooterSection from './sections/FooterSection';
 
 export interface CatalogValidationErrors {
   productTitle?: string | null;
@@ -87,6 +88,15 @@ const CatalogEditor: React.FC<Props> = ({
       </AccordionTrigger>
       <AccordionContent className="px-1">
         <SpecificationsSection config={config} update={update} />
+      </AccordionContent>
+    </AccordionItem>
+
+    <AccordionItem value="rodape">
+      <AccordionTrigger className="text-sm">
+        <span className="flex items-center gap-2"><PanelBottom className="w-4 h-4" /> Rodapé</span>
+      </AccordionTrigger>
+      <AccordionContent className="px-1">
+        <FooterSection config={config} update={update} />
       </AccordionContent>
     </AccordionItem>
 

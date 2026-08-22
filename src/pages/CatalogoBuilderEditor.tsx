@@ -12,7 +12,7 @@ import { usePriceCatalog, useCatalogAutosave } from '@/hooks/usePriceCatalogs';
 import CatalogEditor, { CatalogValidationErrors } from '@/components/catalogos/CatalogEditor';
 import CatalogPreview from '@/components/catalogos/CatalogPreview';
 import CatalogExportModal from '@/components/catalogos/CatalogExportModal';
-import { CatalogConfig, TEXT_LIMITS, sanitizeFileName } from '@/lib/catalogBuilder/types';
+import { CatalogConfig, TEXT_LIMITS, sanitizeFileName, injectCatalogBuilderFonts } from '@/lib/catalogBuilder/types';
 import { exportCatalog, ExportFormat } from '@/lib/catalogBuilder/export';
 import { removeCatalogImage, uploadCatalogImage } from '@/lib/catalogBuilder/storage';
 import { logError } from '@/lib/logger';
@@ -34,6 +34,10 @@ const CatalogoBuilderEditor: React.FC = () => {
   const [showErrors, setShowErrors] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
   const hydrated = useRef(false);
+
+  useEffect(() => {
+    injectCatalogBuilderFonts();
+  }, []);
 
   useEffect(() => {
     if (catalog && !hydrated.current) {

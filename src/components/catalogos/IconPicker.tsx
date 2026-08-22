@@ -11,6 +11,14 @@ interface Props {
 
 const IconPicker: React.FC<Props> = ({ value, onChange }) => {
   const [open, setOpen] = React.useState(false);
+  const [query, setQuery] = React.useState('');
+  const filtered = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return CATALOG_ICON_KEYS;
+    return CATALOG_ICON_KEYS.filter(
+      (k) => CATALOG_ICONS[k].label.toLowerCase().includes(q) || k.includes(q),
+    );
+  }, [query]);
   const Current = CATALOG_ICONS[value]?.Icon ?? CATALOG_ICONS.star.Icon;
 
   return (
@@ -26,9 +34,16 @@ const IconPicker: React.FC<Props> = ({ value, onChange }) => {
           <Current className="w-4 h-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-2" align="start">
-        <div className="grid grid-cols-5 gap-1">
-          {CATALOG_ICON_KEYS.map((key) => {
+      <PopoverContent className="w-72 p-2" align="start">
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar ícone…"
+          aria-label="Buscar ícone"
+          className="mb-2 h-8 w-full rounded-md border border-input bg-background px-2 text-xs outline-none focus:ring-1 focus:ring-ring"
+        />
+        <div className="grid grid-cols-6 gap-1 max-h-64 overflow-y-auto pr-1">
+          {filtered.map((key) => {
             const { Icon, label } = CATALOG_ICONS[key];
             return (
               <button
