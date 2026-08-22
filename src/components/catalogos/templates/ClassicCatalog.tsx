@@ -153,7 +153,8 @@ const ProductTitleBlock: React.FC<{ config: CatalogConfig; type: Typography }> =
 };
 
 const ClassicCatalog: React.FC<Props> = ({ config }) => {
-  const { product, pricing, idealFor, specifications, appearance, footer } = config;
+  const { product, pricing, idealFor, specifications, appearance } = config;
+  const footer = config.footer ?? { showCnpj: false, cnpj: '' };
   const type = TYPOGRAPHY_PRESETS[appearance.typography] ?? TYPOGRAPHY_PRESETS.moderna;
   const radius = appearance.corners === 'rounded' ? 24 : 0;
   const smallRadius = appearance.corners === 'rounded' ? 12 : 0;
