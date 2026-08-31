@@ -451,6 +451,12 @@ export interface CatalogPriceRow {
   price: number;
   /** Preço promocional opcional (usado quando showDiscount = true). */
   promoPrice?: number | null;
+  /** Nº de unidades da faixa. Quando ausente, é lido do texto de `quantity`. */
+  units?: number | null;
+  /** Etiqueta estratégica livre (ex.: "Mais vendido"). */
+  badge?: string;
+  /** Opção em destaque (apenas uma por tabela). */
+  featured?: boolean;
 }
 
 export interface CatalogPricing {
@@ -459,10 +465,15 @@ export interface CatalogPricing {
   showUnitLabel: boolean;
   /** Exibe a coluna de preço promocional com o % de desconto. */
   showDiscount: boolean;
+  /** Destaca o valor total do pedido como informação principal. */
+  showTotals?: boolean;
+  /** Exibe "Economize R$ X" quando houver diferença entre normal e atual. */
+  showSavings?: boolean;
   source: PricingSource;
   sourceProductId: string | null;
   rows: CatalogPriceRow[];
 }
+
 
 export interface CatalogIdealForItem {
   id: string;
