@@ -169,12 +169,6 @@ const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
                         )
                       }
                     />
-                  </div>
-                  <span className="text-[11px] font-medium text-primary tabular-nums">
-                    {row.promoPrice && row.promoPrice > 0 && row.promoPrice < row.price
-                      ? `-${Math.round(((row.price - row.promoPrice) / row.price) * 100)}%`
-                      : ''}
-                  </span>
                 </div>
               )}
             </div>
@@ -198,7 +192,7 @@ const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
           <div>
             <Label htmlFor="show-discount" className="text-xs">Ativar preços promocionais</Label>
             <p className="text-[11px] text-muted-foreground">
-              Mostra o preço atual riscado, o valor da oferta e o % de desconto.
+              Mostra o preço atual riscado e o valor da oferta.
             </p>
           </div>
           <Switch
@@ -209,38 +203,6 @@ const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
             }
           />
         </div>
-      </div>
-
-      <div className="space-y-2 pt-2 border-t border-border">
-        <Label className="text-xs">Os valores representam</Label>
-        <RadioGroup
-          value={pricing.type}
-          onValueChange={(v) =>
-            update((c) => ({ ...c, pricing: { ...c.pricing, type: v as typeof pricing.type } }))
-          }
-          className="gap-2"
-        >
-          <div className="flex items-center gap-2">
-            <RadioGroupItem value="unit" id="type-unit" />
-            <Label htmlFor="type-unit" className="text-xs font-normal">Preço por unidade</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <RadioGroupItem value="total" id="type-total" />
-            <Label htmlFor="type-total" className="text-xs font-normal">Preço total</Label>
-          </div>
-        </RadioGroup>
-        {pricing.type === 'unit' && (
-          <div className="flex items-center justify-between pt-1">
-            <Label htmlFor="show-unit" className="text-xs">Exibir “/un.” no catálogo</Label>
-            <Switch
-              id="show-unit"
-              checked={pricing.showUnitLabel}
-              onCheckedChange={(v) =>
-                update((c) => ({ ...c, pricing: { ...c.pricing, showUnitLabel: v } }))
-              }
-            />
-          </div>
-        )}
       </div>
     </div>
   );
