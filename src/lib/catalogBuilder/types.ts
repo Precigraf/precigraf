@@ -616,13 +616,31 @@ export function normalizeConfig(raw: unknown): CatalogConfig {
       ...(cfg.product ?? {}),
       imageTransform: { ...base.product.imageTransform, ...(cfg.product?.imageTransform ?? {}) },
     },
-    pricing: {
-      ...base.pricing,
-      ...(cfg.pricing ?? {}),
-      rows: Array.isArray(cfg.pricing?.rows) && cfg.pricing!.rows.length
-        ? cfg.pricing!.rows.slice(0, MAX_PRICE_ROWS)
-        : base.pricing.rows,
-    },
+    pricing: (() => {
+      const merged = {
+        ...base.pricing,
+        ...(cfg.pricing ?? {}),
+        rows: Array.isArray(cfg.pricing?.rows) && cfg.pricing!.rows.length
+          ? cfg.pricing!.rows.slice(0, MAX_PRICE_ROWS)
+          : base.pricing.rows,
+      };
+      // Catálogos antigos não tinham estes campos — mantém compatibilidade.
+      merged.showTotals = merged.showTotals ?? true;
+      merged.showSavings = merged.showSavings ?? true;
+      let featuredSeen = false;
+      merged.rows = merged.rows.map((r) => {
+        const featured = !!r.featured && !featuredSeen;
+        if (featured) featuredSeen = true;
+        return {
+          ...r,
+          badge: typeof r.badge === 'string' ? r.badge : '',
+          units: typeof r.units === 'number' && r.units > 0 ? r.units : null,
+          featured,
+        };
+      });
+      return merged;
+    })(),
+
     idealFor: {
       ...base.idealFor,
       ...(cfg.idealFor ?? {}),
