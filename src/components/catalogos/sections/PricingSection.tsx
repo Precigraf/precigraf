@@ -117,7 +117,6 @@ const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
               <div className="w-28 shrink-0">
                 <PriceInput
                   value={row.price}
-                  placeholder={pricing.type === 'unit' ? 'Valor un.' : 'Valor total'}
                   ariaLabel={`Preço da linha ${i + 1}`}
                   onChange={(v) =>
                     setRows(pricing.rows.map((r) => (r.id === row.id ? { ...r, price: v } : r)))
