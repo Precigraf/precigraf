@@ -169,6 +169,7 @@ const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
                         )
                       }
                     />
+                  </div>
                 </div>
               )}
             </div>
