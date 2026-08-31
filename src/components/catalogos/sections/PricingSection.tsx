@@ -24,7 +24,7 @@ interface Props {
 const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
   const { pricing } = config;
   const showTotals = pricing.showTotals !== false;
-  const showSavings = pricing.showSavings !== false;
+  
 
   const setRows = (rows: typeof pricing.rows) =>
     update((c) => ({ ...c, pricing: { ...c.pricing, rows } }));
