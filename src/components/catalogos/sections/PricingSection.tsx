@@ -66,6 +66,38 @@ const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
       </div>
 
       <div className="space-y-2">
+        <Label className="text-xs">Os valores representam</Label>
+        <RadioGroup
+          value={pricing.type}
+          onValueChange={(v) =>
+            update((c) => ({ ...c, pricing: { ...c.pricing, type: v as typeof pricing.type } }))
+          }
+          className="gap-2"
+        >
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="unit" id="type-unit" />
+            <Label htmlFor="type-unit" className="text-xs font-normal">Preço por unidade</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <RadioGroupItem value="total" id="type-total" />
+            <Label htmlFor="type-total" className="text-xs font-normal">Preço total (pacote)</Label>
+          </div>
+        </RadioGroup>
+        {pricing.type === 'unit' && (
+          <div className="flex items-center justify-between pt-1">
+            <Label htmlFor="show-unit" className="text-xs">Exibir “/un.” no catálogo</Label>
+            <Switch
+              id="show-unit"
+              checked={pricing.showUnitLabel}
+              onCheckedChange={(v) =>
+                update((c) => ({ ...c, pricing: { ...c.pricing, showUnitLabel: v } }))
+              }
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label className="text-xs">Linhas ({pricing.rows.length}/{MAX_PRICE_ROWS})</Label>
         </div>
@@ -85,6 +117,7 @@ const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
               <div className="w-28 shrink-0">
                 <PriceInput
                   value={row.price}
+                  placeholder={pricing.type === 'unit' ? 'Valor un.' : 'Valor total'}
                   ariaLabel={`Preço da linha ${i + 1}`}
                   onChange={(v) =>
                     setRows(pricing.rows.map((r) => (r.id === row.id ? { ...r, price: v } : r)))
