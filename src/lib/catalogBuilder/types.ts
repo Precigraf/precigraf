@@ -564,6 +564,8 @@ export function createDefaultConfig(): CatalogConfig {
       type: 'unit',
       showUnitLabel: true,
       showDiscount: false,
+      showTotals: true,
+      showSavings: true,
       source: 'manual',
       sourceProductId: null,
       rows: [
@@ -572,6 +574,7 @@ export function createDefaultConfig(): CatalogConfig {
         { id: uid(), quantity: '100 unidades', price: 2.9 },
       ],
     },
+
     idealFor: {
       title: 'Ideal para',
       items: [
