@@ -7,6 +7,8 @@ import {
   formatBRL,
   getCatalogIcon,
 } from '@/lib/catalogBuilder/types';
+import { computePriceRow } from '@/lib/catalogBuilder/pricing';
+
 
 interface Props {
   config: CatalogConfig;
