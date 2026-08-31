@@ -263,7 +263,6 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
                   ? row.promoPrice
                   : null;
               const hasPromo = promo !== null && promo < row.price;
-              const off = hasPromo ? Math.round(((row.price - promo!) / row.price) * 100) : 0;
               const unitLabel = pricing.type === 'unit' && pricing.showUnitLabel && (
                 <span style={{ fontSize: 16, fontWeight: 400, opacity: 0.65 }}> /un.</span>
               );
@@ -312,33 +311,17 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
                       {!hasPromo && unitLabel}
                     </span>
                     {hasPromo && (
-                      <>
-                        <span
-                          style={{
-                            fontFamily: type.heading,
-                            fontWeight: 700,
-                            fontSize: 30,
-                            color: appearance.primaryColor,
-                          }}
-                        >
-                          {formatBRL(promo!)}
-                          {unitLabel}
-                        </span>
-                        {off > 0 && (
-                          <span
-                            style={{
-                              fontSize: 15,
-                              fontWeight: 700,
-                              padding: '4px 10px',
-                              borderRadius: 999,
-                              backgroundColor: appearance.secondaryColor,
-                              color: appearance.backgroundColor,
-                            }}
-                          >
-                            -{off}%
-                          </span>
-                        )}
-                      </>
+                      <span
+                        style={{
+                          fontFamily: type.heading,
+                          fontWeight: 700,
+                          fontSize: 30,
+                          color: appearance.primaryColor,
+                        }}
+                      >
+                        {formatBRL(promo!)}
+                        {unitLabel}
+                      </span>
                     )}
                   </span>
                 </div>
