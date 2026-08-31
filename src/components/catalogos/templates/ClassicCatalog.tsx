@@ -261,7 +261,6 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
           {(() => {
             const rows = pricing.rows;
             const showTotals = pricing.showTotals !== false;
-            const showSavings = pricing.showSavings !== false;
             // Densidade: quanto mais faixas, mais compacta a escada de decisão.
             const d = rows.length <= 4 ? 1 : rows.length <= 6 ? 0.88 : rows.length <= 8 ? 0.76 : 0.64;
             const px = (n: number) => Math.round(n * d);
