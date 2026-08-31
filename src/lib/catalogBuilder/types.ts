@@ -451,12 +451,6 @@ export interface CatalogPriceRow {
   price: number;
   /** Preço promocional opcional (usado quando showDiscount = true). */
   promoPrice?: number | null;
-  /** Nº de unidades da faixa. Quando ausente, é lido do texto de `quantity`. */
-  units?: number | null;
-  /** Etiqueta estratégica livre (ex.: "Mais vendido"). */
-  badge?: string;
-  /** Opção em destaque (apenas uma por tabela). */
-  featured?: boolean;
 }
 
 export interface CatalogPricing {
@@ -465,15 +459,10 @@ export interface CatalogPricing {
   showUnitLabel: boolean;
   /** Exibe a coluna de preço promocional com o % de desconto. */
   showDiscount: boolean;
-  /** Destaca o valor total do pedido como informação principal. */
-  showTotals?: boolean;
-  /** Exibe "Economize R$ X" quando houver diferença entre normal e atual. */
-  showSavings?: boolean;
   source: PricingSource;
   sourceProductId: string | null;
   rows: CatalogPriceRow[];
 }
-
 
 export interface CatalogIdealForItem {
   id: string;
@@ -564,8 +553,6 @@ export function createDefaultConfig(): CatalogConfig {
       type: 'unit',
       showUnitLabel: true,
       showDiscount: false,
-      showTotals: true,
-      showSavings: true,
       source: 'manual',
       sourceProductId: null,
       rows: [
@@ -574,7 +561,6 @@ export function createDefaultConfig(): CatalogConfig {
         { id: uid(), quantity: '100 unidades', price: 2.9 },
       ],
     },
-
     idealFor: {
       title: 'Ideal para',
       items: [
@@ -616,31 +602,13 @@ export function normalizeConfig(raw: unknown): CatalogConfig {
       ...(cfg.product ?? {}),
       imageTransform: { ...base.product.imageTransform, ...(cfg.product?.imageTransform ?? {}) },
     },
-    pricing: (() => {
-      const merged = {
-        ...base.pricing,
-        ...(cfg.pricing ?? {}),
-        rows: Array.isArray(cfg.pricing?.rows) && cfg.pricing!.rows.length
-          ? cfg.pricing!.rows.slice(0, MAX_PRICE_ROWS)
-          : base.pricing.rows,
-      };
-      // Catálogos antigos não tinham estes campos — mantém compatibilidade.
-      merged.showTotals = merged.showTotals ?? true;
-      merged.showSavings = merged.showSavings ?? true;
-      let featuredSeen = false;
-      merged.rows = merged.rows.map((r) => {
-        const featured = !!r.featured && !featuredSeen;
-        if (featured) featuredSeen = true;
-        return {
-          ...r,
-          badge: typeof r.badge === 'string' ? r.badge : '',
-          units: typeof r.units === 'number' && r.units > 0 ? r.units : null,
-          featured,
-        };
-      });
-      return merged;
-    })(),
-
+    pricing: {
+      ...base.pricing,
+      ...(cfg.pricing ?? {}),
+      rows: Array.isArray(cfg.pricing?.rows) && cfg.pricing!.rows.length
+        ? cfg.pricing!.rows.slice(0, MAX_PRICE_ROWS)
+        : base.pricing.rows,
+    },
     idealFor: {
       ...base.idealFor,
       ...(cfg.idealFor ?? {}),

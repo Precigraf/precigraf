@@ -7,8 +7,6 @@ import {
   formatBRL,
   getCatalogIcon,
 } from '@/lib/catalogBuilder/types';
-import { computePriceRow } from '@/lib/catalogBuilder/pricing';
-
 
 interface Props {
   config: CatalogConfig;
@@ -258,205 +256,95 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
             {pricing.title}
           </div>
 
-          {(() => {
-            const rows = pricing.rows;
-            const showTotals = pricing.showTotals !== false;
-            // Densidade: quanto mais faixas, mais compacta a escada de decisão.
-            const d = rows.length <= 4 ? 1 : rows.length <= 6 ? 0.88 : rows.length <= 8 ? 0.76 : 0.64;
-            const px = (n: number) => Math.round(n * d);
-
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: px(10) }}>
-                {rows.map((row, i) => {
-                  const c = computePriceRow(row, pricing);
-                  const useTotals = showTotals && c.hasTotals;
-                  const badge = (row.badge ?? '').trim();
-                  const featured = !!row.featured;
-                  const unitSuffix =
-                    pricing.type === 'unit' && pricing.showUnitLabel ? ' /un.' : '';
-
-                  return (
-                    <div
-                      key={row.id}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {pricing.rows.map((row, i) => {
+              const promo =
+                pricing.showDiscount && typeof row.promoPrice === 'number' && row.promoPrice > 0
+                  ? row.promoPrice
+                  : null;
+              const hasPromo = promo !== null && promo < row.price;
+              const off = hasPromo ? Math.round(((row.price - promo!) / row.price) * 100) : 0;
+              const unitLabel = pricing.type === 'unit' && pricing.showUnitLabel && (
+                <span style={{ fontSize: 16, fontWeight: 400, opacity: 0.65 }}> /un.</span>
+              );
+              return (
+                <div
+                  key={row.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'baseline',
+                    justifyContent: 'space-between',
+                    gap: 16,
+                    padding: '12px 20px',
+                    borderRadius: smallRadius,
+                    backgroundColor: i % 2 === 0 ? 'rgba(0,0,0,0.04)' : 'transparent',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 26,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {row.quantity}
+                  </span>
+                  <span
+                    style={{
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: 12,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <span
                       style={{
-                        padding: `${px(12)}px ${px(20)}px`,
-                        borderRadius: smallRadius,
-                        border: featured
-                          ? `2px solid ${appearance.primaryColor}`
-                          : '2px solid transparent',
-                        backgroundColor: featured
-                          ? `${appearance.primaryColor}0F`
-                          : i % 2 === 0
-                            ? 'rgba(0,0,0,0.04)'
-                            : 'transparent',
-                        boxSizing: 'border-box',
-                        overflow: 'hidden',
+                        fontFamily: type.heading,
+                        fontWeight: hasPromo ? 500 : 700,
+                        fontSize: hasPromo ? 22 : 30,
+                        color: hasPromo ? appearance.textColor : appearance.primaryColor,
+                        opacity: hasPromo ? 0.55 : 1,
+                        textDecoration: hasPromo ? 'line-through' : 'none',
                       }}
                     >
-                      {/* Linha 1: quantidade + etiqueta */}
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: px(12),
-                        }}
-                      >
+                      {formatBRL(row.price)}
+                      {!hasPromo && unitLabel}
+                    </span>
+                    {hasPromo && (
+                      <>
                         <span
                           style={{
-                            fontSize: px(useTotals ? 22 : 26),
-                            fontWeight: featured ? 600 : 400,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            minWidth: 0,
+                            fontFamily: type.heading,
+                            fontWeight: 700,
+                            fontSize: 30,
+                            color: appearance.primaryColor,
                           }}
                         >
-                          {row.quantity}
+                          {formatBRL(promo!)}
+                          {unitLabel}
                         </span>
-                        {badge && (
+                        {off > 0 && (
                           <span
                             style={{
-                              fontSize: px(13),
+                              fontSize: 15,
                               fontWeight: 700,
-                              letterSpacing: '0.08em',
-                              textTransform: 'uppercase',
-                              padding: `${px(3)}px ${px(10)}px`,
+                              padding: '4px 10px',
                               borderRadius: 999,
-                              whiteSpace: 'nowrap',
-                              flexShrink: 0,
-                              backgroundColor: featured
-                                ? appearance.primaryColor
-                                : `${appearance.secondaryColor}22`,
-                              color: featured
-                                ? appearance.backgroundColor
-                                : appearance.secondaryColor,
+                              backgroundColor: appearance.secondaryColor,
+                              color: appearance.backgroundColor,
                             }}
                           >
-                            {badge}
+                            -{off}%
                           </span>
                         )}
-                      </div>
-
-                      {useTotals ? (
-                        <>
-                          {c.hasPromo && c.totalNormal !== null ? (
-                            <div
-                              style={{
-                                fontSize: px(16),
-                                opacity: 0.55,
-                                marginTop: px(2),
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              Preço atual:{' '}
-                              <span style={{ textDecoration: 'line-through' }}>
-                                {formatBRL(c.totalNormal)}
-                              </span>
-                            </div>
-                          ) : (
-                            <div
-                              style={{
-                                fontSize: px(16),
-                                opacity: 0.55,
-                                marginTop: px(2),
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              Preço: {formatBRL(c.totalNormal ?? c.totalCurrent!)}
-                            </div>
-                          )}
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'baseline',
-                              gap: px(10),
-                              marginTop: px(2),
-                            }}
-                          >
-                            {c.hasPromo && (
-                              <span
-                                style={{
-                                  fontSize: px(14),
-                                  fontWeight: 600,
-                                  opacity: 0.8,
-                                  whiteSpace: 'nowrap',
-                                  flexShrink: 0,
-                                }}
-                              >
-                                Promoção:
-                              </span>
-                            )}
-                            <span
-                              style={{
-                                fontFamily: type.heading,
-                                fontWeight: 700,
-                                fontSize: px(featured ? 36 : 32),
-                                color: appearance.primaryColor,
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              {formatBRL(c.totalCurrent!)}
-                            </span>
-                          </div>
-                          {c.unitCurrent !== null && (
-                            <div
-                              style={{
-                                fontSize: px(15),
-                                opacity: 0.7,
-                                marginTop: px(2),
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              {formatBRL(c.unitCurrent)} por unidade
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'baseline',
-                            justifyContent: 'space-between',
-                            gap: px(12),
-                            marginTop: px(2),
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: px(15),
-                              opacity: 0.5,
-                              textDecoration: c.hasPromo ? 'line-through' : 'none',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {c.hasPromo ? `de ${formatBRL(row.price)}${unitSuffix}` : ''}
-                          </span>
-                          <span
-                            style={{
-                              fontFamily: type.heading,
-                              fontWeight: 700,
-                              fontSize: px(30),
-                              color: appearance.primaryColor,
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {formatBRL(c.hasPromo ? c.unitCurrent ?? row.price : row.price)}
-                            {unitSuffix && (
-                              <span style={{ fontSize: px(16), fontWeight: 400, opacity: 0.65 }}>
-                                {unitSuffix}
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
-
+                      </>
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
 
           {idealFor.items.length > 0 && (
             <div style={{ marginTop: 'auto', paddingTop: 28 }}>
