@@ -261,7 +261,6 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
           {(() => {
             const rows = pricing.rows;
             const showTotals = pricing.showTotals !== false;
-            const showSavings = pricing.showSavings !== false;
             // Densidade: quanto mais faixas, mais compacta a escada de decisão.
             const d = rows.length <= 4 ? 1 : rows.length <= 6 ? 0.88 : rows.length <= 8 ? 0.76 : 0.64;
             const px = (n: number) => Math.round(n * d);
@@ -341,28 +340,53 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
 
                       {useTotals ? (
                         <>
-                          {c.hasPromo && c.totalNormal !== null && (
+                          {c.hasPromo && c.totalNormal !== null ? (
                             <div
                               style={{
                                 fontSize: px(16),
-                                opacity: 0.5,
-                                textDecoration: 'line-through',
+                                opacity: 0.55,
                                 marginTop: px(2),
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              de {formatBRL(c.totalNormal)}
+                              Preço atual:{' '}
+                              <span style={{ textDecoration: 'line-through' }}>
+                                {formatBRL(c.totalNormal)}
+                              </span>
+                            </div>
+                          ) : (
+                            <div
+                              style={{
+                                fontSize: px(16),
+                                opacity: 0.55,
+                                marginTop: px(2),
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              Preço: {formatBRL(c.totalNormal ?? c.totalCurrent!)}
                             </div>
                           )}
                           <div
                             style={{
                               display: 'flex',
                               alignItems: 'baseline',
-                              justifyContent: 'space-between',
-                              gap: px(12),
+                              gap: px(10),
                               marginTop: px(2),
                             }}
                           >
+                            {c.hasPromo && (
+                              <span
+                                style={{
+                                  fontSize: px(14),
+                                  fontWeight: 600,
+                                  opacity: 0.8,
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0,
+                                }}
+                              >
+                                Promoção:
+                              </span>
+                            )}
                             <span
                               style={{
                                 fontFamily: type.heading,
@@ -374,22 +398,6 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
                             >
                               {formatBRL(c.totalCurrent!)}
                             </span>
-                            {showSavings && c.savings > 0 && (
-                              <span
-                                style={{
-                                  fontSize: px(14),
-                                  fontWeight: 700,
-                                  padding: `${px(4)}px ${px(10)}px`,
-                                  borderRadius: 999,
-                                  whiteSpace: 'nowrap',
-                                  flexShrink: 0,
-                                  backgroundColor: appearance.secondaryColor,
-                                  color: appearance.backgroundColor,
-                                }}
-                              >
-                                Economize {formatBRL(c.savings)}
-                              </span>
-                            )}
                           </div>
                           {c.unitCurrent !== null && (
                             <div

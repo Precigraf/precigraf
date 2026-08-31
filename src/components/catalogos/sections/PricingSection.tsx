@@ -24,7 +24,7 @@ interface Props {
 const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
   const { pricing } = config;
   const showTotals = pricing.showTotals !== false;
-  const showSavings = pricing.showSavings !== false;
+  
 
   const setRows = (rows: typeof pricing.rows) =>
     update((c) => ({ ...c, pricing: { ...c.pricing, rows } }));
@@ -208,11 +208,6 @@ const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
                     )}
                     <div>Total atual: {formatBRL(c.totalCurrent!)}</div>
                     {c.unitCurrent !== null && <div>Por unidade: {formatBRL(c.unitCurrent)}</div>}
-                    {c.savings > 0 && (
-                      <div className="text-primary font-medium">
-                        Economia: {formatBRL(c.savings)}
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <p className="text-[11px] text-muted-foreground">
@@ -266,22 +261,6 @@ const PricingSection: React.FC<Props> = ({ config, update, rowsError }) => {
             checked={showTotals}
             onCheckedChange={(v) =>
               update((c) => ({ ...c, pricing: { ...c.pricing, showTotals: v } }))
-            }
-          />
-        </div>
-
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <Label htmlFor="show-savings" className="text-xs">Exibir “Economize R$”</Label>
-            <p className="text-[11px] text-muted-foreground">
-              Calculado automaticamente (total normal − total atual).
-            </p>
-          </div>
-          <Switch
-            id="show-savings"
-            checked={showSavings}
-            onCheckedChange={(v) =>
-              update((c) => ({ ...c, pricing: { ...c.pricing, showSavings: v } }))
             }
           />
         </div>
