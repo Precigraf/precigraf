@@ -263,7 +263,6 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
                   ? row.promoPrice
                   : null;
               const hasPromo = promo !== null && promo < row.price;
-              const off = hasPromo ? Math.round(((row.price - promo!) / row.price) * 100) : 0;
               const unitLabel = pricing.type === 'unit' && pricing.showUnitLabel && (
                 <span style={{ fontSize: 16, fontWeight: 400, opacity: 0.65 }}> /un.</span>
               );
