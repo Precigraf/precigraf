@@ -276,7 +276,7 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
               const effectivePrice = hasPromo ? promo! : row.price;
               const qtyNumber = parseQuantity(row.quantity);
               const unitPrice = qtyNumber ? effectivePrice / qtyNumber : null;
-              const showUnitPrice = pricing.type === 'unit' && unitPrice !== null && unitPrice > 0;
+              const showUnitPrice = unitPrice !== null && unitPrice > 0 && (qtyNumber ?? 0) > 1;
 
               return (
                 <div
