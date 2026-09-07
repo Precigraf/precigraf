@@ -21,6 +21,16 @@ function fitFont(text: string, base: number, comfortable: number, min = 0.72) {
   return Math.round(base * ratio);
 }
 
+/** Extrai o valor numérico de uma string de quantidade (ex.: "20 unidades", "1.000"). */
+function parseQuantity(qty: string): number | null {
+  const cleaned = qty.replace(/[^\d,.]/g, '').trim();
+  if (!cleaned) return null;
+  const normalized = cleaned.replace(/\./g, '').replace(',', '.');
+  const n = parseFloat(normalized);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}
+
 /** Cabeçalho institucional da marca — variantes centralizada e lateral. */
 const BrandHeader: React.FC<{ config: CatalogConfig; type: Typography }> = ({ config, type }) => {
   const { brand, appearance } = config;
