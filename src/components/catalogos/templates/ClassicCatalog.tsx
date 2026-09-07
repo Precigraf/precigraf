@@ -273,9 +273,11 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
                   ? row.promoPrice
                   : null;
               const hasPromo = promo !== null && promo < row.price;
-              const unitLabel = pricing.type === 'unit' && pricing.showUnitLabel && (
-                <span style={{ fontSize: 16, fontWeight: 400, opacity: 0.65 }}> /un.</span>
-              );
+              const effectivePrice = hasPromo ? promo! : row.price;
+              const qtyNumber = parseQuantity(row.quantity);
+              const unitPrice = qtyNumber ? effectivePrice / qtyNumber : null;
+              const showUnitPrice = pricing.type === 'unit' && unitPrice !== null && unitPrice > 0;
+
               return (
                 <div
                   key={row.id}
@@ -318,7 +320,6 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
                       }}
                     >
                       {formatBRL(row.price)}
-                      {!hasPromo && unitLabel}
                     </span>
                     {hasPromo && (
                       <span
@@ -330,7 +331,18 @@ const ClassicCatalog: React.FC<Props> = ({ config }) => {
                         }}
                       >
                         {formatBRL(promo!)}
-                        {unitLabel}
+                      </span>
+                    )}
+                    {showUnitPrice && (
+                      <span
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 500,
+                          color: appearance.secondaryColor,
+                          marginLeft: 4,
+                        }}
+                      >
+                        ({formatBRL(unitPrice)}/un)
                       </span>
                     )}
                   </span>
