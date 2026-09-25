@@ -54,6 +54,11 @@ const baseOptions = (o: RenderOptions, size: { width: number; height: number }) 
   // when an old catalog contains an unavailable image.
   cacheBust: false,
   imagePlaceholder: TRANSPARENT_PIXEL,
+  // Catálogos antigos podem apontar para uma fotografia já removida. O
+  // preview mostra o espaço reservado; a exportação deve fazer o mesmo em vez
+  // de cancelar todo o arquivo por causa desse recurso indisponível.
+  filter: (element: HTMLElement) =>
+    !(element instanceof HTMLImageElement && element.complete && element.naturalWidth === 0),
   backgroundColor: o.backgroundColor,
   style: {
     transform: 'none',
