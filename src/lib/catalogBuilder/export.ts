@@ -31,6 +31,9 @@ interface RenderOptions {
   backgroundColor: string;
 }
 
+const TRANSPARENT_PIXEL =
+  'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+
 /** Dimensões reais do nó renderizado (a altura cresce com o conteúdo). */
 function measure(node: HTMLElement) {
   return {
@@ -43,7 +46,19 @@ const baseOptions = (o: RenderOptions, size: { width: number; height: number }) 
   width: size.width,
   height: size.height,
   pixelRatio: o.pixelRatio ?? 2,
-  cacheBust: true,
+  // The catalog fonts are already loaded by the browser. Asking html-to-image
+  // to read cross-origin Google Fonts stylesheets throws a SecurityError and
+  // aborts the download in some browsers.
+  skipFonts: true,
+  // Keep signed/public image URLs unchanged and do not fail the whole export
+  // when an old catalog contains an unavailable image.
+  cacheBust: false,
+  imagePlaceholder: TRANSPARENT_PIXEL,
+  // Catálogos antigos podem apontar para uma fotografia já removida. O
+  // preview mostra o espaço reservado; a exportação deve fazer o mesmo em vez
+  // de cancelar todo o arquivo por causa desse recurso indisponível.
+  filter: (element: HTMLElement) =>
+    !(element instanceof HTMLImageElement && element.complete && element.naturalWidth === 0),
   backgroundColor: o.backgroundColor,
   style: {
     transform: 'none',
@@ -59,12 +74,9 @@ export async function renderCatalogImage(
 ): Promise<string> {
   await waitForAssets(node);
   const size = measure(node);
-  // Primeira passada aquece o cache de fontes/imagens do html-to-image.
   if (format === 'png') {
-    await toPng(node, { ...baseOptions(options, size), pixelRatio: 1 });
     return toPng(node, baseOptions(options, size));
   }
-  await toJpeg(node, { ...baseOptions(options, size), pixelRatio: 1, quality: 0.9 });
   return toJpeg(node, { ...baseOptions(options, size), quality: 0.94 });
 }
 
